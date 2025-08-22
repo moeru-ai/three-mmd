@@ -1,0 +1,39 @@
+{
+  "name": "@moeru/three-mmd",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "Use MMD on Three.js",
+  "author": "Moeru AI",
+  "license": "MIT",
+  "homepage": "https://github.com/moeru-ai/three-mmd",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moeru-ai/three-mmd.git",
+    "directory": "packages/three-mmd"
+  },
+  "bugs": "https://github.com/moeru-ai/three-mmd/issues",
+  "keywords": [
+    "threejs",
+    "three",
+    "mmd"
+  ],
+  "sideEffects": false,
+  "exports": "./src/index.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "scripts": {
+    "build": "pkgroll"
+  }
+}
