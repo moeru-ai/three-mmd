@@ -5,6 +5,6 @@ export default defineConfig({
   react: true,
 }, {
   rules: {
-    'sonarjs/cognitive-complexity': 'off'
-  }
+    'sonarjs/cognitive-complexity': 'off',
+  },
 })
