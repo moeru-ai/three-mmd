@@ -4,8 +4,19 @@ dictionaryDefinitions: []
 dictionaries: []
 words:
   - antfu
+  - Blinn
+  - BRDF
+  - Clearcoat
+  - envmap
+  - glsl
+  - gradientmap
+  - irradiances
+  - matcap
+  - Metcap
   - moeru
+  - Phong
   - pkgroll
   - threejs
+  - Toon
 ignoreWords: []
 import: []
