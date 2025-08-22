@@ -3,19 +3,26 @@ ignorePaths: []
 dictionaryDefinitions: []
 dictionaries: []
 words:
+  - ammojs
   - antfu
   - Blinn
+  - BPPV
   - BRDF
   - Clearcoat
   - envmap
+  - Eulers
   - glsl
   - gradientmap
   - irradiances
   - matcap
   - Metcap
   - moeru
+  - noname
   - Phong
   - pkgroll
+  - PVRTC
+  - slerp
+  - sonarjs
   - threejs
   - Toon
 ignoreWords: []
