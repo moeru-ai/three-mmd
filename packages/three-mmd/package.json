@@ -40,6 +40,10 @@
     "@types/three": "^0.179.0",
     "three": "^0.179.0"
   },
+  "dependencies": {
+    "@noname0310/mmd-parser": "catalog:",
+    "ammojs-typed": "catalog:"
+  },
   "devDependencies": {
     "@types/three": "catalog:",
     "three": "catalog:"
