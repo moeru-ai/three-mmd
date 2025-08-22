@@ -1,5 +1,9 @@
 {
   "extends": "@moeru/tsconfig",
+  "compilerOptions": {
+    // "allowJs": true,
+    // "checkJs": true
+  },
   "include": [
     "examples/**/src",
     "packages/**/src",
