@@ -35,5 +35,13 @@
   },
   "scripts": {
     "build": "pkgroll"
+  },
+  "peerDependencies": {
+    "@types/three": "^0.179.0",
+    "three": "^0.179.0"
+  },
+  "devDependencies": {
+    "@types/three": "catalog:",
+    "three": "catalog:"
   }
 }
