@@ -12,7 +12,8 @@ Considering the needs of Project AIRI or other future projects, I decided to for
 ## Usage
 
 ```bash
-npm i @moeru/three-mmd
+npm i three @moeru/three-mmd
+npm i -D @types/three
 ```
 
 > There may be significant changes in future versions, so this is unstable.
