@@ -1,0 +1,103 @@
+import type { AnimationClip, AnimationMixer, Audio, Bone, Camera, Object3D, Quaternion, SkinnedMesh } from 'three'
+import type { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
+
+import type { MMDPhysics } from './MMDPhysics'
+
+export interface AudioManagerParameter {
+  delayTime?: number
+}
+
+export interface MMDAnimationHelperAddParameter {
+  animation?: AnimationClip | AnimationClip[]
+  delayTime?: number
+  gravity?: number
+  maxStepNum?: number
+  physics?: boolean
+  unitStep?: number
+  warmup?: number
+}
+
+export interface MMDAnimationHelperMixer {
+  duration?: number
+  grantSolver: GrantSolver
+  ikSolver: CCDIKSolver
+  looped: boolean
+  mixer?: AnimationMixer
+  physics?: MMDPhysics
+}
+
+export interface MMDAnimationHelperParameter {
+  afterglow?: number
+  pmxAnimation?: boolean
+  resetPhysicsOnLoop?: boolean
+  sync?: boolean
+}
+
+export interface MMDAnimationHelperPoseParameter {
+  grant?: boolean
+  ik?: boolean
+  resetPose?: boolean
+}
+
+export class AudioManager {
+  audio: Audio
+  audioDuration: number
+  currentTime: number
+  delayTime: number
+  duration: number
+  elapsedTime: number
+  constructor(audio: Audio, params?: AudioManagerParameter)
+
+  control(delta: number): this
+}
+
+export class GrantSolver {
+  grants: object[]
+  mesh: SkinnedMesh
+  constructor(mesh: SkinnedMesh, grants: object[])
+
+  addGrantRotation(bone: Bone, q: Quaternion, ratio: number): this
+  update(): this
+  updateOne(gran: object[]): this
+}
+
+/**
+ * @deprecated The module has been deprecated and will be removed with r172. Please migrate to
+ * https://github.com/takahirox/three-mmd-loader instead.
+ */
+export class MMDAnimationHelper {
+  audio: Audio
+  audioManager: AudioManager
+  camera: Camera | null
+  cameraTarget: Object3D
+  configuration: {
+    afterglow: number
+    pmxAnimation: boolean
+    resetPhysicsOnLoop: boolean
+    sync: boolean
+  }
+
+  enabled: {
+    animation: boolean
+    cameraAnimation: boolean
+    grant: boolean
+    ik: boolean
+    physics: boolean
+  }
+
+  masterPhysics: null
+
+  meshes: SkinnedMesh[]
+
+  objects: WeakMap<AudioManager | Camera | SkinnedMesh, MMDAnimationHelperMixer>
+  onBeforePhysics: (mesh: SkinnedMesh) => void
+  sharedPhysics: boolean
+  constructor(params?: MMDAnimationHelperParameter)
+
+  add(object: Audio | Camera | SkinnedMesh, params?: MMDAnimationHelperAddParameter): this
+  createGrantSolver(mesh: SkinnedMesh): GrantSolver
+  enable(key: string, enabled: boolean): this
+  pose(mesh: SkinnedMesh, vpd: object, params?: MMDAnimationHelperPoseParameter): this
+  remove(object: Audio | Camera | SkinnedMesh): this
+  update(delta: number): this
+}
