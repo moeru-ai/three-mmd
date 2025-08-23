@@ -1451,7 +1451,7 @@ class MaterialBuilder {
 
 //
 
-class MMDToonMaterial extends ShaderMaterial {
+export class MMDToonMaterial extends ShaderMaterial {
   constructor(parameters) {
     super()
 

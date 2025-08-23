@@ -1,5 +1,6 @@
 import type { Pmd, Pmx, Vmd } from '@noname0310/mmd-parser'
-import type { AnimationClip, Camera, FileLoader, Loader, LoadingManager, SkinnedMesh } from 'three'
+import type { AnimationClip, Camera, Color, FileLoader, Loader, LoadingManager, ShaderMaterial, SkinnedMesh } from 'three'
+import type { MMDToonMaterial } from '..'
 
 export interface MMDLoaderAnimationObject {
   animation: AnimationClip
@@ -74,4 +75,13 @@ export class MMDLoader extends Loader<SkinnedMesh> {
     onError?: (event: ErrorEvent) => void,
   ): void
   setAnimationPath(animationPath: string): this
+}
+
+export class MMDToonMaterial extends ShaderMaterial {
+  // TODO: emissive declared in MaterialJSON but not where can be
+  // found under ShaderMaterial nor Material, but mentioned as
+  // https://github.com/mrdoob/three.js/issues/28336, setting
+  // emissive for colored textures was required.
+  emissive?: Color
+  emissiveIntensity?: number
 }
