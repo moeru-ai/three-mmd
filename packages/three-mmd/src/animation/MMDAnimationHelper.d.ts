@@ -3,10 +3,6 @@ import type { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
 
 import type { MMDPhysics } from './MMDPhysics'
 
-export interface AudioManagerParameter {
-  delayTime?: number
-}
-
 export interface MMDAnimationHelperAddParameter {
   animation?: AnimationClip | AnimationClip[]
   delayTime?: number
@@ -37,18 +33,6 @@ export interface MMDAnimationHelperPoseParameter {
   grant?: boolean
   ik?: boolean
   resetPose?: boolean
-}
-
-export class AudioManager {
-  audio: Audio
-  audioDuration: number
-  currentTime: number
-  delayTime: number
-  duration: number
-  elapsedTime: number
-  constructor(audio: Audio, params?: AudioManagerParameter)
-
-  control(delta: number): this
 }
 
 export class GrantSolver {
