@@ -41,7 +41,7 @@ export class ExperimentalMMDLoader extends Loader<SkinnedMesh> {
 
           if (!['pmd', 'pmx'].includes(modelExtension)) {
             // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
-            onError?.(new Error(`PMXLoader: Unknown model file extension .${modelExtension}.`) as unknown as ErrorEvent)
+            onError?.(new Error(`ExperimentalMMDLoader: Unknown model file extension .${modelExtension}.`) as unknown as ErrorEvent)
 
             return
           }
