@@ -9,6 +9,12 @@ and no code has ever appeared in the [takahirox/three-mmd-loader](https://github
 
 Considering the needs of Project AIRI or other future projects, I decided to fork and maintain it, i.e., this repo.
 
+## Roadmap
+
+- React-three-fiber bindings (`@moeru/three-mmd-r3f`)
+- Split MMDLoader
+- Rapier-based physics (help wanted)
+
 ## Usage
 
 ```bash
