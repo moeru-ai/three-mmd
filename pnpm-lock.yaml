@@ -22,7 +22,7 @@ catalogs:
       specifier: ^0.1.4
       version: 0.1.4
     '@types/three':
-      specifier: 0.179.0
+      specifier: ^0.179.0
       version: 0.179.0
     ammojs-typed:
       specifier: ^1.0.6
@@ -36,11 +36,14 @@ catalogs:
     eslint-plugin-react-refresh:
       specifier: ^0.4.20
       version: 0.4.20
+    mmd-parser:
+      specifier: ^1.0.4
+      version: 1.0.4
     pkgroll:
       specifier: ^2.15.3
       version: 2.15.3
     three:
-      specifier: 0.179.1
+      specifier: ^0.179.1
       version: 0.179.1
     typescript:
       specifier: ~5.8.3
@@ -105,6 +108,9 @@ importers:
       ammojs-typed:
         specifier: 'catalog:'
         version: 1.0.6
+      mmd-parser:
+        specifier: 'catalog:'
+        version: 1.0.4
     devDependencies:
       '@types/three':
         specifier: 'catalog:'
@@ -1922,6 +1928,9 @@ packages:
 
   mlly@1.7.4:
     resolution: {integrity: sha512-qmdSIPC4bDJXgZTCR7XosJiNKySV7O215tsPtDN9iEO/7q/76b/ijtgRu/+epFXSJhijtTCCGp3DWS549P3xKw==}
+
+  mmd-parser@1.0.4:
+    resolution: {integrity: sha512-Qi0VCU46t2IwfGv5KF0+D/t9cizcDug7qnNoy9Ggk7aucp0tssV8IwTMkBlDbm+VqAf3cdQHTCARKSsuS2MYFg==}
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
@@ -4591,6 +4600,8 @@ snapshots:
       pathe: 2.0.3
       pkg-types: 1.3.1
       ufo: 1.6.1
+
+  mmd-parser@1.0.4: {}
 
   ms@2.1.3: {}
 

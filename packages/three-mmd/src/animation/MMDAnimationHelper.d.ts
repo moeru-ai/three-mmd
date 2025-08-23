@@ -1,11 +1,9 @@
-import type { AnimationClip, AnimationMixer, Audio, Bone, Camera, Object3D, Quaternion, SkinnedMesh } from 'three'
+import type { AnimationClip, AnimationMixer, Audio, Camera, Object3D, SkinnedMesh } from 'three'
 import type { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
 
+import type { AudioManager } from './mmd-animation-helper/audio-manager'
+import type { GrantSolver } from './mmd-animation-helper/grant-solver'
 import type { MMDPhysics } from './MMDPhysics'
-
-export interface AudioManagerParameter {
-  delayTime?: number
-}
 
 export interface MMDAnimationHelperAddParameter {
   animation?: AnimationClip | AnimationClip[]
@@ -37,28 +35,6 @@ export interface MMDAnimationHelperPoseParameter {
   grant?: boolean
   ik?: boolean
   resetPose?: boolean
-}
-
-export class AudioManager {
-  audio: Audio
-  audioDuration: number
-  currentTime: number
-  delayTime: number
-  duration: number
-  elapsedTime: number
-  constructor(audio: Audio, params?: AudioManagerParameter)
-
-  control(delta: number): this
-}
-
-export class GrantSolver {
-  grants: object[]
-  mesh: SkinnedMesh
-  constructor(mesh: SkinnedMesh, grants: object[])
-
-  addGrantRotation(bone: Bone, q: Quaternion, ratio: number): this
-  update(): this
-  updateOne(gran: object[]): this
 }
 
 export class MMDAnimationHelper {
