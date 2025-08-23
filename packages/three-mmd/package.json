@@ -41,6 +41,7 @@
     "three": "^0.179.0"
   },
   "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.18.2",
     "@noname0310/mmd-parser": "catalog:",
     "ammojs-typed": "catalog:"
   },

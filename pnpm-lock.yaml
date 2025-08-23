@@ -99,6 +99,9 @@ importers:
 
   packages/three-mmd:
     dependencies:
+      '@dimforge/rapier3d-compat':
+        specifier: ^0.18.2
+        version: 0.18.2
       '@noname0310/mmd-parser':
         specifier: 'catalog:'
         version: 0.1.4
@@ -198,6 +201,9 @@ packages:
 
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
+
+  '@dimforge/rapier3d-compat@0.18.2':
+    resolution: {integrity: sha512-DTXrOsn3ra9ZonB+VyqJc16xnRXWsHVa5FK230Z+R1PJ7q8oSRmWQ+AU6e+IJYBHxkM0a5QVDqd729DyeEhHPA==}
 
   '@es-joy/jsdoccomment@0.50.2':
     resolution: {integrity: sha512-YAdE/IJSpwbOTiaURNCKECdAwqrJuFiZhylmesBcIRawtYKnBR2wxPhoIewMg+Yu+QuYvHfJNReWpoxGBKOChA==}
@@ -2498,6 +2504,8 @@ snapshots:
       sisteransi: 1.0.5
 
   '@dimforge/rapier3d-compat@0.12.0': {}
+
+  '@dimforge/rapier3d-compat@0.18.2': {}
 
   '@es-joy/jsdoccomment@0.50.2':
     dependencies:
