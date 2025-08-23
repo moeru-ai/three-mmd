@@ -4,7 +4,8 @@ Use MMD on Three.js
 
 ## About
 
-`MMDLoader` having been removed in three.js r172 nearly ten months ago, there have been no new commits to [takahirox/three-mmd-loader](https://github.com/takahirox/three-mmd-loader).
+`MMDLoader` having been removed in three.js r172 nearly ten months ago,
+and no code has ever appeared in the [takahirox/three-mmd-loader](https://github.com/takahirox/three-mmd-loader) repository.
 
 Considering the needs of Project AIRI or other future projects, I decided to fork and maintain it, i.e., this project.
 
