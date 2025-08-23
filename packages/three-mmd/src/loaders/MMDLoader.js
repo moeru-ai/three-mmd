@@ -172,8 +172,6 @@ class MMDLoader extends Loader {
       resourcePath = LoaderUtils.extractUrlBase(url)
     }
 
-    const extractModelExtension = this._extractModelExtension
-
     this.loader
       .setMimeType(undefined)
       .setPath(this.path)
@@ -182,7 +180,7 @@ class MMDLoader extends Loader {
       .setWithCredentials(this.withCredentials)
       .load(url, (buffer) => {
         try {
-          const modelExtension = extractModelExtension(buffer)
+          const modelExtension = this._extractModelExtension(buffer)
 
           if (modelExtension !== 'pmd' && modelExtension !== 'pmx') {
             if (onError)
@@ -1745,52 +1743,6 @@ class MaterialBuilder {
 
 //
 
-/**
- * @param {THREE.LoadingManager} manager
- */
-class MeshBuilder {
-  constructor(manager) {
-    this.crossOrigin = 'anonymous'
-    this.geometryBuilder = new GeometryBuilder()
-    this.materialBuilder = new MaterialBuilder(manager)
-  }
-
-  /**
-   * @param {object} data - parsed PMD/PMX data
-   * @param {string} resourcePath
-   * @param {Function} onProgress
-   * @param {Function} onError
-   * @return {SkinnedMesh}
-   */
-  build(data, resourcePath, onProgress, onError) {
-    const geometry = this.geometryBuilder.build(data)
-    const material = this.materialBuilder
-      .setCrossOrigin(this.crossOrigin)
-      .setResourcePath(resourcePath)
-      .build(data, geometry, onProgress, onError)
-
-    const mesh = new SkinnedMesh(geometry, material)
-
-    const skeleton = new Skeleton(initBones(mesh))
-    mesh.bind(skeleton)
-
-    // console.log( mesh ); // for console debug
-
-    return mesh
-  }
-
-  /**
-   * @param {string} crossOrigin
-   * @return {MeshBuilder}
-   */
-  setCrossOrigin(crossOrigin) {
-    this.crossOrigin = crossOrigin
-    return this
-  }
-}
-
-// interpolation
-
 class MMDToonMaterial extends ShaderMaterial {
   constructor(parameters) {
     super()
@@ -1931,6 +1883,52 @@ class MMDToonMaterial extends ShaderMaterial {
 
     this.flatShading = source.flatShading
 
+    return this
+  }
+}
+
+// interpolation
+
+/**
+ * @param {THREE.LoadingManager} manager
+ */
+export class MeshBuilder {
+  constructor(manager) {
+    this.crossOrigin = 'anonymous'
+    this.geometryBuilder = new GeometryBuilder()
+    this.materialBuilder = new MaterialBuilder(manager)
+  }
+
+  /**
+   * @param {object} data - parsed PMD/PMX data
+   * @param {string} resourcePath
+   * @param {Function} onProgress
+   * @param {Function} onError
+   * @return {SkinnedMesh}
+   */
+  build(data, resourcePath, onProgress, onError) {
+    const geometry = this.geometryBuilder.build(data)
+    const material = this.materialBuilder
+      .setCrossOrigin(this.crossOrigin)
+      .setResourcePath(resourcePath)
+      .build(data, geometry, onProgress, onError)
+
+    const mesh = new SkinnedMesh(geometry, material)
+
+    const skeleton = new Skeleton(initBones(mesh))
+    mesh.bind(skeleton)
+
+    // console.log( mesh ); // for console debug
+
+    return mesh
+  }
+
+  /**
+   * @param {string} crossOrigin
+   * @return {MeshBuilder}
+   */
+  setCrossOrigin(crossOrigin) {
+    this.crossOrigin = crossOrigin
     return this
   }
 }
