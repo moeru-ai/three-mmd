@@ -3,6 +3,7 @@ ignorePaths: []
 dictionaryDefinitions: []
 dictionaries: []
 words:
+  - AIRI
   - ammojs
   - antfu
   - Blinn
@@ -31,6 +32,7 @@ words:
   - slerp
   - sonarjs
   - Takahiro
+  - takahirox
   - threejs
   - Toon
   - vite
