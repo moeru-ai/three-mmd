@@ -17,7 +17,6 @@
     "three",
     "mmd"
   ],
-  "sideEffects": false,
   "exports": "./src/index.ts",
   "files": [
     "dist"
