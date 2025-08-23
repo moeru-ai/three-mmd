@@ -1,5 +1,5 @@
 /* eslint-disable @masknet/no-top-level */
-import { Ammo, MMDAnimationHelper, MMDLoader } from '@moeru/three-mmd'
+import { initAmmo, MMDAnimationHelper, MMDLoader } from '@moeru/three-mmd'
 import {
   AmbientLight,
   Clock,
@@ -20,9 +20,8 @@ import vmdUrl from './assets/vmds/wavefile_v2.vmd?url'
 import './main.css'
 import './app.css'
 
-// https://github.com/giniedp/ammojs-typed/issues/18
 // eslint-disable-next-line antfu/no-top-level-await
-await Ammo.bind(Ammo)(Ammo)
+await initAmmo()
   .then(() => {
     const clock = new Clock()
 
