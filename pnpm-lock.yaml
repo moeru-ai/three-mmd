@@ -13,11 +13,11 @@ catalogs:
       specifier: ^1.52.3
       version: 1.52.6
     '@moeru/eslint-config':
-      specifier: 0.1.0-beta.7
-      version: 0.1.0-beta.7
+      specifier: ^0.1.0-beta.8
+      version: 0.1.0-beta.8
     '@moeru/tsconfig':
-      specifier: 0.1.0-beta.7
-      version: 0.1.0-beta.7
+      specifier: ^0.1.0-beta.8
+      version: 0.1.0-beta.8
     '@noname0310/mmd-parser':
       specifier: ^0.1.4
       version: 0.1.4
@@ -64,10 +64,10 @@ importers:
         version: 1.52.6(eslint@9.33.0)(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3)
       '@moeru/eslint-config':
         specifier: 'catalog:'
-        version: 0.1.0-beta.7(@antfu/eslint-config@5.2.1(@eslint-react/eslint-plugin@1.52.6(eslint@9.33.0)(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3))(@vue/compiler-sfc@3.5.19)(eslint-plugin-react-hooks@5.2.0(eslint@9.33.0))(eslint-plugin-react-refresh@0.4.20(eslint@9.33.0))(eslint@9.33.0)(typescript@5.8.3))(eslint@9.33.0)(typescript@5.8.3)
+        version: 0.1.0-beta.8(@antfu/eslint-config@5.2.1(@eslint-react/eslint-plugin@1.52.6(eslint@9.33.0)(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3))(@vue/compiler-sfc@3.5.19)(eslint-plugin-react-hooks@5.2.0(eslint@9.33.0))(eslint-plugin-react-refresh@0.4.20(eslint@9.33.0))(eslint@9.33.0)(typescript@5.8.3))(eslint@9.33.0)(typescript@5.8.3)
       '@moeru/tsconfig':
         specifier: 'catalog:'
-        version: 0.1.0-beta.7
+        version: 0.1.0-beta.8
       eslint:
         specifier: 'catalog:'
         version: 9.33.0
@@ -489,8 +489,8 @@ packages:
     peerDependencies:
       eslint: '>= 8'
 
-  '@moeru/eslint-config@0.1.0-beta.7':
-    resolution: {integrity: sha512-Yl/5noYB+7ggATRXErIMSMvRVEixTllaAjFogCmVQVkf3qbNyi9WzRB2ysGejCQnwuJZfvRFJ88bVa0knVtdxg==}
+  '@moeru/eslint-config@0.1.0-beta.8':
+    resolution: {integrity: sha512-4aP41wVqaYBif5Nt3O05HfCYU22EUlkW/I3gB0P4T7hWVv0h3IgEAW7g9pn/573vXnwPe3iPMGO8Xt4xMM3jig==}
     hasBin: true
     peerDependencies:
       '@antfu/eslint-config': ^4.12.0
@@ -500,11 +500,11 @@ packages:
       eslint-plugin-oxlint:
         optional: true
 
-  '@moeru/std@0.1.0-beta.7':
-    resolution: {integrity: sha512-zMo9Bt51SQPNcCa81yEgmcwCe+s5s7+dc8khwY3yKg0fzQgfCyqQ30TAvOmlKw61TS8SGqZxDlYdTEhxYUd+oQ==}
+  '@moeru/std@0.1.0-beta.8':
+    resolution: {integrity: sha512-G8DL4G0kYKydTq6AQRORS9iBN1gSr9IQU8RercGJGdtuMnqy8y0nNU7svArGcJwicDc6e12mnoLHNp4mrNearA==}
 
-  '@moeru/tsconfig@0.1.0-beta.7':
-    resolution: {integrity: sha512-ZmO88hK3cYa3Gmdm8LHdiwzYX6IK1WrIg3BD4BUjqINbG8lGv2cHV22OpRL866gniacN0P/26vRoHPNOCFEfZw==}
+  '@moeru/tsconfig@0.1.0-beta.8':
+    resolution: {integrity: sha512-FjydN26c6W0AZs7fIsw1haNx1/0w2dtBWOdEehj9la8yxNY6DFEr9Wm9GR1+T6XQTwlwjJuIsGo6VmlLRDzwJA==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -2780,11 +2780,11 @@ snapshots:
     dependencies:
       eslint: 9.33.0
 
-  '@moeru/eslint-config@0.1.0-beta.7(@antfu/eslint-config@5.2.1(@eslint-react/eslint-plugin@1.52.6(eslint@9.33.0)(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3))(@vue/compiler-sfc@3.5.19)(eslint-plugin-react-hooks@5.2.0(eslint@9.33.0))(eslint-plugin-react-refresh@0.4.20(eslint@9.33.0))(eslint@9.33.0)(typescript@5.8.3))(eslint@9.33.0)(typescript@5.8.3)':
+  '@moeru/eslint-config@0.1.0-beta.8(@antfu/eslint-config@5.2.1(@eslint-react/eslint-plugin@1.52.6(eslint@9.33.0)(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3))(@vue/compiler-sfc@3.5.19)(eslint-plugin-react-hooks@5.2.0(eslint@9.33.0))(eslint-plugin-react-refresh@0.4.20(eslint@9.33.0))(eslint@9.33.0)(typescript@5.8.3))(eslint@9.33.0)(typescript@5.8.3)':
     dependencies:
       '@antfu/eslint-config': 5.2.1(@eslint-react/eslint-plugin@1.52.6(eslint@9.33.0)(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3))(@vue/compiler-sfc@3.5.19)(eslint-plugin-react-hooks@5.2.0(eslint@9.33.0))(eslint-plugin-react-refresh@0.4.20(eslint@9.33.0))(eslint@9.33.0)(typescript@5.8.3)
       '@masknet/eslint-plugin': 0.3.0(eslint@9.33.0)
-      '@moeru/std': 0.1.0-beta.7
+      '@moeru/std': 0.1.0-beta.8
       eslint: 9.33.0
       eslint-flat-config-utils: 2.1.1
       eslint-plugin-de-morgan: 1.3.1(eslint@9.33.0)
@@ -2795,9 +2795,9 @@ snapshots:
       - supports-color
       - typescript
 
-  '@moeru/std@0.1.0-beta.7': {}
+  '@moeru/std@0.1.0-beta.8': {}
 
-  '@moeru/tsconfig@0.1.0-beta.7': {}
+  '@moeru/tsconfig@0.1.0-beta.8': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
