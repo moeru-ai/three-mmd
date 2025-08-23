@@ -56,6 +56,8 @@ export class PMDLoader extends Loader<SkinnedMesh> {
           onError?.(e as ErrorEvent)
         }
       },
+      onProgress,
+      onError as (error: unknown) => void,
     )
   }
 
