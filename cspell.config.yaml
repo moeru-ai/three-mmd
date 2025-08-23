@@ -10,13 +10,18 @@ words:
   - BRDF
   - CCDIK
   - Clearcoat
+  - Crypton
   - envmap
   - Eulers
   - glsl
   - gradientmap
+  - Hatsune
   - irradiances
+  - Kagamine
+  - masknet
   - matcap
   - Metcap
+  - Miku
   - moeru
   - noname
   - Phong
@@ -24,7 +29,9 @@ words:
   - PVRTC
   - slerp
   - sonarjs
+  - Takahiro
   - threejs
   - Toon
+  - Vocaloid
 ignoreWords: []
 import: []

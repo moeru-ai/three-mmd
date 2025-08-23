@@ -1,0 +1,17 @@
+{
+  "name": "@moeru/three-mmd-example-basic",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@moeru/three-mmd": "workspace:^",
+    "three": "catalog:"
+  },
+  "devDependencies": {
+    "@types/three": "catalog:"
+  }
+}
