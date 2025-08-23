@@ -19,3 +19,6 @@ catalog:
   three: ^0.179.1
   typescript: ~5.8.3
   vite: ^7.1.3
+
+onlyBuiltDependencies:
+  - esbuild
