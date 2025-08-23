@@ -1,6 +1,7 @@
 MIT License
 
 Copyright (c) 2010-2024 three.js authors
+
 Copyright (c) 2025 Moeru AI
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
