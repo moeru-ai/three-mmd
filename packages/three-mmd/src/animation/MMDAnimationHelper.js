@@ -7,6 +7,7 @@ import {
 import { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
 
 import { AudioManager } from './mmd-animation-helper/audio-manager'
+import { GrantSolver } from './mmd-animation-helper/grant-solver'
 import { MMDPhysics } from './MMDPhysics'
 
 // Keep working quaternions for less GC
@@ -80,80 +81,6 @@ const updateOne = (mesh, boneIndex, ikSolver, grantSolver) => {
 
   // Update with the actual result here
   quaternion.copy(bone.quaternion)
-}
-
-/**
- * Solver for Grant (Fuyo in Japanese. I just google translated because
- * Fuyo may be MMD specific term and may not be common word in 3D CG terms.)
- * Grant propagates a bone's transform to other bones transforms even if
- * they are not children.
- * @param {import('three').SkinnedMesh} mesh
- * @param {Array<object>} grants
- */
-class GrantSolver {
-  _q = new Quaternion()
-
-  constructor(mesh, grants = []) {
-    this.mesh = mesh
-    this.grants = grants
-  }
-
-  addGrantRotation(bone, q, ratio) {
-    this._q.set(0, 0, 0, 1)
-    this._q.slerp(q, ratio)
-    bone.quaternion.multiply(this._q)
-
-    return this
-  }
-
-  /**
-   * Solve all the grant bones
-   * @return {GrantSolver}
-   */
-  update() {
-    const grants = this.grants
-
-    for (let i = 0, il = grants.length; i < il; i++) {
-      this.updateOne(grants[i])
-    }
-
-    return this
-  }
-
-  /**
-   * Solve a grant bone
-   * @param {object} grant - grant parameter
-   * @return {GrantSolver}
-   */
-  updateOne(grant) {
-    const bones = this.mesh.skeleton.bones
-    const bone = bones[grant.index]
-    const parentBone = bones[grant.parentIndex]
-
-    if (grant.isLocal) {
-      // TODO: implement
-      // if (grant.affectPosition) {
-
-      // }
-
-      // TODO: implement
-      // if (grant.affectRotation) {
-
-      // }
-    }
-    else {
-      // TODO: implement
-      // if (grant.affectPosition) {
-
-      // }
-
-      if (grant.affectRotation) {
-        this.addGrantRotation(bone, parentBone.quaternion, grant.ratio)
-      }
-    }
-
-    return this
-  }
 }
 
 /**
