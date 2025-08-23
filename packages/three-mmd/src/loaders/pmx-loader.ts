@@ -1,4 +1,3 @@
-import type { Pmx } from '@noname0310/mmd-parser'
 import type { LoadingManager, SkinnedMesh } from 'three'
 
 import { MMDParser } from '@noname0310/mmd-parser'
@@ -9,12 +8,7 @@ import { resolveResourcePath } from '../utils/_resolve-resource-path'
 import { MeshBuilder } from './MMDLoader'
 
 /** @experimental */
-export interface PMX extends Pmx {
-  mesh: SkinnedMesh
-}
-
-/** @experimental */
-export class PMXLoader extends Loader<PMX> {
+export class PMXLoader extends Loader<SkinnedMesh> {
   meshBuilder: MeshBuilder
 
   constructor(manager?: LoadingManager) {
@@ -25,7 +19,7 @@ export class PMXLoader extends Loader<PMX> {
 
   public load(
     url: string,
-    onLoad: (pmd: PMX) => void,
+    onLoad: (mesh: SkinnedMesh) => void,
     onProgress?: (event: ProgressEvent) => void,
     onError?: (event: ErrorEvent) => void,
   ): void {
@@ -56,10 +50,7 @@ export class PMXLoader extends Loader<PMX> {
 
           const mesh = builder.build(data, resourcePath, onProgress, onError)
 
-          onLoad?.({
-            ...data,
-            mesh,
-          })
+          onLoad(mesh)
         }
         catch (e) {
           onError?.(e as ErrorEvent)
@@ -71,7 +62,7 @@ export class PMXLoader extends Loader<PMX> {
   public async loadAsync(
     url: string,
     onProgress?: (event: ProgressEvent) => void,
-  ): Promise<PMX> {
+  ): Promise<SkinnedMesh> {
     return super.loadAsync(url, onProgress)
   }
 }
