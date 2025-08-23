@@ -1,4 +1,3 @@
-import type { Pmd } from '@noname0310/mmd-parser'
 import type { LoadingManager, SkinnedMesh } from 'three'
 
 import { MMDParser } from '@noname0310/mmd-parser'
@@ -9,12 +8,7 @@ import { resolveResourcePath } from '../utils/_resolve-resource-path'
 import { MeshBuilder } from './MMDLoader'
 
 /** @experimental */
-export interface PMD extends Pmd {
-  mesh: SkinnedMesh
-}
-
-/** @experimental */
-export class PMDLoader extends Loader<PMD> {
+export class ExperimentalMMDLoader extends Loader<SkinnedMesh> {
   meshBuilder: MeshBuilder
 
   constructor(manager?: LoadingManager) {
@@ -25,7 +19,7 @@ export class PMDLoader extends Loader<PMD> {
 
   public load(
     url: string,
-    onLoad: (pmd: PMD) => void,
+    onLoad: (mesh: SkinnedMesh) => void,
     onProgress?: (event: ProgressEvent) => void,
     onError?: (event: ErrorEvent) => void,
   ): void {
@@ -45,21 +39,20 @@ export class PMDLoader extends Loader<PMD> {
         try {
           const modelExtension = extractModelExtension(buffer as ArrayBuffer)
 
-          if (modelExtension !== 'pmd') {
+          if (!['pmd', 'pmx'].includes(modelExtension)) {
             // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
-            onError?.(new Error(`PMDLoader: Unknown model file extension .${modelExtension}.`) as unknown as ErrorEvent)
+            onError?.(new Error(`PMXLoader: Unknown model file extension .${modelExtension}.`) as unknown as ErrorEvent)
 
             return
           }
 
-          const data = MMDParser.parsePmd(buffer as ArrayBuffer, true)
+          const data = modelExtension === 'pmd'
+            ? MMDParser.parsePmd(buffer as ArrayBuffer, true)
+            : MMDParser.parsePmx(buffer as ArrayBuffer, true)
 
           const mesh = builder.build(data, resourcePath, onProgress, onError)
 
-          onLoad?.({
-            ...data,
-            mesh,
-          })
+          onLoad(mesh)
         }
         catch (e) {
           onError?.(e as ErrorEvent)
@@ -71,7 +64,7 @@ export class PMDLoader extends Loader<PMD> {
   public async loadAsync(
     url: string,
     onProgress?: (event: ProgressEvent) => void,
-  ): Promise<PMD> {
+  ): Promise<SkinnedMesh> {
     return super.loadAsync(url, onProgress)
   }
 }

@@ -2,9 +2,10 @@ import type { Pmx } from '@noname0310/mmd-parser'
 import type { LoadingManager, SkinnedMesh } from 'three'
 
 import { MMDParser } from '@noname0310/mmd-parser'
-import { FileLoader, Loader, LoaderUtils } from 'three'
+import { FileLoader, Loader } from 'three'
 
 import { extractModelExtension } from '../utils/_extract-model-extension'
+import { resolveResourcePath } from '../utils/_resolve-resource-path'
 import { MeshBuilder } from './MMDLoader'
 
 /** @experimental */
@@ -30,17 +31,7 @@ export class PMXLoader extends Loader<PMX> {
   ): void {
     const loader = new FileLoader(this.manager)
     const builder = this.meshBuilder.setCrossOrigin(this.crossOrigin)
-
-    let resourcePath
-    if (this.resourcePath !== '') {
-      resourcePath = this.resourcePath
-    }
-    else if (this.path !== '') {
-      resourcePath = this.path
-    }
-    else {
-      resourcePath = LoaderUtils.extractUrlBase(url)
-    }
+    const resourcePath = resolveResourcePath(url, this.resourcePath, this.path)
 
     loader.setResponseType('arraybuffer')
 
