@@ -1,4 +1,5 @@
 import { MMDParser } from '@noname0310/mmd-parser'
+import { Parser as OriginalMMDParser } from 'mmd-parser'
 import {
   AddOperation,
   AnimationClip,
@@ -300,7 +301,8 @@ class MMDLoader extends Loader {
     for (let i = 0, il = urls.length; i < il; i++) {
       this.loader.load(urls[i], (buffer) => {
         try {
-          vmds.push(MMDParser.parseVmd(buffer, true))
+          // TODO: replace this
+          vmds.push(new OriginalMMDParser().parseVmd(buffer, true))
 
           if (vmds.length === vmdNum)
             onLoad(MMDParser.mergeVmds(vmds))
@@ -354,10 +356,8 @@ class MMDLoader extends Loader {
    * @param {Function} onError
    */
   loadWithAnimation(modelUrl, vmdUrl, onLoad, onProgress, onError) {
-    const scope = this
-
     this.load(modelUrl, (mesh) => {
-      scope.loadAnimation(vmdUrl, mesh, (animation) => {
+      this.loadAnimation(vmdUrl, mesh, (animation) => {
         onLoad({
           animation,
           mesh,
