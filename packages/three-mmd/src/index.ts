@@ -1,7 +1,7 @@
 export { MMDAnimationHelper } from './animation/MMDAnimationHelper'
 export { MMDPhysics } from './animation/MMDPhysics'
 export { ExperimentalMMDLoader } from './loaders/mmd-loader'
-export { MMDToonMaterial } from './loaders/MMDLoader'
+export { MMDToonMaterial } from './materials/mmd-toon-material'
 export { MMDLoader } from './loaders/MMDLoader'
 export { PMDLoader } from './loaders/pmd-loader'
 export { PMXLoader } from './loaders/pmx-loader'
