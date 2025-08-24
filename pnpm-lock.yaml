@@ -27,6 +27,9 @@ catalogs:
     ammojs-typed:
       specifier: ^1.0.6
       version: 1.0.6
+    bumpp:
+      specifier: ^10.2.3
+      version: 10.2.3
     eslint:
       specifier: ^9.33.0
       version: 9.34.0
@@ -69,7 +72,7 @@ importers:
         specifier: 'catalog:'
         version: 0.1.0-beta.8
       bumpp:
-        specifier: ^10.2.3
+        specifier: 'catalog:'
         version: 10.2.3
       eslint:
         specifier: 'catalog:'
