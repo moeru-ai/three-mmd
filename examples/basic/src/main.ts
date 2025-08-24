@@ -1,5 +1,12 @@
 /* eslint-disable @masknet/no-top-level */
-import { initAmmo, MMDAnimationHelper, MMDLoader, MMDToonMaterial } from '@moeru/three-mmd'
+import {
+  createMMDAnimationClip,
+  initAmmo,
+  MMDAnimationHelper,
+  ExperimentalMMDLoader as MMDLoader,
+  MMDToonMaterial,
+  VMDLoader,
+} from '@moeru/three-mmd'
 import {
   Clock,
   Color,
@@ -19,6 +26,7 @@ import pmdUrl from './assets/miku/miku_v2.pmd?url'
 import vmdUrl from './assets/vmds/wavefile_v2.vmd?url'
 import './main.css'
 import './app.css'
+import { onError, onProgress } from './lib/loader'
 
 // eslint-disable-next-line antfu/no-top-level-await
 await initAmmo()
@@ -67,13 +75,12 @@ const stats = new Stats()
 document.body.appendChild(stats.dom)
 
 const loader = new MMDLoader()
+const vmdLoader = new VMDLoader()
 const helper = new MMDAnimationHelper({ afterglow: 2.0 })
 
-loader.loadWithAnimation(
+loader.load(
   pmdUrl,
-  [vmdUrl],
-  (mmd) => {
-    const mesh = mmd.mesh
+  (mesh) => {
     mesh.position.y = -10
 
     if (Array.isArray(mesh.material)) {
@@ -95,10 +102,14 @@ loader.loadWithAnimation(
     // to implement this feature later
     // directionalLight.target = mesh
 
-    helper.add(mesh, {
-      animation: mmd.animation,
-      physics: true,
-    })
+    vmdLoader.load(vmdUrl, (vmd) => {
+      const animation = createMMDAnimationClip(vmd, mesh)
+
+      helper.add(mesh, {
+        animation,
+        physics: true,
+      })
+    }, onProgress, onError)
 
     const ikHelper = helper.objects.get(mesh)!.ikSolver.createHelper()
     ikHelper.visible = false
@@ -211,14 +222,8 @@ loader.loadWithAnimation(
 
     initGui()
   },
-  (xhr) => {
-    if (!(xhr.lengthComputable))
-      return
-    const percentComplete = xhr.loaded / xhr.total * 100
-    // eslint-disable-next-line no-console
-    console.log(`${Math.round(percentComplete)}% downloaded`)
-  },
-  err => console.error(err),
+  onProgress,
+  onError,
 )
 
 const controls = new OrbitControls(camera, renderer.domElement)
