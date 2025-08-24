@@ -4,6 +4,7 @@
   "packageManager": "pnpm@10.15.0",
   "scripts": {
     "build": "pnpm -r build",
+    "dev": "pnpm -rF @moeru/three-mmd-example-basic dev",
     "lint": "eslint --flag unstable_native_nodejs_ts_config --cache ."
   },
   "devDependencies": {
