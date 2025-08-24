@@ -11,8 +11,6 @@ import {
 import { MMDToonShader } from '../shaders/mmd-toon-shader'
 
 export class MMDToonMaterial extends ShaderMaterial {
-  _matcapCombine: number
-  _shininess: number
   combine: number
   // TODO: emissive declared in MaterialJSON but not where can be
   // found under ShaderMaterial nor Material, but mentioned as
@@ -27,6 +25,40 @@ export class MMDToonMaterial extends ShaderMaterial {
   wireframeLinecap: string
   wireframeLinejoin: string
 
+  get matcapCombine(): number {
+    return this._matcapCombine
+  }
+
+  set matcapCombine(value: number) {
+    this._matcapCombine = value
+
+    switch (value) {
+      case MultiplyOperation:
+        this.defines.MATCAP_BLENDING_MULTIPLY = true
+        delete this.defines.MATCAP_BLENDING_ADD
+        break
+
+      case AddOperation:
+      default:
+        this.defines.MATCAP_BLENDING_ADD = true
+        delete this.defines.MATCAP_BLENDING_MULTIPLY
+        break
+    }
+  }
+
+  get shininess(): number {
+    return this._shininess
+  }
+
+  // Special path for shininess to handle zero shininess properly
+  set shininess(value: number) {
+    this._shininess = value
+    this.uniforms.shininess.value = Math.max(this._shininess, 1e-4) // To prevent pow( 0.0, 0.0 )
+  }
+
+  private _matcapCombine: number
+  private _shininess: number
+
   constructor(parameters?: MaterialParameters) {
     super()
 
@@ -35,6 +67,8 @@ export class MMDToonMaterial extends ShaderMaterial {
     this.type = 'MMDToonMaterial'
 
     this._matcapCombine = AddOperation
+    this._shininess = 30
+
     this.emissiveIntensity = 1.0
     this.normalMapType = TangentSpaceNormalMap
 
@@ -51,27 +85,6 @@ export class MMDToonMaterial extends ShaderMaterial {
     this.fragmentShader = MMDToonShader.fragmentShader
 
     this.defines = Object.assign({}, MMDToonShader.defines)
-    Object.defineProperty(this, 'matcapCombine', {
-      get() {
-        return (this as MMDToonMaterial)._matcapCombine
-      },
-      set(value: number) {
-        (this as MMDToonMaterial)._matcapCombine = value
-
-        switch (value) {
-          case MultiplyOperation:
-            (this as MMDToonMaterial).defines.MATCAP_BLENDING_MULTIPLY = true
-            delete (this as MMDToonMaterial).defines.MATCAP_BLENDING_ADD
-            break
-
-          case AddOperation:
-          default:
-            (this as MMDToonMaterial).defines.MATCAP_BLENDING_ADD = true
-            delete (this as MMDToonMaterial).defines.MATCAP_BLENDING_MULTIPLY
-            break
-        }
-      },
-    })
 
     this.uniforms = UniformsUtils.clone(MMDToonShader.uniforms)
 
@@ -126,21 +139,6 @@ export class MMDToonMaterial extends ShaderMaterial {
       })
     }
 
-    // Special path for shininess to handle zero shininess properly
-    this._shininess = 30
-    Object.defineProperty(this, 'shininess', {
-
-      get() {
-        return (this as MMDToonMaterial)._shininess
-      },
-
-      set(value: number) {
-        (this as MMDToonMaterial)._shininess = value
-        ;(this as MMDToonMaterial).uniforms.shininess.value = Math.max((this as MMDToonMaterial)._shininess, 1e-4) // To prevent pow( 0.0, 0.0 )
-      },
-
-    })
-
     Object.defineProperty(
       this,
       'color',
@@ -155,6 +153,8 @@ export class MMDToonMaterial extends ShaderMaterial {
 
     this._matcapCombine = source._matcapCombine
     // this.matcapCombine = source.matcapCombine
+    this._shininess = source._shininess
+
     this.emissiveIntensity = source.emissiveIntensity
     this.normalMapType = source.normalMapType
 
