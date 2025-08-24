@@ -145,7 +145,7 @@ class MMDPhysics {
    */
   constructor(mesh, rigidBodyParams, constraintParams = [], params = {}) {
     if (typeof Ammo === 'undefined') {
-      throw new TypeError('THREE.MMDPhysics: Import ammo.js https://github.com/kripken/ammo.js')
+      throw new TypeError('MMDPhysics: Import ammo.js https://github.com/kripken/ammo.js')
     }
 
     this.manager = new ResourceManager()
@@ -171,8 +171,6 @@ class MMDPhysics {
     this.constraints = []
 
     this._init(mesh, rigidBodyParams, constraintParams)
-
-    console.warn('THREE.MMDPhysics: The module has been deprecated and will be removed with r172. Please migrate to https://github.com/takahirox/three-mmd-loader instead.')
   }
 
   _createWorld() {

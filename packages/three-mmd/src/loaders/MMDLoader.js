@@ -134,7 +134,7 @@ class MMDLoader extends Loader {
     this.meshBuilder = new MeshBuilder(this.manager)
     this.animationBuilder = new AnimationBuilder()
 
-    console.warn('THREE.MMDLoader: The module has been deprecated and will be removed with r172. Please migrate to https://github.com/takahirox/three-mmd-loader instead.')
+    console.warn('MMDLoader: The module has been deprecated and will be removed in the future. Please migrate to ExperimentalMMDLoader instead.')
   }
 
   _extractModelExtension(buffer) {
@@ -142,8 +142,6 @@ class MMDLoader extends Loader {
     const bytes = new Uint8Array(buffer, 0, 3)
     return decoder.decode(bytes).toLowerCase()
   }
-
-  // Load MMD assets as Three.js Object
 
   /**
    * Loads Model file (.pmd or .pmx) as a SkinnedMesh.
@@ -182,7 +180,7 @@ class MMDLoader extends Loader {
 
           if (modelExtension !== 'pmd' && modelExtension !== 'pmx') {
             if (onError)
-              onError(new Error(`THREE.MMDLoader: Unknown model file extension .${modelExtension}.`))
+              onError(new Error(`MMDLoader: Unknown model file extension .${modelExtension}.`))
 
             return
           }
@@ -203,7 +201,7 @@ class MMDLoader extends Loader {
    * If two or more files are specified, they'll be merged.
    *
    * @param {string|Array<string>} url - url(s) to animation(.vmd) file(s)
-   * @param {SkinnedMesh|THREE.Camera} object - tracks will be fitting to this object
+   * @param {SkinnedMesh|import('three').Camera} object - tracks will be fitting to this object
    * @param {Function} onLoad
    * @param {Function} onProgress
    * @param {Function} onError
@@ -978,7 +976,7 @@ class GeometryBuilder {
 //
 
 /**
- * @param {THREE.LoadingManager} manager
+ * @param {import('three').LoadingManager} manager
  */
 class MaterialBuilder {
   constructor(manager) {
@@ -1113,7 +1111,7 @@ class MaterialBuilder {
   _getTGALoader() {
     if (this.tgaLoader === null) {
       if (TGALoader === undefined) {
-        throw new Error('THREE.MMDLoader: Import TGALoader')
+        throw new Error('MMDLoader: Import TGALoader')
       }
 
       this.tgaLoader = new TGALoader(this.manager)
@@ -1145,7 +1143,7 @@ class MaterialBuilder {
         index = Number.parseInt(filePath.match(/toon(\d{2})\.bmp$/)[1])
       }
       catch {
-        console.warn(`THREE.MMDLoader: ${filePath} seems like a `
+        console.warn(`MMDLoader: ${filePath} seems like a `
           + `not right default texture path. Using toon00.bmp instead.`)
 
         index = 0
@@ -1740,7 +1738,7 @@ export class AnimationBuilder {
 // interpolation
 
 /**
- * @param {THREE.LoadingManager} manager
+ * @param {import('three').LoadingManager} manager
  */
 export class MeshBuilder {
   constructor(manager) {

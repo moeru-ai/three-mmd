@@ -129,18 +129,16 @@ class MMDAnimationHelper {
       physics: true,
     }
 
-    this.onBeforePhysics = (/* mesh */) => {}
+    this.onBeforePhysics = (/* mesh */) => { }
 
     // experimental
     this.sharedPhysics = false
     this.masterPhysics = null
-
-    console.warn('THREE.MMDAnimationHelper: The module has been deprecated and will be removed with r172. Please migrate to https://github.com/takahirox/three-mmd-loader instead.')
   }
 
   _addMesh(mesh, params) {
     if (this.meshes.includes(mesh)) {
-      throw new Error(`THREE.MMDAnimationHelper._addMesh: `
+      throw new Error(`MMDAnimationHelper._addMesh: `
         + `SkinnedMesh '${mesh.name}' has already been added.`)
     }
 
@@ -249,7 +247,7 @@ class MMDAnimationHelper {
 
   _clearAudio(audio) {
     if (audio !== this.audio) {
-      throw new Error(`THREE.MMDAnimationHelper._clearAudio: `
+      throw new Error(`MMDAnimationHelper._clearAudio: `
         + `Audio '${audio.name}' has not been set yet.`)
     }
 
@@ -263,7 +261,7 @@ class MMDAnimationHelper {
 
   _clearCamera(camera) {
     if (camera !== this.camera) {
-      throw new Error(`THREE.MMDAnimationHelper._clearCamera: `
+      throw new Error(`MMDAnimationHelper._clearCamera: `
         + `Camera '${camera.name}' has not been set yet.`)
     }
 
@@ -279,7 +277,7 @@ class MMDAnimationHelper {
 
   _createCCDIKSolver(mesh) {
     if (CCDIKSolver === undefined) {
-      throw new Error('THREE.MMDAnimationHelper: Import CCDIKSolver.')
+      throw new Error('MMDAnimationHelper: Import CCDIKSolver.')
     }
 
     return new CCDIKSolver(mesh, mesh.geometry.userData.MMD.iks)
@@ -287,7 +285,7 @@ class MMDAnimationHelper {
 
   _createMMDPhysics(mesh, params) {
     if (MMDPhysics === undefined) {
-      throw new Error('THREE.MMDPhysics: Import MMDPhysics.')
+      throw new Error('MMDPhysics: Import MMDPhysics.')
     }
 
     return new MMDPhysics(
@@ -409,7 +407,7 @@ class MMDAnimationHelper {
 
   _setupAudio(audio, params) {
     if (this.audio === audio) {
-      throw new Error(`THREE.MMDAnimationHelper._setupAudio: `
+      throw new Error(`MMDAnimationHelper._setupAudio: `
         + `Audio '${audio.name}' has already been set.`)
     }
 
@@ -428,7 +426,7 @@ class MMDAnimationHelper {
 
   _setupCamera(camera, params) {
     if (this.camera === camera) {
-      throw new Error(`THREE.MMDAnimationHelper._setupCamera: `
+      throw new Error(`MMDAnimationHelper._setupCamera: `
         + `Camera '${camera.name}' has already been set.`)
     }
 
@@ -689,7 +687,7 @@ class MMDAnimationHelper {
       this._setupAudio(object, params)
     }
     else {
-      throw new Error('THREE.MMDAnimationHelper.add: '
+      throw new Error('MMDAnimationHelper.add: '
         + 'accepts only '
         + 'THREE.SkinnedMesh or '
         + 'THREE.Camera or '
@@ -723,7 +721,7 @@ class MMDAnimationHelper {
    */
   enable(key, enabled) {
     if (this.enabled[key] === undefined) {
-      throw new Error(`THREE.MMDAnimationHelper.enable: `
+      throw new Error(`MMDAnimationHelper.enable: `
         + `unknown key ${key}`)
     }
 
@@ -819,7 +817,7 @@ class MMDAnimationHelper {
       this._clearAudio(object)
     }
     else {
-      throw new Error('THREE.MMDAnimationHelper.remove: '
+      throw new Error('MMDAnimationHelper.remove: '
         + 'accepts only '
         + 'THREE.SkinnedMesh or '
         + 'THREE.Camera or '
