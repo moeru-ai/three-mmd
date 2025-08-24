@@ -24,7 +24,7 @@ npm i -D @types/three
 > There may be significant changes in future versions, so this is unstable.
 
 ```ts
-import { ExperimentalMMDLoader as MMDLoader } from '@moeru/three-mmd'
+import { MMDLoader } from '@moeru/three-mmd'
 import { Scene } from 'three'
 
 const scene = new Scene()
