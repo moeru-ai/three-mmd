@@ -1,23 +1,29 @@
+import type { Color, MaterialParameters } from 'three'
+
 import {
   AddOperation,
-  Color, MultiplyOperation, ShaderMaterial, TangentSpaceNormalMap, UniformsUtils, type MaterialParameters
-} from "three"
-import { MMDToonShader } from "../shaders/mmd-toon-shader"
+  MultiplyOperation,
+  ShaderMaterial,
+  TangentSpaceNormalMap,
+  UniformsUtils,
+} from 'three'
+
+import { MMDToonShader } from '../shaders/mmd-toon-shader'
 
 export class MMDToonMaterial extends ShaderMaterial {
   _matcapCombine: number
   _shininess: number
+  combine: number
   // TODO: emissive declared in MaterialJSON but not where can be
   // found under ShaderMaterial nor Material, but mentioned as
   // https://github.com/mrdoob/three.js/issues/28336, setting
   // emissive for colored textures was required.
   emissive?: Color
   emissiveIntensity?: number
-  isMMDToonMaterial: boolean
-  combine: number
-  type: string
-  normalMapType: number
   flatShading: boolean
+  isMMDToonMaterial: boolean
+  normalMapType: number
+  type: string
   wireframeLinecap: string
   wireframeLinejoin: string
 
@@ -47,21 +53,21 @@ export class MMDToonMaterial extends ShaderMaterial {
     this.defines = Object.assign({}, MMDToonShader.defines)
     Object.defineProperty(this, 'matcapCombine', {
       get() {
-        return this._matcapCombine
+        return (this as MMDToonMaterial)._matcapCombine
       },
-      set(value) {
-        this._matcapCombine = value
+      set(value: number) {
+        (this as MMDToonMaterial)._matcapCombine = value
 
         switch (value) {
           case MultiplyOperation:
-            this.defines.MATCAP_BLENDING_MULTIPLY = true
-            delete this.defines.MATCAP_BLENDING_ADD
+            (this as MMDToonMaterial).defines.MATCAP_BLENDING_MULTIPLY = true
+            delete (this as MMDToonMaterial).defines.MATCAP_BLENDING_ADD
             break
 
           case AddOperation:
           default:
-            this.defines.MATCAP_BLENDING_ADD = true
-            delete this.defines.MATCAP_BLENDING_MULTIPLY
+            (this as MMDToonMaterial).defines.MATCAP_BLENDING_ADD = true
+            delete (this as MMDToonMaterial).defines.MATCAP_BLENDING_MULTIPLY
             break
         }
       },
@@ -109,11 +115,12 @@ export class MMDToonMaterial extends ShaderMaterial {
       Object.defineProperty(this, propertyName, {
 
         get() {
-          return this.uniforms[propertyName].value
+          // eslint-disable-next-line @masknet/type-prefer-return-type-annotation
+          return (this as MMDToonMaterial).uniforms[propertyName].value as number
         },
 
-        set(value) {
-          this.uniforms[propertyName].value = value
+        set(value: number) {
+          (this as MMDToonMaterial).uniforms[propertyName].value = value
         },
 
       })
@@ -124,12 +131,12 @@ export class MMDToonMaterial extends ShaderMaterial {
     Object.defineProperty(this, 'shininess', {
 
       get() {
-        return this._shininess
+        return (this as MMDToonMaterial)._shininess
       },
 
-      set(value) {
-        this._shininess = value
-        this.uniforms.shininess.value = Math.max(this._shininess, 1e-4) // To prevent pow( 0.0, 0.0 )
+      set(value: number) {
+        (this as MMDToonMaterial)._shininess = value
+        ;(this as MMDToonMaterial).uniforms.shininess.value = Math.max((this as MMDToonMaterial)._shininess, 1e-4) // To prevent pow( 0.0, 0.0 )
       },
 
     })

@@ -17,7 +17,7 @@ export class GrantSolver {
   grants: Grant[]
   mesh: SkinnedMesh
 
-  private _q = new Quaternion()
+  private q = new Quaternion()
 
   constructor(mesh: SkinnedMesh, grants: Grant[] = []) {
     this.mesh = mesh
@@ -25,9 +25,9 @@ export class GrantSolver {
   }
 
   addGrantRotation(bone: Bone, q: Quaternion, ratio: number) {
-    this._q.set(0, 0, 0, 1)
-    this._q.slerp(q, ratio)
-    bone.quaternion.multiply(this._q)
+    this.q.set(0, 0, 0, 1)
+    this.q.slerp(q, ratio)
+    bone.quaternion.multiply(this.q)
 
     return this
   }
