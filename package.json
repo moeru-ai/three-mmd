@@ -12,6 +12,7 @@
     "@eslint-react/eslint-plugin": "catalog:",
     "@moeru/eslint-config": "catalog:",
     "@moeru/tsconfig": "catalog:",
+    "bumpp": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
     "eslint-plugin-react-refresh": "catalog:",

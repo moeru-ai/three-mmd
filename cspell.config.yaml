@@ -9,11 +9,13 @@ words:
   - Blinn
   - BPPV
   - BRDF
+  - bumpp
   - CCDIK
   - Clearcoat
   - Crypton
   - dimforge
   - envmap
+  - esbuild
   - Eulers
   - glsl
   - gradientmap
