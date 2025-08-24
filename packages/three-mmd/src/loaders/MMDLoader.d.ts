@@ -1,6 +1,5 @@
 import type { Pmd, Pmx, Vmd } from '@noname0310/mmd-parser'
-import type { AnimationClip, Camera, Color, FileLoader, Loader, LoadingManager, ShaderMaterial, SkinnedMesh } from 'three'
-import type { MMDToonMaterial } from '../materials/mmd-toon-material'
+import type { AnimationClip, Camera, FileLoader, Loader, LoadingManager, SkinnedMesh } from 'three'
 
 export interface MMDLoaderAnimationObject {
   animation: AnimationClip
