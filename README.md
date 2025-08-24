@@ -12,7 +12,6 @@ Considering the needs of Project AIRI or other future projects, I decided to for
 ## Roadmap
 
 - React-three-fiber bindings (`@moeru/three-mmd-r3f`)
-- Split MMDLoader
 - Rapier-based physics (help wanted)
 
 ## Usage
@@ -25,11 +24,10 @@ npm i -D @types/three
 > There may be significant changes in future versions, so this is unstable.
 
 ```ts
-import { MMDLoader } from '@moeru/three-mmd'
-import * as THREE from 'three'
+import { ExperimentalMMDLoader as MMDLoader } from '@moeru/three-mmd'
+import { Scene } from 'three'
 
-const scene = new THREE.Scene()
-
+const scene = new Scene()
 const loader = new MMDLoader()
 
 loader.load(
@@ -43,6 +41,12 @@ loader.load(
   error => console.error(error),
 )
 ```
+
+## See also
+
+- [noname0310/mmd-parser](https://github.com/noname0310/mmd-parser)
+- [noname0310/babylon-mmd](https://github.com/noname0310/babylon-mmd)
+- [pixiv/three-vrm](https://github.com/pixiv/three-vrm/)
 
 ## License
 
