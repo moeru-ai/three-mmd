@@ -8,7 +8,7 @@ import { resolveResourcePath } from '../utils/_resolve-resource-path'
 import { MeshBuilder } from './MMDLoader'
 
 /** @experimental */
-export class ExperimentalMMDLoader extends Loader<SkinnedMesh> {
+export class MMDLoader extends Loader<SkinnedMesh> {
   meshBuilder: MeshBuilder
 
   constructor(manager?: LoadingManager) {

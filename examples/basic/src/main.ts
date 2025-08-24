@@ -3,7 +3,7 @@ import {
   createMMDAnimationClip,
   initAmmo,
   MMDAnimationHelper,
-  ExperimentalMMDLoader as MMDLoader,
+  MMDLoader,
   MMDToonMaterial,
   VMDLoader,
 } from '@moeru/three-mmd'
