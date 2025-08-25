@@ -113,9 +113,9 @@ export class MMDToonMaterial extends ShaderMaterial {
       'normalMap',
       'normalScale',
 
-      'displacemantBias',
-      'displacemantMap',
-      'displacemantScale',
+      'displacementBias',
+      'displacementMap',
+      'displacementScale',
 
       'specularMap',
 
