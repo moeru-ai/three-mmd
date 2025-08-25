@@ -1,6 +1,8 @@
-import type { Bone, Euler, Matrix4, MeshBasicMaterial, Quaternion, SkinnedMesh, Vector3 } from 'three'
+import type { Bone, MeshBasicMaterial, SkinnedMesh, Vector3 } from 'three'
 
 import { Object3D } from 'three'
+
+import type { ResourceManager } from './mmd-physics/resource-manager'
 
 export interface MMDPhysicsParameter {
   gravity?: Vector3
@@ -56,56 +58,6 @@ export class MMDPhysicsHelper extends Object3D {
 
   constructor(mesh: SkinnedMesh, physics: MMDPhysics)
   dispose(): void
-}
-
-export class ResourceManager {
-  quaternions: object[]
-  threeEulers: Euler[]
-  threeMatrix4s: Matrix4[]
-  threeQuaternions: Quaternion[]
-  threeVector3s: Vector3[]
-  transforms: object[]
-  vector3s: object[]
-  constructor()
-
-  addVector3(v1: object, v2: object): object
-  allocQuaternion(): void
-  allocThreeEuler(): void
-  allocThreeMatrix4(): void
-  allocThreeQuaternion(): void
-  allocThreeVector3(): void
-  allocTransform(): void
-  allocVector3(): void
-  columnOfMatrix3(m: object, i: number): object
-  copyOrigin(t1: object, t2: object): void
-  dotVectors3(v1: object, v2: object): number
-  freeQuaternion(q: object): void
-  freeThreeEuler(e: Euler): void
-  freeThreeMatrix4(m: Matrix4): void
-  freeThreeQuaternion(q: Quaternion): void
-  freeThreeVector3(v: Vector3): void
-  freeTransform(t: object): void
-  freeVector3(v: object): void
-  getBasis(t: object): object
-  getBasisAsMatrix3(t: object): object
-  getOrigin(t: object): object
-  inverseTransform(t: object): object
-  matrix3ToQuaternion(m: object): object
-  multiplyMatrices3(m1: object, m2: object): object
-  multiplyMatrix3ByVector3(m: object, v: object): object
-  multiplyTransforms(t1: object, t2: object): object
-  negativeVector3(v: object): object
-  quaternionToMatrix3(q: object): object
-  rowOfMatrix3(m: object, i: number): object
-  setBasis(t: object, q: object): void
-  setBasisFromArray3(t: object, a: number[]): void
-  setBasisFromMatrix3(t: object, m: object): void
-  setBasisFromThreeQuaternion(t: object, a: Quaternion): void
-  setIdentity(): void
-  setOrigin(t: object, v: object): void
-  setOriginFromArray3(t: object, a: number[]): void
-  setOriginFromThreeVector3(t: object, v: Vector3): void
-  transposeMatrix3(m: object): object
 }
 
 export class RigidBody {
