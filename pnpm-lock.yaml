@@ -54,6 +54,16 @@ catalogs:
     vite:
       specifier: ^7.1.3
       version: 7.1.3
+  r3f:
+    '@react-three/fiber':
+      specifier: ^9.3.0
+      version: 9.3.0
+    '@types/react':
+      specifier: ^19.1.11
+      version: 19.1.11
+    react:
+      specifier: ^19.1.1
+      version: 19.1.1
 
 importers:
 
@@ -132,16 +142,16 @@ importers:
         version: link:../three-mmd
     devDependencies:
       '@react-three/fiber':
-        specifier: ^9.3.0
+        specifier: catalog:r3f
         version: 9.3.0(@types/react@19.1.11)(react@19.1.1)(three@0.179.1)
       '@types/react':
-        specifier: ^19.1.11
+        specifier: catalog:r3f
         version: 19.1.11
       '@types/three':
         specifier: 'catalog:'
         version: 0.179.0
       react:
-        specifier: ^19.1.1
+        specifier: catalog:r3f
         version: 19.1.1
       three:
         specifier: 'catalog:'
