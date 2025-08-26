@@ -21,5 +21,11 @@ catalog:
   typescript: ~5.8.3
   vite: ^7.1.3
 
+catalogs:
+  r3f:
+    '@react-three/fiber': ^9.3.0
+    '@types/react': ^19.1.11
+    react: ^19.1.1
+
 onlyBuiltDependencies:
   - esbuild
