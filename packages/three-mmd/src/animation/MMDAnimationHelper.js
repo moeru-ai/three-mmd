@@ -8,7 +8,7 @@ import { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
 
 import { AudioManager } from './mmd-animation-helper/audio-manager'
 import { GrantSolver } from './mmd-animation-helper/grant-solver'
-import { MMDPhysics } from './MMDPhysics'
+import { MMDPhysics } from './mmd-physics'
 
 // Keep working quaternions for less GC
 const _quaternions = []

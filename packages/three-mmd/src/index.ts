@@ -1,5 +1,5 @@
+export { MMDPhysics } from './animation/mmd-physics'
 export { MMDAnimationHelper } from './animation/MMDAnimationHelper'
-export { MMDPhysics } from './animation/MMDPhysics'
 export { MMDLoader } from './loaders/mmd-loader'
 export { PMDLoader } from './loaders/pmd-loader'
 export { PMXLoader } from './loaders/pmx-loader'

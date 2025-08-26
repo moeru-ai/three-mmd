@@ -3,7 +3,7 @@ import type { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
 
 import type { AudioManager } from './mmd-animation-helper/audio-manager'
 import type { GrantSolver } from './mmd-animation-helper/grant-solver'
-import type { MMDPhysics } from './MMDPhysics'
+import type { MMDPhysics } from './mmd-physics'
 
 export interface MMDAnimationHelperAddParameter {
   animation?: AnimationClip | AnimationClip[]
