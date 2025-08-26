@@ -6,7 +6,8 @@
   "scripts": {
     "build": "pnpm -r build",
     "bump": "bumpp",
-    "dev": "pnpm -rF @moeru/three-mmd-example-basic dev",
+    "dev": "pnpm -rF @moeru/three-mmd-playground dev",
+    "dev:basic": "pnpm -rF @moeru/three-mmd-example-basic dev",
     "lint": "eslint --flag unstable_native_nodejs_ts_config --cache ."
   },
   "devDependencies": {
