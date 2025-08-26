@@ -1,8 +1,9 @@
-import type { Bone, MeshBasicMaterial, SkinnedMesh, Vector3 } from 'three'
+import type { MeshBasicMaterial, SkinnedMesh, Vector3 } from 'three'
 
 import { Object3D } from 'three'
 
 import type { ResourceManager } from './mmd-physics/resource-manager'
+import type { RigidBody } from './mmd-physics/rigid-body'
 
 export interface MMDPhysicsParameter {
   gravity?: Vector3
@@ -58,21 +59,4 @@ export class MMDPhysicsHelper extends Object3D {
 
   constructor(mesh: SkinnedMesh, physics: MMDPhysics)
   dispose(): void
-}
-
-export class RigidBody {
-  body: object
-  bone: Bone
-  boneOffsetForm: object
-  boneOffsetFormInverse: object
-  manager: ResourceManager
-
-  mesh: SkinnedMesh
-  params: object
-  world: object
-  constructor(mesh: SkinnedMesh, world: object, params: object, manager: ResourceManager)
-
-  reset(): this
-  updateBone(): this
-  updateFromBone(): this
 }
