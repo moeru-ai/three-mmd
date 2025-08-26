@@ -39,6 +39,7 @@ words:
   - threejs
   - Toon
   - vite
+  - vitejs
   - Vocaloid
 ignoreWords: []
 import: []

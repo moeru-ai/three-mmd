@@ -1,0 +1,22 @@
+{
+  "name": "@moeru/three-mmd-playground",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@moeru/three-mmd-r3f": "workspace:^",
+    "@react-three/fiber": "catalog:r3f",
+    "react": "catalog:r3f",
+    "react-dom": "catalog:r3f",
+    "three": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:r3f",
+    "@types/react-dom": "catalog:r3f",
+    "@types/three": "catalog:"
+  }
+}

@@ -6,10 +6,11 @@ packages:
 catalog:
   '@antfu/eslint-config': ^5.2.1
   '@eslint-react/eslint-plugin': ^1.52.3
-  '@moeru/eslint-config': &std ^0.1.0-beta.8
-  '@moeru/tsconfig': *std
+  '@moeru/eslint-config': ^0.1.0-beta.8
+  '@moeru/tsconfig': ^0.1.0-beta.8
   '@noname0310/mmd-parser': ^0.1.4
   '@types/three': ^0.179.0
+  '@vitejs/plugin-react': ^5.0.1
   ammojs-typed: ^1.0.6
   bumpp: ^10.2.3
   eslint: ^9.33.0
@@ -25,7 +26,9 @@ catalogs:
   r3f:
     '@react-three/fiber': ^9.3.0
     '@types/react': ^19.1.11
+    '@types/react-dom': ^19.1.7
     react: ^19.1.1
+    react-dom: ^19.1.1
 
 onlyBuiltDependencies:
   - esbuild

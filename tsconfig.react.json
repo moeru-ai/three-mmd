@@ -1,15 +1,9 @@
 {
   "extends": "@moeru/tsconfig",
   "compilerOptions": {
-    // "allowJs": true,
-    // "checkJs": true
+    "jsx": "react-jsx"
   },
   "include": [
-    "examples/**/src",
-    "packages/**/src",
-    "packages/**/test"
-  ],
-  "exclude": [
     "examples/playground/src",
     "packages/three-mmd-r3f/src"
   ]
