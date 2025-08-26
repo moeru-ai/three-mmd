@@ -2,6 +2,7 @@ import type { MeshBasicMaterial, SkinnedMesh, Vector3 } from 'three'
 
 import { Object3D } from 'three'
 
+import type { Constraint } from './mmd-physics/constraint'
 import type { ResourceManager } from './mmd-physics/resource-manager'
 import type { RigidBody } from './mmd-physics/rigid-body'
 
@@ -9,24 +10,6 @@ export interface MMDPhysicsParameter {
   gravity?: Vector3
   maxStepNum?: number
   unitStep?: number
-}
-
-export class Constraint {
-  bodyA: RigidBody
-
-  bodyB: RigidBody
-  manager: ResourceManager
-  mesh: SkinnedMesh
-  params: object
-  world: object
-  constructor(
-    mesh: SkinnedMesh,
-    world: object,
-    bodyA: RigidBody,
-    bodyB: RigidBody,
-    params: object,
-    manager: ResourceManager,
-  )
 }
 
 export class MMDPhysics {
