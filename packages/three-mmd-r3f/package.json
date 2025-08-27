@@ -47,7 +47,8 @@
     "three": "^0.179.0"
   },
   "dependencies": {
-    "@moeru/three-mmd": "workspace:^"
+    "@moeru/three-mmd": "workspace:^",
+    "suspend-react": "catalog:r3f"
   },
   "devDependencies": {
     "@react-three/fiber": "catalog:r3f",
