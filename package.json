@@ -6,19 +6,23 @@
   "scripts": {
     "build": "pnpm -r build",
     "bump": "bumpp",
-    "dev": "pnpm -rF @moeru/three-mmd-example-basic dev",
+    "dev": "pnpm -rF @moeru/three-mmd-playground dev",
+    "dev:basic": "pnpm -rF @moeru/three-mmd-example-basic dev",
     "lint": "eslint --flag unstable_native_nodejs_ts_config --cache ."
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@eslint-react/eslint-plugin": "catalog:",
+    "@generouted/react-router": "catalog:r3f",
     "@moeru/eslint-config": "catalog:",
     "@moeru/tsconfig": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "bumpp": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
     "eslint-plugin-react-refresh": "catalog:",
     "pkgroll": "catalog:",
+    "react-router": "catalog:r3f",
     "typescript": "catalog:",
     "vite": "catalog:"
   }

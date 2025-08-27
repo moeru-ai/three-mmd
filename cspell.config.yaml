@@ -14,9 +14,11 @@ words:
   - Clearcoat
   - Crypton
   - dimforge
+  - drei
   - envmap
   - esbuild
   - Eulers
+  - generouted
   - glsl
   - gradientmap
   - Hatsune
@@ -39,6 +41,7 @@ words:
   - threejs
   - Toon
   - vite
+  - vitejs
   - Vocaloid
 ignoreWords: []
 import: []

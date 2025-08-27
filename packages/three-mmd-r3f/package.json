@@ -1,0 +1,60 @@
+{
+  "name": "@moeru/three-mmd-r3f",
+  "type": "module",
+  "version": "0.0.2",
+  "description": "Use MMD on React-three-fiber",
+  "author": "Moeru AI",
+  "license": "MIT",
+  "homepage": "https://github.com/moeru-ai/three-mmd",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moeru-ai/three-mmd.git",
+    "directory": "packages/three-mmd-r3f"
+  },
+  "bugs": "https://github.com/moeru-ai/three-mmd/issues",
+  "keywords": [
+    "threejs",
+    "three",
+    "react-three",
+    "react-three-fiber",
+    "r3f",
+    "mmd"
+  ],
+  "sideEffects": false,
+  "exports": "./src/index.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "scripts": {
+    "build": "pkgroll"
+  },
+  "peerDependencies": {
+    "@react-three/fiber": "^9.3.0",
+    "@types/react": "^19.1.11",
+    "@types/three": "^0.179.0",
+    "react": "^19.1.1",
+    "three": "^0.179.0"
+  },
+  "dependencies": {
+    "@moeru/three-mmd": "workspace:^",
+    "suspend-react": "catalog:r3f"
+  },
+  "devDependencies": {
+    "@react-three/fiber": "catalog:r3f",
+    "@types/react": "catalog:r3f",
+    "@types/three": "catalog:",
+    "react": "catalog:r3f",
+    "three": "catalog:"
+  }
+}
