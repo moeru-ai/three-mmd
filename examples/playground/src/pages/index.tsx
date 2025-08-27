@@ -1,46 +1,26 @@
-import type { ThreeElements } from '@react-three/fiber'
-import type { Mesh } from 'three'
+import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
+import { Environment, useAnimations } from '@react-three/drei'
+import { useEffect } from 'react'
 
-import { useFrame } from '@react-three/fiber'
-import { useRef, useState } from 'react'
+import pmdUrl from '../../../basic/src/assets/miku/miku_v2.pmd?url'
+import vmdUrl from '../../../basic/src/assets/vmds/wavefile_v2.vmd?url'
 
-const Box = (props: ThreeElements['mesh']) => {
-  const ref = useRef<Mesh>(null)
+const Index = () => {
+  const object = useMMD(pmdUrl)
+  const animation = useMMDAnimation(vmdUrl, object, 'dance')
+  const { actions, ref } = useAnimations([animation])
 
-  const [hovered, hover] = useState(false)
-  const [clicked, click] = useState(false)
-
-  useFrame((_state, delta) => {
-    if (ref.current)
-      ref.current.rotation.x += delta
+  // TODO: physics
+  useEffect(() => {
+    actions?.dance?.play()
   })
 
   return (
-    <mesh
-      data-test-id="box"
-      {...props}
-      onClick={() => click(!clicked)}
-      onPointerOut={() => hover(false)}
-      onPointerOver={() => hover(true)}
-      ref={ref}
-      // eslint-disable-next-line @masknet/jsx-no-logical
-      scale={clicked ? 1.5 : 1}
-    >
-      <boxGeometry args={[1, 1, 1]} />
-      {/* eslint-disable-next-line @masknet/jsx-no-logical */}
-      <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
-    </mesh>
+    <>
+      <primitive object={object} ref={ref} scale={0.1} />
+      <Environment background files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/belfast_sunset_puresky_2k.hdr" />
+    </>
   )
 }
-
-const Index = () => (
-  <>
-    <ambientLight intensity={Math.PI / 2} />
-    <spotLight angle={0.15} decay={0} intensity={Math.PI} penumbra={1} position={[10, 10, 10]} />
-    <pointLight decay={0} intensity={Math.PI} position={[-10, -10, -10]} />
-    <Box position={[-1.2, 0, 0]} />
-    <Box position={[1.2, 0, 0]} />
-  </>
-)
 
 export default Index
