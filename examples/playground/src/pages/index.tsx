@@ -1,5 +1,6 @@
+import { MMDAnimationHelper } from '@moeru/three-mmd'
 import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
-import { Environment, useAnimations } from '@react-three/drei'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 
 import pmdUrl from '../../../basic/src/assets/miku/miku_v2.pmd?url'
@@ -8,18 +9,35 @@ import vmdUrl from '../../../basic/src/assets/vmds/wavefile_v2.vmd?url'
 const Index = () => {
   const object = useMMD(pmdUrl)
   const animation = useMMDAnimation(vmdUrl, object, 'dance')
-  const { actions, ref } = useAnimations([animation])
 
-  // TODO: physics
+  const helper = new MMDAnimationHelper({ afterglow: 2 })
+  const scene = useThree(({ scene }) => scene)
+
   useEffect(() => {
-    actions?.dance?.play()
+    helper.add(object, {
+      animation,
+      physics: true,
+    })
+
+    const ikHelper = helper.objects.get(object)!.ikSolver.createHelper()
+    ikHelper.visible = false
+    scene.add(ikHelper)
+
+    const physicsHelper = helper.objects.get(object)!.physics!.createHelper()
+    physicsHelper.visible = false
+    scene.add(physicsHelper)
+
+    return () => {
+      helper.remove(object)
+      scene.remove(ikHelper)
+      scene.remove(physicsHelper)
+    }
   })
 
+  useFrame((_, delta) => helper.update(delta))
+
   return (
-    <>
-      <primitive object={object} ref={ref} scale={0.1} />
-      <Environment background files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/belfast_sunset_puresky_2k.hdr" />
-    </>
+    <primitive object={object} scale={0.1} />
   )
 }
 
