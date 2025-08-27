@@ -13,6 +13,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@eslint-react/eslint-plugin": "catalog:",
+    "@generouted/react-router": "catalog:r3f",
     "@moeru/eslint-config": "catalog:",
     "@moeru/tsconfig": "catalog:",
     "@vitejs/plugin-react": "catalog:",
@@ -21,6 +22,7 @@
     "eslint-plugin-react-hooks": "catalog:",
     "eslint-plugin-react-refresh": "catalog:",
     "pkgroll": "catalog:",
+    "react-router": "catalog:r3f",
     "typescript": "catalog:",
     "vite": "catalog:"
   }
