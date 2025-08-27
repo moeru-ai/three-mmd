@@ -11,8 +11,8 @@ Considering the needs of Project AIRI or other future projects, I decided to for
 
 ## Roadmap
 
-- React-three-fiber bindings (`@moeru/three-mmd-r3f`)
 - Rapier-based physics (help wanted)
+- WebGPURenderer compatibility
 
 ## Usage
 
