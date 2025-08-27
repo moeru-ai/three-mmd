@@ -1,6 +1,6 @@
 import { MMDAnimationHelper } from '@moeru/three-mmd'
 import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useEffect } from 'react'
 
 import pmdUrl from '../../../basic/src/assets/miku/miku_v2.pmd?url'
@@ -11,7 +11,6 @@ const Index = () => {
   const animation = useMMDAnimation(vmdUrl, object, 'dance')
 
   const helper = new MMDAnimationHelper({ afterglow: 2 })
-  const scene = useThree(({ scene }) => scene)
 
   useEffect(() => {
     helper.add(object, {
@@ -19,18 +18,8 @@ const Index = () => {
       physics: true,
     })
 
-    const ikHelper = helper.objects.get(object)!.ikSolver.createHelper()
-    ikHelper.visible = false
-    scene.add(ikHelper)
-
-    const physicsHelper = helper.objects.get(object)!.physics!.createHelper()
-    physicsHelper.visible = false
-    scene.add(physicsHelper)
-
     return () => {
       helper.remove(object)
-      scene.remove(ikHelper)
-      scene.remove(physicsHelper)
     }
   })
 
