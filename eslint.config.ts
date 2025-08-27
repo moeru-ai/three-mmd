@@ -7,4 +7,8 @@ export default defineConfig({
   rules: {
     'sonarjs/cognitive-complexity': 'off',
   },
+}, {
+  ignores: [
+    'examples/playground/src/router.ts',
+  ],
 })
