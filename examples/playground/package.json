@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "tsc && vite build",
     "dev": "vite",
     "preview": "vite preview"
   },
