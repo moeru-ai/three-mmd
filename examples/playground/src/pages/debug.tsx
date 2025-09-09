@@ -33,6 +33,9 @@ const Debug = () => {
     })
 
     return () => {
+      if (mesh == null)
+        return
+
       helper.remove(mesh)
       scene.remove(mesh)
     }
