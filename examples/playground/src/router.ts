@@ -7,6 +7,7 @@ export type Path =
   | `/`
   | `/debug`
   | `/debug2`
+  | `/debug3`
   | `/with-use-animations`
 
 export type Params = {
