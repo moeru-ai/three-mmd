@@ -2,6 +2,7 @@
   "name": "@moeru/three-mmd-r3f",
   "type": "module",
   "version": "0.0.2",
+  "private": true,
   "description": "Use MMD on React-three-fiber",
   "author": "Moeru AI",
   "license": "MIT",
