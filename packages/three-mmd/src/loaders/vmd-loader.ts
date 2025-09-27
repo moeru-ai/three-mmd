@@ -1,9 +1,7 @@
 import type { Vmd } from '@noname0310/mmd-parser'
 import type { LoadingManager } from 'three'
 
-// import { MMDParser } from '@noname0310/mmd-parser'
-// @ts-expect-error missing types
-import { Parser } from 'mmd-parser'
+import { MMDParser } from '@noname0310/mmd-parser'
 import { FileLoader, Loader } from 'three'
 
 /** @experimental */
@@ -33,10 +31,7 @@ export class VMDLoader extends Loader<Vmd> {
       url,
       (buffer) => {
         try {
-          // FIXME: use @noname0310/mmd-parser
-          // onLoad(MMDParser.parseVmd(buffer as ArrayBuffer, true))
-          // eslint-disable-next-line ts/no-unsafe-call, ts/no-unsafe-member-access
-          onLoad(new Parser().parseVmd(buffer, true) as Vmd)
+          onLoad(MMDParser.parseVmd(buffer as ArrayBuffer, true))
         }
         catch (e) {
           onError?.(e as ErrorEvent)

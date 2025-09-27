@@ -41,8 +41,7 @@
   },
   "dependencies": {
     "@noname0310/mmd-parser": "catalog:",
-    "ammojs-typed": "catalog:",
-    "mmd-parser": "catalog:"
+    "ammojs-typed": "catalog:"
   },
   "devDependencies": {
     "@types/three": "catalog:",
