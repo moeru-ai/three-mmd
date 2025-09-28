@@ -34,7 +34,7 @@
     "types": "./dist/index.d.ts"
   },
   "scripts": {
-    "build": "pkgroll"
+    "build": "tsdown"
   },
   "peerDependencies": {
     "@types/three": "^0.180.0",

@@ -23,6 +23,7 @@
     "eslint-plugin-react-refresh": "catalog:",
     "pkgroll": "catalog:",
     "react-router": "catalog:r3f",
+    "tsdown": "^0.15.5",
     "typescript": "catalog:",
     "vite": "catalog:"
   }
