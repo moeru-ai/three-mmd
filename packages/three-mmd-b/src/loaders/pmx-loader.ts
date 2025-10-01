@@ -1,7 +1,7 @@
-import type { PmxObject } from 'babylon-mmd'
+import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import type { LoadingManager } from 'three'
 
-import { PmxReader } from 'babylon-mmd'
+import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import {
   FileLoader,
   Loader,
