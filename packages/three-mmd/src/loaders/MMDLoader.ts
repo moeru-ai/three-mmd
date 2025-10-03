@@ -2,6 +2,7 @@ import {
   AddOperation,
   AnimationClip,
   Bone,
+  BufferGeometry,
   Color,
   CustomBlending,
   DoubleSide,
@@ -9,6 +10,9 @@ import {
   Euler,
   FrontSide,
   Interpolant,
+  KeyframeTrack,
+  LoadingManager,
+  Mesh,
   MultiplyOperation,
   NearestFilter,
   NumberKeyframeTrack,
@@ -25,6 +29,7 @@ import {
   SkinnedMesh,
   SrcAlphaFactor,
   SRGBColorSpace,
+  Texture,
   TextureLoader,
   Vector3,
   VectorKeyframeTrack,
@@ -62,8 +67,13 @@ import { GeometryBuilder } from './mmd-loader/geometry-builder'
  *  - more precise grant skinning support.
  *  - shadow support.
  */
+type BoneMesh = SkinnedMesh<any, any, any> & {
+  geometry: {
+    bones?: any[]
+  }
+}
 
-const initBones = (mesh) => {
+const initBones = (mesh: BoneMesh) => {
   const geometry = mesh.geometry
 
   const bones = []
@@ -149,7 +159,7 @@ class CubicBezierInterpolation extends Interpolant {
     this.interpolationParams = params
   }
 
-  _calculate(x1, x2, y1, y2, x) {
+  _calculate(x1: number, x2: number, y1: number, y2: number, x: number) {
     /*
      * Cubic Bezier curves
      *   https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Cubic_B.C3.A9zier_curves
@@ -194,7 +204,7 @@ class CubicBezierInterpolation extends Interpolant {
     const eps = 1e-5
     const math = Math
 
-    let sst3, stt3, ttt
+    let sst3 =-1, stt3 = -1, ttt = -1
 
     for (let i = 0; i < loop; i++) {
       sst3 = 3.0 * s * s * t
@@ -215,7 +225,7 @@ class CubicBezierInterpolation extends Interpolant {
     return (sst3 * y1) + (stt3 * y2) + ttt
   }
 
-  interpolate_(i1, t0, t, t1) {
+  interpolate_(i1: number, t0: number, t: number, t1: number) {
     const result = this.resultBuffer
     const values = this.sampleValues
     const stride = this.valueSize
@@ -266,36 +276,42 @@ class CubicBezierInterpolation extends Interpolant {
   }
 }
 
+interface MaterialBuilderPameters {
+
+}
+
 /**
  * @param {import('three').LoadingManager} manager
  */
 class MaterialBuilder {
-  constructor(manager) {
+  manager:  LoadingManager
+  textureLoader : TextureLoader
+  tgaLoader?: TGALoader = undefined
+  crossOrigin = 'anonymous'
+  resourcePath?: string
+
+
+  constructor(manager: LoadingManager) {
     this.manager = manager
-
-    this.textureLoader = new TextureLoader(this.manager)
-    this.tgaLoader = null // lazy generation
-
-    this.crossOrigin = 'anonymous'
-    this.resourcePath = undefined
+    this.textureLoader = new TextureLoader(manager)
   }
 
   // Check if the partial image area used by the texture is transparent.
-  _checkImageTransparency(map, geometry, groupIndex) {
+  _checkImageTransparency(map, geometry: Geometry, groupIndex) {
     map.readyCallbacks.push((texture) => {
       // Is there any efficient ways?
-      const createImageData = (image) => {
+      const createImageData = (image: HTMLImageElement) => {
         const canvas = document.createElement('canvas')
         canvas.width = image.width
         canvas.height = image.height
 
-        const context = canvas.getContext('2d')
+        const context = canvas.getContext('2d')!
         context.drawImage(image, 0, 0)
 
         return context.getImageData(0, 0, canvas.width, canvas.height)
       }
 
-      const detectImageTransparency = (image, uvs, indices) => {
+      const detectImageTransparency = (image: ImageData, uvs: readonly number[], indices:readonly  number[]) => {
         const width = image.width
         const height = image.height
         const data = image.data
@@ -308,7 +324,7 @@ class MaterialBuilder {
         *   texture.wrapT = RepeatWrapping
         * TODO: more precise
         */
-        const getAlphaByUv = (image, uv) => {
+        const getAlphaByUv = (image: ImageData, uv: {x: number, y: number}) => {
           const width = image.width
           const height = image.height
 
@@ -380,9 +396,9 @@ class MaterialBuilder {
     })
   }
 
-  _getRotatedImage(image) {
+  _getRotatedImage(image: HTMLImageElement) {
     const canvas = document.createElement('canvas')
-    const context = canvas.getContext('2d')
+    const context = canvas.getContext('2d')!
 
     const width = image.width
     const height = image.height
@@ -399,7 +415,7 @@ class MaterialBuilder {
     return context.getImageData(0, 0, width, height)
   }
 
-  _getTGALoader() {
+  _getTGALoader(): TGALoader {
     if (this.tgaLoader === null) {
       if (TGALoader === undefined) {
         throw new Error('MMDLoader: Import TGALoader')
@@ -408,19 +424,19 @@ class MaterialBuilder {
       this.tgaLoader = new TGALoader(this.manager)
     }
 
-    return this.tgaLoader
+    return this.tgaLoader!
   }
 
   // private methods
 
-  _isDefaultToonTexture(name) {
+  private _isDefaultToonTexture(name: string): boolean {
     if (name.length !== 10)
       return false
 
     return /toon(?:10|0\d)\.bmp/.test(name)
   }
 
-  _loadTexture(filePath, textures, params, onProgress, onError) {
+  private _loadTexture(filePath: string, textures: Record<string, Texture>, params: unknown, onProgress: () => void, onError: () => void) {
     params = params || {}
 
     const scope = this
@@ -457,7 +473,8 @@ class MaterialBuilder {
         : this.textureLoader
     }
 
-    const texture = loader.load(fullPath, (t) => {
+    // FIXME: wtf how does this work
+    const texture = loader.load(fullPath, (t: Texture) => {
       // MMD toon texture is Axis-Y oriented
       // but Three.js gradient map is Axis-X oriented.
       // So here replaces the toon texture image with the rotated one.
@@ -495,7 +512,7 @@ class MaterialBuilder {
    * @param {Function} onError
    * @return {Array<MMDToonMaterial>}
    */
-  build(data, geometry /* , onProgress, onError */) {
+  build(data, geometry: BufferGeometry, onProgress?: unknown, onError?: unknown) {
     const materials = []
 
     const textures = {}
@@ -721,7 +738,7 @@ class MaterialBuilder {
    * @param {string} crossOrigin
    * @return {MaterialBuilder}
    */
-  setCrossOrigin(crossOrigin) {
+  setCrossOrigin(crossOrigin: string): this {
     this.crossOrigin = crossOrigin
     return this
   }
@@ -730,14 +747,22 @@ class MaterialBuilder {
    * @param {string} resourcePath
    * @return {MaterialBuilder}
    */
-  setResourcePath(resourcePath) {
+  setResourcePath(resourcePath: string): this {
     this.resourcePath = resourcePath
     return this
   }
 }
 
+class TypedKeyframeTrack extends KeyframeTrack {
+  createInterpolant(result: unknown) {
+      return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, new Float32Array(interpolations))
+
+  }
+
+}
+
 export class AnimationBuilder {
-  _createTrack(node, TypedKeyframeTrack, times, values, interpolations) {
+  private _createTrack(node: string, TypedKeyframeTrack: typeof KeyframeTrack, times, values, interpolations) {
     /*
      * optimizes here not to let KeyframeTrackPrototype optimize
      * because KeyframeTrackPrototype optimizes times and values but
@@ -783,7 +808,6 @@ export class AnimationBuilder {
     const track = new TypedKeyframeTrack(node, times, values)
 
     track.createInterpolant = function InterpolantFactoryMethodCubicBezier(result) {
-      return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, new Float32Array(interpolations))
     }
 
     return track
@@ -812,20 +836,20 @@ export class AnimationBuilder {
    * @return {AnimationClip}
    */
   buildCameraAnimation(vmd) {
-    const pushVector3 = (array, vec) => {
+    const pushVector3 = (array: Vector3[], vec: Vector3) => {
       array.push(vec.x)
       array.push(vec.y)
       array.push(vec.z)
     }
 
-    const pushQuaternion = (array, q) => {
+    const pushQuaternion = (array: Quaternion[], q: Quaternion) => {
       array.push(q.x)
       array.push(q.y)
       array.push(q.z)
       array.push(q.w)
     }
 
-    const pushInterpolation = (array, interpolation, index) => {
+    const pushInterpolation = (array: number[], interpolation: number[], index: number) => {
       array.push(interpolation[index * 4 + 0] / 127) // x1
       array.push(interpolation[index * 4 + 1] / 127) // x2
       array.push(interpolation[index * 4 + 2] / 127) // y1
@@ -839,15 +863,15 @@ export class AnimationBuilder {
     })
 
     const times = []
-    const centers = []
-    const quaternions = []
-    const positions = []
+    const centers: Vector3[] = []
+    const quaternions: Quaternion[] = []
+    const positions: Vector3[] = []
     const fovs = []
 
-    const cInterpolations = []
-    const qInterpolations = []
-    const pInterpolations = []
-    const fInterpolations = []
+    const cInterpolations: number[] = []
+    const qInterpolations: number[] = []
+    const pInterpolations: number[] = []
+    const fInterpolations: number[] = []
 
     const quaternion = new Quaternion()
     const euler = new Euler()
@@ -912,11 +936,11 @@ export class AnimationBuilder {
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
    * @return {AnimationClip}
    */
-  buildMorphAnimation(vmd, mesh) {
+  buildMorphAnimation(vmd, mesh: SkinnedMesh): AnimationClip {
     const tracks = []
 
-    const morphs = {}
-    const morphTargetDictionary = mesh.morphTargetDictionary
+    const morphs: Record<string, unknown[]> = {}
+    const morphTargetDictionary = mesh.morphTargetDictionary!
 
     for (let i = 0; i < vmd.metadata.morphCount; i++) {
       const morph = vmd.morphs[i]
@@ -957,8 +981,8 @@ export class AnimationBuilder {
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
    * @return {AnimationClip}
    */
-  buildSkeletalAnimation(vmd, mesh) {
-    const pushInterpolation = (array, interpolation, index) => {
+  buildSkeletalAnimation(vmd, mesh: SkinnedMesh) {
+    const pushInterpolation = (array: number[], interpolation: number[], index: number) => {
       array.push(interpolation[index + 0] / 127) // x1
       array.push(interpolation[index + 8] / 127) // x2
       array.push(interpolation[index + 4] / 127) // y1
@@ -967,9 +991,10 @@ export class AnimationBuilder {
 
     const tracks = []
 
-    const motions = {}
+    type BoneName = string
+    const motions: Record<BoneName, unknown[]> = {}
     const bones = mesh.skeleton.bones
-    const boneNameDictionary = {}
+    const boneNameDictionary: Record<BoneName, boolean> = {}
 
     for (let i = 0, il = bones.length; i < il; i++) {
       boneNameDictionary[bones[i].name] = true
@@ -993,13 +1018,13 @@ export class AnimationBuilder {
         return a.frameNum - b.frameNum
       })
 
-      const times = []
-      const positions = []
-      const rotations = []
-      const pInterpolations = []
-      const rInterpolations = []
+      const times: number[] = []
+      const positions: number[] = []
+      const rotations: number[] = []
+      const pInterpolations: number[] = []
+      const rInterpolations: number[] = []
 
-      const basePosition = mesh.skeleton.getBoneByName(key).position.toArray()
+      const basePosition = mesh.skeleton.getBoneByName(key)!.position.toArray()
 
       for (let i = 0, il = array.length; i < il; i++) {
         const time = array[i].frameNum / 30
@@ -1032,8 +1057,10 @@ export class AnimationBuilder {
  * @param {import('three').LoadingManager} manager
  */
 export class MeshBuilder {
-  constructor(manager) {
-    this.crossOrigin = 'anonymous'
+    crossOrigin = 'anonymous'
+    geometryBuilder: GeometryBuilder
+    materialBuilder: MaterialBuilder
+  constructor(manager: LoadingManager) {
     this.geometryBuilder = new GeometryBuilder()
     this.materialBuilder = new MaterialBuilder(manager)
   }
@@ -1045,7 +1072,7 @@ export class MeshBuilder {
    * @param {Function} onError
    * @return {SkinnedMesh}
    */
-  build(data, resourcePath, onProgress, onError) {
+  build(data, resourcePath: string, onProgress: () => void, onError: () => void) {
     const geometry = this.geometryBuilder.build(data)
     const material = this.materialBuilder
       .setCrossOrigin(this.crossOrigin)
@@ -1066,7 +1093,7 @@ export class MeshBuilder {
    * @param {string} crossOrigin
    * @return {MeshBuilder}
    */
-  setCrossOrigin(crossOrigin) {
+  setCrossOrigin(crossOrigin: string) {
     this.crossOrigin = crossOrigin
     return this
   }
