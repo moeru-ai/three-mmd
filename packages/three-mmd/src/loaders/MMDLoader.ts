@@ -164,7 +164,7 @@ export interface MMDLoaderAnimationObject {
 }
 // Builders. They build Three.js object from Object data parsed by MMDParser.
 
-interface DeferedTexture extends Texture {
+interface LoadingTexture extends Texture {
   readyCallbacks?: ((texture: Texture) => void)[]
   transparent: boolean
 }
@@ -173,10 +173,10 @@ interface MaterialBuilderPameters extends MaterialParameters {
   diffuse?: Color
   emissive: Color
   fog: boolean
-  gradientMap: DeferedTexture
+  gradientMap: LoadingTexture
   isDefaultToonTexture: boolean
   isToonTexture: boolean
-  map?: DeferedTexture
+  map?: LoadingTexture
   matcap: Texture
   matcapCombine: number
 
@@ -365,7 +365,7 @@ class MaterialBuilder {
   }
 
   // Check if the partial image area used by the texture is transparent.
-  _checkImageTransparency(map: DeferedTexture, geometry: BufferGeometry, groupIndex: number) {
+  _checkImageTransparency(map: LoadingTexture, geometry: BufferGeometry, groupIndex: number) {
     map.readyCallbacks!.push((texture: Texture) => {
       // Is there any efficient ways?
       const createImageData = (image: HTMLImageElement) => {
@@ -750,7 +750,7 @@ class MaterialBuilder {
     return /toon(?:10|0\d)\.bmp/.test(name)
   }
 
-  private _loadTexture(filePath: string, textures: Record<string, DeferedTexture>, params?: { isDefaultToonTexture: boolean, isToonTexture: boolean }, onProgress?: () => void, onError?: () => void): DeferedTexture {
+  private _loadTexture(filePath: string, textures: Record<string, LoadingTexture>, params?: { isDefaultToonTexture: boolean, isToonTexture: boolean }, onProgress?: () => void, onError?: () => void): LoadingTexture {
     params = params || {} as MaterialBuilderPameters
 
     const scope = this
@@ -788,7 +788,7 @@ class MaterialBuilder {
     }
 
     // @ts-expect-error
-    const texture: DeferedTexture = loader.load(fullPath, (t: Texture) => {
+    const texture: LoadingTexture = loader.load(fullPath, (t: Texture) => {
       // MMD toon texture is Axis-Y oriented
       // but Three.js gradient map is Axis-X oriented.
       // So here replaces the toon texture image with the rotated one.
