@@ -35,7 +35,7 @@ import {
   VectorKeyframeTrack,
 } from 'three'
 import { TGALoader } from 'three/addons/loaders/TGALoader.js'
-import type { Pmd, Pmx, Vmd, VmdMotionFrame } from '@noname0310/mmd-parser'
+import type { Pmd, Pmx, Vmd, VmdMorphFrame, VmdMotionFrame } from '@noname0310/mmd-parser'
 
 import { MMDToonMaterial } from '../materials/mmd-toon-material'
 import { GeometryBuilder } from './mmd-loader/geometry-builder'
@@ -154,18 +154,18 @@ const NON_ALPHA_CHANNEL_FORMATS = [
 // Builders. They build Three.js object from Object data parsed by MMDParser.
 
 class CubicBezierInterpolation extends Interpolant {
-  interpolationParams: ArrayLike<number>
-  declare parameterPositions: number[]
-  declare sampleValues: number[]
+  readonly interpolationParams: ArrayLike<number>
+  declare parameterPositions: ArrayLike<number>
+  declare sampleValues: ArrayLike<number>
   declare sampleSize: number
   declare resultBuffer: number[]
 
   constructor(
-    parameterPositions: number[],
-    sampleValues: number[],
+    parameterPositions: ArrayLike<number>,
+    sampleValues: ArrayLike<number>,
     sampleSize: number,
     resultBuffer: number[],
-    params: number[]
+    params: ArrayLike<number>
   ) {
     super(parameterPositions, sampleValues, sampleSize, resultBuffer)
 
@@ -310,7 +310,7 @@ class MaterialBuilder {
   }
 
   // Check if the partial image area used by the texture is transparent.
-  _checkImageTransparency(map, geometry: Geometry, groupIndex) {
+  _checkImageTransparency(map, geometry: BufferGeometry, groupIndex: number) {
     map.readyCallbacks.push((texture) => {
       // Is there any efficient ways?
       const createImageData = (image: HTMLImageElement) => {
@@ -767,21 +767,21 @@ class MaterialBuilder {
   }
 }
 
-class PatchedKeyframeTrack extends KeyframeTrack {
+class CubicBezierKeyframeTrack extends KeyframeTrack {
   interpolationParams: ArrayLike<number>
 
-  constructor(name: string, times: Float32Array, values:ArrayLike<number|string|boolean>, interpolationParams: ArrayLike<number>) {
+  constructor(name: string, times: ArrayLike<number>, values:ArrayLike<number|string|boolean>, interpolationParams: ArrayLike<number>) {
     super(name, times, values)
     this.interpolationParams = interpolationParams
   }
 
-  createInterpolant(result: Float32Array): CubicBezierInterpolation {
+  createInterpolant(result: number[]): CubicBezierInterpolation {
     return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, this.interpolationParams)
   }
 }
 
 export class AnimationBuilder {
-  private _createTrack(node: string, TrackClass: typeof KeyframeTrack | typeof PatchedKeyframeTrack, times: number[], values: number[], interpolations: number[]): KeyframeTrack {
+  private _createTrack(node: string, TrackClass: typeof VectorKeyframeTrack | typeof QuaternionKeyframeTrack | typeof CubicBezierKeyframeTrack, times: number[], values: number[], interpolations: number[]): InstanceType<typeof TrackClass> {
     /*
      * optimizes here not to let KeyframeTrackPrototype optimize
      * because KeyframeTrackPrototype optimizes times and values but
@@ -824,8 +824,8 @@ export class AnimationBuilder {
       interpolations.length = (index + 1) * interpolateStride
     }
 
-    const track = new PatchedKeyframeTrack(node, times, values, interpolations)
-
+    // @ts-expect-error
+    const track = new TrackClass(node, times, values, interpolations)
 
     return track
   }
@@ -939,11 +939,11 @@ export class AnimationBuilder {
     const tracks = []
 
     // I expect an object whose name 'target' exists under THREE.Camera
-    tracks.push(this._createTrack('target.position', PatchedKeyframeTrack, times, centers, cInterpolations))
+    tracks.push(this._createTrack('target.position', CubicBezierKeyframeTrack, times, centers, cInterpolations))
 
-    tracks.push(this._createTrack('.quaternion', PatchedKeyframeTrack, times, quaternions, qInterpolations))
-    tracks.push(this._createTrack('.position', PatchedKeyframeTrack, times, positions, pInterpolations))
-    tracks.push(this._createTrack('.fov', PatchedKeyframeTrack, times, fovs, fInterpolations))
+    tracks.push(this._createTrack('.quaternion', CubicBezierKeyframeTrack, times, quaternions, qInterpolations))
+    tracks.push(this._createTrack('.position', CubicBezierKeyframeTrack, times, positions, pInterpolations))
+    tracks.push(this._createTrack('.fov', CubicBezierKeyframeTrack, times, fovs, fInterpolations))
 
     return new AnimationClip('', -1, tracks)
   }
@@ -956,7 +956,7 @@ export class AnimationBuilder {
   private buildMorphAnimation(vmd: Vmd, mesh: SkinnedMesh): AnimationClip {
     const tracks = []
 
-    const morphs: Record<string, unknown[]> = {}
+    const morphs: Record<string, VmdMorphFrame[]> = {}
     const morphTargetDictionary = mesh.morphTargetDictionary!
 
     for (let i = 0; i < vmd.metadata.morphCount; i++) {
@@ -1083,13 +1083,12 @@ export class MeshBuilder {
   }
 
   /**
-   * @param {object} data - parsed PMD/PMX data
-   * @param {string} resourcePath
-   * @param {Function} onProgress
-   * @param {Function} onError
+   * @param data - parsed PMD/PMX data
+   * @param onProgress
+   * @param onError
    * @return {SkinnedMesh}
    */
-  build(data: Pmd|Pmx, resourcePath: string, onProgress: () => void, onError: () => void) {
+  build(data: Pmd|Pmx, resourcePath: string, onProgress: () => void, onError: () => void): SkinnedMesh {
     const geometry = this.geometryBuilder.build(data)
     const material = this.materialBuilder
       .setCrossOrigin(this.crossOrigin)
@@ -1106,11 +1105,7 @@ export class MeshBuilder {
     return mesh
   }
 
-  /**
-   * @param {string} crossOrigin
-   * @return {MeshBuilder}
-   */
-  setCrossOrigin(crossOrigin: string) {
+  setCrossOrigin(crossOrigin: string): this {
     this.crossOrigin = crossOrigin
     return this
   }
