@@ -8,6 +8,7 @@
 /* eslint-disable sonarjs/no-nested-template-literals */
 /* eslint-disable sonarjs/prefer-regexp-exec */
 /* eslint-disable ts/no-this-alias */
+/* eslint-disable perfectionist/sort-classes */
 
 import type { Pmd, PmdMaterialInfo, Pmx, PmxMaterialInfo, Vmd, VmdMorphFrame, VmdMotionFrame } from '@noname0310/mmd-parser'
 import type { BufferGeometry, LoadingManager, Material, MaterialParameters, Texture, TypedArray } from 'three'
@@ -497,6 +498,81 @@ class MaterialBuilder {
   }
 
   // private methods
+  private _isDefaultToonTexture(name: string): boolean {
+    if (name.length !== 10)
+      return false
+
+    return /toon(?:10|0\d)\.bmp/.test(name)
+  }
+
+  private _loadTexture(filePath: string, textures: Record<string, LoadingTexture>, params?: { isDefaultToonTexture: boolean, isToonTexture: boolean }, onProgress?: () => void, onError?: () => void): LoadingTexture {
+    params = params || {} as MaterialBuilderPameters
+
+    const scope = this
+
+    let fullPath
+
+    if (params.isDefaultToonTexture === true) {
+      let index
+
+      try {
+        index = Number.parseInt(filePath.match(/toon(\d{2})\.bmp$/)![1])
+      }
+      catch {
+        console.warn(`MMDLoader: ${filePath} seems like a `
+          + 'not right default texture path. Using toon00.bmp instead.')
+
+        index = 0
+      }
+
+      fullPath = DEFAULT_TOON_TEXTURES[index]
+    }
+    else {
+      fullPath = this.resourcePath + filePath
+    }
+
+    if (textures[fullPath] !== undefined)
+      return textures[fullPath]
+
+    let loader = this.manager.getHandler(fullPath)
+
+    if (loader === null) {
+      loader = (filePath.slice(-4).toLowerCase() === '.tga')
+        ? this._getTGALoader()
+        : this.textureLoader
+    }
+
+    // @ts-expect-error
+    const texture: LoadingTexture = loader.load(fullPath, (t: Texture) => {
+      // MMD toon texture is Axis-Y oriented
+      // but Three.js gradient map is Axis-X oriented.
+      // So here replaces the toon texture image with the rotated one.
+      if (params.isToonTexture === true) {
+        t.image = scope._getRotatedImage(t.image)
+
+        t.magFilter = NearestFilter
+        t.minFilter = NearestFilter
+        t.generateMipmaps = false
+      }
+
+      t.flipY = false
+      t.wrapS = RepeatWrapping
+      t.wrapT = RepeatWrapping
+      t.colorSpace = SRGBColorSpace
+
+      for (let i = 0; i < texture.readyCallbacks!.length; i++) {
+        texture.readyCallbacks![i](texture)
+      }
+
+      delete texture.readyCallbacks
+    }, onProgress, onError)
+
+    texture.readyCallbacks = []
+
+    textures[fullPath] = texture
+
+    return texture
+  }
 
   /**
    * @param {object} data - parsed PMD/PMX data
@@ -741,82 +817,6 @@ class MaterialBuilder {
   setResourcePath(resourcePath: string): this {
     this.resourcePath = resourcePath
     return this
-  }
-
-  private _isDefaultToonTexture(name: string): boolean {
-    if (name.length !== 10)
-      return false
-
-    return /toon(?:10|0\d)\.bmp/.test(name)
-  }
-
-  private _loadTexture(filePath: string, textures: Record<string, LoadingTexture>, params?: { isDefaultToonTexture: boolean, isToonTexture: boolean }, onProgress?: () => void, onError?: () => void): LoadingTexture {
-    params = params || {} as MaterialBuilderPameters
-
-    const scope = this
-
-    let fullPath
-
-    if (params.isDefaultToonTexture === true) {
-      let index
-
-      try {
-        index = Number.parseInt(filePath.match(/toon(\d{2})\.bmp$/)![1])
-      }
-      catch {
-        console.warn(`MMDLoader: ${filePath} seems like a `
-          + 'not right default texture path. Using toon00.bmp instead.')
-
-        index = 0
-      }
-
-      fullPath = DEFAULT_TOON_TEXTURES[index]
-    }
-    else {
-      fullPath = this.resourcePath + filePath
-    }
-
-    if (textures[fullPath] !== undefined)
-      return textures[fullPath]
-
-    let loader = this.manager.getHandler(fullPath)
-
-    if (loader === null) {
-      loader = (filePath.slice(-4).toLowerCase() === '.tga')
-        ? this._getTGALoader()
-        : this.textureLoader
-    }
-
-    // @ts-expect-error
-    const texture: LoadingTexture = loader.load(fullPath, (t: Texture) => {
-      // MMD toon texture is Axis-Y oriented
-      // but Three.js gradient map is Axis-X oriented.
-      // So here replaces the toon texture image with the rotated one.
-      if (params.isToonTexture === true) {
-        t.image = scope._getRotatedImage(t.image)
-
-        t.magFilter = NearestFilter
-        t.minFilter = NearestFilter
-        t.generateMipmaps = false
-      }
-
-      t.flipY = false
-      t.wrapS = RepeatWrapping
-      t.wrapT = RepeatWrapping
-      t.colorSpace = SRGBColorSpace
-
-      for (let i = 0; i < texture.readyCallbacks!.length; i++) {
-        texture.readyCallbacks![i](texture)
-      }
-
-      delete texture.readyCallbacks
-    }, onProgress, onError)
-
-    texture.readyCallbacks = []
-
-    textures[fullPath] = texture
-
-    return texture
   }
 }
 
