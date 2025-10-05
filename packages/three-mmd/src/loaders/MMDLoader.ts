@@ -25,7 +25,6 @@ import {
   Euler,
   FrontSide,
   Interpolant,
-  KeyframeTrack,
 
   MultiplyOperation,
   NearestFilter,
@@ -334,19 +333,6 @@ class CubicBezierInterpolation extends Interpolant {
     }
 
     return result
-  }
-}
-
-class CubicBezierKeyframeTrack extends KeyframeTrack {
-  interpolationParams: ArrayLike<number>
-
-  constructor(name: string, times: ArrayLike<number>, values: ArrayLike<boolean | number | string>, interpolationParams: ArrayLike<number>) {
-    super(name, times, values)
-    this.interpolationParams = interpolationParams
-  }
-
-  createInterpolant(result: number[]): CubicBezierInterpolation {
-    return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, this.interpolationParams)
   }
 }
 
@@ -821,7 +807,7 @@ class MaterialBuilder {
 }
 
 export class AnimationBuilder {
-  private _createTrack(node: string, TrackClass: typeof CubicBezierKeyframeTrack | typeof QuaternionKeyframeTrack | typeof VectorKeyframeTrack, times: number[], values: number[], interpolations: number[]): InstanceType<typeof TrackClass> {
+  private _createTrack(node: string, TypedKeyframeTrack: typeof NumberKeyframeTrack | typeof QuaternionKeyframeTrack | typeof VectorKeyframeTrack, times: number[], values: number[], interpolations: number[]): InstanceType<typeof TypedKeyframeTrack> {
     /*
      * optimizes here not to let KeyframeTrackPrototype optimize
      * because KeyframeTrackPrototype optimizes times and values but
@@ -864,9 +850,14 @@ export class AnimationBuilder {
       interpolations.length = (index + 1) * interpolateStride
     }
 
-    // @ts-expect-error
+    const track = new TypedKeyframeTrack(node, times, values)
 
-    return new TrackClass(node, times, values, interpolations)
+    // @ts-expect-error monkey patch
+    track.createInterpolant = function InterpolantFactoryMethodCubicBezier(result) {
+      return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, new Float32Array(interpolations))
+    }
+
+    return track
   }
 
   /**
@@ -978,11 +969,11 @@ export class AnimationBuilder {
     const tracks = []
 
     // I expect an object whose name 'target' exists under THREE.Camera
-    tracks.push(this._createTrack('target.position', CubicBezierKeyframeTrack, times, centers, cInterpolations))
+    tracks.push(this._createTrack('target.position', VectorKeyframeTrack, times, centers, cInterpolations))
 
-    tracks.push(this._createTrack('.quaternion', CubicBezierKeyframeTrack, times, quaternions, qInterpolations))
-    tracks.push(this._createTrack('.position', CubicBezierKeyframeTrack, times, positions, pInterpolations))
-    tracks.push(this._createTrack('.fov', CubicBezierKeyframeTrack, times, fovs, fInterpolations))
+    tracks.push(this._createTrack('.quaternion', QuaternionKeyframeTrack, times, quaternions, qInterpolations))
+    tracks.push(this._createTrack('.position', VectorKeyframeTrack, times, positions, pInterpolations))
+    tracks.push(this._createTrack('.fov', NumberKeyframeTrack, times, fovs, fInterpolations))
 
     return new AnimationClip('', -1, tracks)
   }
