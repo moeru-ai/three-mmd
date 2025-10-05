@@ -12,7 +12,7 @@ import {
   Interpolant,
   KeyframeTrack,
   LoadingManager,
-  Mesh,
+  Material,
   MultiplyOperation,
   NearestFilter,
   NumberKeyframeTrack,
@@ -35,6 +35,7 @@ import {
   VectorKeyframeTrack,
 } from 'three'
 import { TGALoader } from 'three/addons/loaders/TGALoader.js'
+import type { Pmd, Pmx, Vmd, VmdMotionFrame } from '@noname0310/mmd-parser'
 
 import { MMDToonMaterial } from '../materials/mmd-toon-material'
 import { GeometryBuilder } from './mmd-loader/geometry-builder'
@@ -153,13 +154,25 @@ const NON_ALPHA_CHANNEL_FORMATS = [
 // Builders. They build Three.js object from Object data parsed by MMDParser.
 
 class CubicBezierInterpolation extends Interpolant {
-  constructor(parameterPositions, sampleValues, sampleSize, resultBuffer, params) {
+  interpolationParams: ArrayLike<number>
+  declare parameterPositions: number[]
+  declare sampleValues: number[]
+  declare sampleSize: number
+  declare resultBuffer: number[]
+
+  constructor(
+    parameterPositions: number[],
+    sampleValues: number[],
+    sampleSize: number,
+    resultBuffer: number[],
+    params: number[]
+  ) {
     super(parameterPositions, sampleValues, sampleSize, resultBuffer)
 
     this.interpolationParams = params
   }
 
-  _calculate(x1: number, x2: number, y1: number, y2: number, x: number) {
+  _calculate(x1: number, x2: number, y1: number, y2: number, x: number): number {
     /*
      * Cubic Bezier curves
      *   https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Cubic_B.C3.A9zier_curves
@@ -225,7 +238,7 @@ class CubicBezierInterpolation extends Interpolant {
     return (sst3 * y1) + (stt3 * y2) + ttt
   }
 
-  interpolate_(i1: number, t0: number, t: number, t1: number) {
+  interpolate_(i1: number, t0: number, t: number, t1: number): number[] {
     const result = this.resultBuffer
     const values = this.sampleValues
     const stride = this.valueSize
@@ -512,7 +525,7 @@ class MaterialBuilder {
    * @param {Function} onError
    * @return {Array<MMDToonMaterial>}
    */
-  build(data, geometry: BufferGeometry, onProgress?: unknown, onError?: unknown) {
+  build(data: Pmd|Pmx, geometry: BufferGeometry, onProgress?: unknown, onError?: unknown) {
     const materials = []
 
     const textures = {}
@@ -526,7 +539,7 @@ class MaterialBuilder {
 
       const params = { userData: { MMD: {} } }
 
-      if (material.name !== undefined)
+      if ((material as { name?: string }).name !== undefined)
         params.name = material.name
 
       /*
@@ -696,7 +709,7 @@ class MaterialBuilder {
     if (data.metadata.format === 'pmx') {
       // set transparent true if alpha morph is defined.
 
-      const checkAlphaMorph = (elements, materials) => {
+      const checkAlphaMorph = (elements: (Pmd|Pmx)['morphs'][number]['elements'], materials: Material[]) => {
         for (let i = 0, il = elements.length; i < il; i++) {
           const element = elements[i]
 
@@ -705,6 +718,7 @@ class MaterialBuilder {
 
           const material = materials[element.index]
 
+          // @ts-expect-error
           if (material.opacity !== element.diffuse[3]) {
             material.transparent = true
           }
@@ -753,16 +767,21 @@ class MaterialBuilder {
   }
 }
 
-class TypedKeyframeTrack extends KeyframeTrack {
-  createInterpolant(result: unknown) {
-      return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, new Float32Array(interpolations))
+class PatchedKeyframeTrack extends KeyframeTrack {
+  interpolationParams: ArrayLike<number>
 
+  constructor(name: string, times: Float32Array, values:ArrayLike<number|string|boolean>, interpolationParams: ArrayLike<number>) {
+    super(name, times, values)
+    this.interpolationParams = interpolationParams
   }
 
+  createInterpolant(result: Float32Array): CubicBezierInterpolation {
+    return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, this.interpolationParams)
+  }
 }
 
 export class AnimationBuilder {
-  private _createTrack(node: string, TypedKeyframeTrack: typeof KeyframeTrack, times, values, interpolations) {
+  private _createTrack(node: string, TrackClass: typeof KeyframeTrack | typeof PatchedKeyframeTrack, times: number[], values: number[], interpolations: number[]): KeyframeTrack {
     /*
      * optimizes here not to let KeyframeTrackPrototype optimize
      * because KeyframeTrackPrototype optimizes times and values but
@@ -805,10 +824,8 @@ export class AnimationBuilder {
       interpolations.length = (index + 1) * interpolateStride
     }
 
-    const track = new TypedKeyframeTrack(node, times, values)
+    const track = new PatchedKeyframeTrack(node, times, values, interpolations)
 
-    track.createInterpolant = function InterpolantFactoryMethodCubicBezier(result) {
-    }
 
     return track
   }
@@ -818,7 +835,7 @@ export class AnimationBuilder {
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
    * @return {AnimationClip}
    */
-  build(vmd, mesh) {
+  build(vmd: Vmd, mesh: SkinnedMesh) {
     // combine skeletal and morph animations
 
     const tracks = this.buildSkeletalAnimation(vmd, mesh).tracks
@@ -835,14 +852,14 @@ export class AnimationBuilder {
    * @param {object} vmd - parsed VMD data
    * @return {AnimationClip}
    */
-  buildCameraAnimation(vmd) {
-    const pushVector3 = (array: Vector3[], vec: Vector3) => {
+  buildCameraAnimation(vmd: Vmd) {
+    const pushVector3 = (array: number[], vec: Vector3) => {
       array.push(vec.x)
       array.push(vec.y)
       array.push(vec.z)
     }
 
-    const pushQuaternion = (array: Quaternion[], q: Quaternion) => {
+    const pushQuaternion = (array: number[], q: Quaternion) => {
       array.push(q.x)
       array.push(q.y)
       array.push(q.z)
@@ -863,9 +880,9 @@ export class AnimationBuilder {
     })
 
     const times = []
-    const centers: Vector3[] = []
-    const quaternions: Quaternion[] = []
-    const positions: Vector3[] = []
+    const centers: number[] = []
+    const quaternions: number[] = []
+    const positions: number[] = []
     const fovs = []
 
     const cInterpolations: number[] = []
@@ -922,11 +939,11 @@ export class AnimationBuilder {
     const tracks = []
 
     // I expect an object whose name 'target' exists under THREE.Camera
-    tracks.push(this._createTrack('target.position', VectorKeyframeTrack, times, centers, cInterpolations))
+    tracks.push(this._createTrack('target.position', PatchedKeyframeTrack, times, centers, cInterpolations))
 
-    tracks.push(this._createTrack('.quaternion', QuaternionKeyframeTrack, times, quaternions, qInterpolations))
-    tracks.push(this._createTrack('.position', VectorKeyframeTrack, times, positions, pInterpolations))
-    tracks.push(this._createTrack('.fov', NumberKeyframeTrack, times, fovs, fInterpolations))
+    tracks.push(this._createTrack('.quaternion', PatchedKeyframeTrack, times, quaternions, qInterpolations))
+    tracks.push(this._createTrack('.position', PatchedKeyframeTrack, times, positions, pInterpolations))
+    tracks.push(this._createTrack('.fov', PatchedKeyframeTrack, times, fovs, fInterpolations))
 
     return new AnimationClip('', -1, tracks)
   }
@@ -936,7 +953,7 @@ export class AnimationBuilder {
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
    * @return {AnimationClip}
    */
-  buildMorphAnimation(vmd, mesh: SkinnedMesh): AnimationClip {
+  private buildMorphAnimation(vmd: Vmd, mesh: SkinnedMesh): AnimationClip {
     const tracks = []
 
     const morphs: Record<string, unknown[]> = {}
@@ -981,7 +998,7 @@ export class AnimationBuilder {
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
    * @return {AnimationClip}
    */
-  buildSkeletalAnimation(vmd, mesh: SkinnedMesh) {
+  private buildSkeletalAnimation(vmd: Vmd, mesh: SkinnedMesh) {
     const pushInterpolation = (array: number[], interpolation: number[], index: number) => {
       array.push(interpolation[index + 0] / 127) // x1
       array.push(interpolation[index + 8] / 127) // x2
@@ -992,7 +1009,7 @@ export class AnimationBuilder {
     const tracks = []
 
     type BoneName = string
-    const motions: Record<BoneName, unknown[]> = {}
+    const motions: Record<BoneName, VmdMotionFrame[]> = {}
     const bones = mesh.skeleton.bones
     const boneNameDictionary: Record<BoneName, boolean> = {}
 
@@ -1072,7 +1089,7 @@ export class MeshBuilder {
    * @param {Function} onError
    * @return {SkinnedMesh}
    */
-  build(data, resourcePath: string, onProgress: () => void, onError: () => void) {
+  build(data: Pmd|Pmx, resourcePath: string, onProgress: () => void, onError: () => void) {
     const geometry = this.geometryBuilder.build(data)
     const material = this.materialBuilder
       .setCrossOrigin(this.crossOrigin)

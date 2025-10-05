@@ -6,11 +6,6 @@ export interface MMDLoaderAnimationObject {
   mesh: SkinnedMesh
 }
 
-export class AnimationBuilder {
-  build(vmd: Vmd, mesh: SkinnedMesh): AnimationClip
-  buildCameraAnimation(vmd: Vmd): AnimationClip
-}
-
 export class MeshBuilder {
   crossOrigin: string
   geometryBuilder: object
