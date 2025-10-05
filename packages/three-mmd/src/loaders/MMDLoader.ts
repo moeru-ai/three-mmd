@@ -821,6 +821,54 @@ class MaterialBuilder {
 }
 
 export class AnimationBuilder {
+  private _createTrack(node: string, TrackClass: typeof CubicBezierKeyframeTrack | typeof QuaternionKeyframeTrack | typeof VectorKeyframeTrack, times: number[], values: number[], interpolations: number[]): InstanceType<typeof TrackClass> {
+    /*
+     * optimizes here not to let KeyframeTrackPrototype optimize
+     * because KeyframeTrackPrototype optimizes times and values but
+     * doesn't optimize interpolations.
+     */
+    if (times.length > 2) {
+      times = times.slice()
+      values = values.slice()
+      interpolations = interpolations.slice()
+
+      const stride = values.length / times.length
+      const interpolateStride = interpolations.length / times.length
+
+      let index = 1
+
+      for (let aheadIndex = 2, endIndex = times.length; aheadIndex < endIndex; aheadIndex++) {
+        for (let i = 0; i < stride; i++) {
+          if (values[index * stride + i] !== values[(index - 1) * stride + i]
+            || values[index * stride + i] !== values[aheadIndex * stride + i]) {
+            index++
+            break
+          }
+        }
+
+        if (aheadIndex > index) {
+          times[index] = times[aheadIndex]
+
+          for (let i = 0; i < stride; i++) {
+            values[index * stride + i] = values[aheadIndex * stride + i]
+          }
+
+          for (let i = 0; i < interpolateStride; i++) {
+            interpolations[index * interpolateStride + i] = interpolations[aheadIndex * interpolateStride + i]
+          }
+        }
+      }
+
+      times.length = index + 1
+      values.length = (index + 1) * stride
+      interpolations.length = (index + 1) * interpolateStride
+    }
+
+    // @ts-expect-error
+
+    return new TrackClass(node, times, values, interpolations)
+  }
+
   /**
    * @param {object} vmd - parsed VMD data
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
@@ -937,54 +985,6 @@ export class AnimationBuilder {
     tracks.push(this._createTrack('.fov', CubicBezierKeyframeTrack, times, fovs, fInterpolations))
 
     return new AnimationClip('', -1, tracks)
-  }
-
-  private _createTrack(node: string, TrackClass: typeof CubicBezierKeyframeTrack | typeof QuaternionKeyframeTrack | typeof VectorKeyframeTrack, times: number[], values: number[], interpolations: number[]): InstanceType<typeof TrackClass> {
-    /*
-     * optimizes here not to let KeyframeTrackPrototype optimize
-     * because KeyframeTrackPrototype optimizes times and values but
-     * doesn't optimize interpolations.
-     */
-    if (times.length > 2) {
-      times = times.slice()
-      values = values.slice()
-      interpolations = interpolations.slice()
-
-      const stride = values.length / times.length
-      const interpolateStride = interpolations.length / times.length
-
-      let index = 1
-
-      for (let aheadIndex = 2, endIndex = times.length; aheadIndex < endIndex; aheadIndex++) {
-        for (let i = 0; i < stride; i++) {
-          if (values[index * stride + i] !== values[(index - 1) * stride + i]
-            || values[index * stride + i] !== values[aheadIndex * stride + i]) {
-            index++
-            break
-          }
-        }
-
-        if (aheadIndex > index) {
-          times[index] = times[aheadIndex]
-
-          for (let i = 0; i < stride; i++) {
-            values[index * stride + i] = values[aheadIndex * stride + i]
-          }
-
-          for (let i = 0; i < interpolateStride; i++) {
-            interpolations[index * interpolateStride + i] = interpolations[aheadIndex * interpolateStride + i]
-          }
-        }
-      }
-
-      times.length = index + 1
-      values.length = (index + 1) * stride
-      interpolations.length = (index + 1) * interpolateStride
-    }
-
-    // @ts-expect-error
-
-    return new TrackClass(node, times, values, interpolations)
   }
 
   /**
