@@ -1,8 +1,22 @@
+/* eslint-disable sonarjs/redundant-type-aliases */
+/* eslint-disable ts/strict-boolean-expressions */
+/* eslint-disable ts/ban-ts-comment */
+/* eslint-disable sonarjs/different-types-comparison */
+/* eslint-disable ts/no-unsafe-assignment */
+/* eslint-disable ts/no-unsafe-member-access */
+/* eslint-disable ts/no-unsafe-argument */
+/* eslint-disable sonarjs/no-nested-template-literals */
+/* eslint-disable sonarjs/prefer-regexp-exec */
+/* eslint-disable ts/no-this-alias */
+
+import type { Pmd, PmdMaterialInfo, Pmx, PmxMaterialInfo, Vmd, VmdMorphFrame, VmdMotionFrame } from '@noname0310/mmd-parser'
+import type { BufferGeometry, LoadingManager, Material, MaterialParameters, Texture, TypedArray } from 'three'
+
 import {
   AddOperation,
   AnimationClip,
   Bone,
-  BufferGeometry,
+
   Color,
   CustomBlending,
   DoubleSide,
@@ -11,8 +25,7 @@ import {
   FrontSide,
   Interpolant,
   KeyframeTrack,
-  LoadingManager,
-  Material,
+
   MultiplyOperation,
   NearestFilter,
   NumberKeyframeTrack,
@@ -29,15 +42,13 @@ import {
   SkinnedMesh,
   SrcAlphaFactor,
   SRGBColorSpace,
-  Texture,
+
   TextureLoader,
   Vector3,
   VectorKeyframeTrack,
-  type MaterialParameters,
-  type TypedArray,
+
 } from 'three'
 import { TGALoader } from 'three/addons/loaders/TGALoader.js'
-import type { Pmd, PmdMaterialInfo, Pmx, PmxMaterialInfo, Vmd, VmdMorphFrame, VmdMotionFrame } from '@noname0310/mmd-parser'
 
 import { MMDToonMaterial } from '../materials/mmd-toon-material'
 import { GeometryBuilder } from './mmd-loader/geometry-builder'
@@ -70,7 +81,7 @@ import { GeometryBuilder } from './mmd-loader/geometry-builder'
  *  - more precise grant skinning support.
  *  - shadow support.
  */
-const initBones = (mesh: SkinnedMesh & {geometry: {bones?: any[]}}) => {
+const initBones = (mesh: SkinnedMesh & { geometry: { bones?: any[] } }) => {
   const geometry = mesh.geometry
 
   const bones = []
@@ -153,19 +164,55 @@ export interface MMDLoaderAnimationObject {
 }
 // Builders. They build Three.js object from Object data parsed by MMDParser.
 
+interface DeferedTexture extends Texture {
+  readyCallbacks?: ((texture: Texture) => void)[]
+  transparent: boolean
+}
+
+interface MaterialBuilderPameters extends MaterialParameters {
+  diffuse?: Color
+  emissive: Color
+  fog: boolean
+  gradientMap: DeferedTexture
+  isDefaultToonTexture: boolean
+  isToonTexture: boolean
+  map?: DeferedTexture
+  matcap: Texture
+  matcapCombine: number
+
+  name?: string
+  opacity: number
+  shininess: number
+
+  specular: Color
+  transparent: boolean
+  userData: {
+    MMD: {
+      mapFileName: string
+      matcapFileName: string
+    }
+    outlineParameters: {
+      alpha: number
+      color: number[]
+      thickness: number
+      visible: boolean
+    }
+  }
+}
+
 class CubicBezierInterpolation extends Interpolant {
   readonly interpolationParams: ArrayLike<number>
   declare parameterPositions: ArrayLike<number>
-  declare sampleValues: ArrayLike<number>
-  declare sampleSize: number
   declare resultBuffer: number[]
+  declare sampleSize: number
+  declare sampleValues: ArrayLike<number>
 
   constructor(
     parameterPositions: ArrayLike<number>,
     sampleValues: ArrayLike<number>,
     sampleSize: number,
     resultBuffer: number[],
-    params: ArrayLike<number>
+    params: ArrayLike<number>,
   ) {
     super(parameterPositions, sampleValues, sampleSize, resultBuffer)
 
@@ -217,7 +264,7 @@ class CubicBezierInterpolation extends Interpolant {
     const eps = 1e-5
     const math = Math
 
-    let sst3: number,stt3: number, ttt: number
+    let sst3: number, stt3: number, ttt: number
 
     for (let i = 0; i < loop; i++) {
       sst3 = 3.0 * s * s * t
@@ -289,52 +336,28 @@ class CubicBezierInterpolation extends Interpolant {
   }
 }
 
-interface MaterialBuilderPameters extends MaterialParameters {
-  name?: string
-  map?: DeferedTexture,
-  diffuse?: Color,
-  userData: {
-    MMD: {
-      mapFileName: string
-      matcapFileName: string
-    }
-  outlineParameters: {
-    alpha: number
-    color: number[]
-    thickness: number
-    visible: boolean
+class CubicBezierKeyframeTrack extends KeyframeTrack {
+  interpolationParams: ArrayLike<number>
+
+  constructor(name: string, times: ArrayLike<number>, values: ArrayLike<boolean | number | string>, interpolationParams: ArrayLike<number>) {
+    super(name, times, values)
+    this.interpolationParams = interpolationParams
   }
+
+  createInterpolant(result: number[]): CubicBezierInterpolation {
+    return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, this.interpolationParams)
   }
-  opacity: number
-  specular: Color
-  shininess: number
-  emissive: Color
-  transparent: boolean
-
-  fog: boolean
-  isDefaultToonTexture: boolean
-  isToonTexture: boolean
-
-  matcap: Texture
-  matcapCombine: number
-  gradientMap: DeferedTexture,
-}
-
-interface DeferedTexture extends Texture {
-  transparent: boolean
-  readyCallbacks?: ((texture: Texture) => void)[]
 }
 
 /**
  * @param {import('three').LoadingManager} manager
  */
 class MaterialBuilder {
-  manager:  LoadingManager
-  textureLoader : TextureLoader
-  tgaLoader?: TGALoader = undefined
   crossOrigin = 'anonymous'
+  manager: LoadingManager
   resourcePath?: string
-
+  textureLoader: TextureLoader
+  tgaLoader?: TGALoader = undefined
 
   constructor(manager: LoadingManager) {
     this.manager = manager
@@ -356,7 +379,7 @@ class MaterialBuilder {
         return context.getImageData(0, 0, canvas.width, canvas.height)
       }
 
-      const detectImageTransparency = (image: ImageData, uvs: TypedArray, indices:TypedArray) => {
+      const detectImageTransparency = (image: ImageData, uvs: TypedArray, indices: TypedArray) => {
         const width = image.width
         const height = image.height
         const data = image.data
@@ -369,7 +392,7 @@ class MaterialBuilder {
         *   texture.wrapT = RepeatWrapping
         * TODO: more precise
         */
-        const getAlphaByUv = (image: ImageData, uv: {x: number, y: number}) => {
+        const getAlphaByUv = (image: ImageData, uv: { x: number, y: number }) => {
           const width = image.width
           const height = image.height
 
@@ -475,90 +498,12 @@ class MaterialBuilder {
 
   // private methods
 
-  private _isDefaultToonTexture(name: string): boolean {
-    if (name.length !== 10)
-      return false
-
-    return /toon(?:10|0\d)\.bmp/.test(name)
-  }
-
-  private _loadTexture(filePath: string, textures: Record<string, DeferedTexture>, params?: {isDefaultToonTexture: boolean, isToonTexture: boolean}, onProgress?: () => void, onError?: () => void): DeferedTexture {
-    params = params || {} as MaterialBuilderPameters
-
-    const scope = this
-
-    let fullPath
-
-    if (params.isDefaultToonTexture === true) {
-      let index
-
-      try {
-        index = Number.parseInt(filePath.match(/toon(\d{2})\.bmp$/)![1])
-      }
-      catch {
-        console.warn(`MMDLoader: ${filePath} seems like a `
-          + `not right default texture path. Using toon00.bmp instead.`)
-
-        index = 0
-      }
-
-      fullPath = DEFAULT_TOON_TEXTURES[index]
-    }
-    else {
-      fullPath = this.resourcePath + filePath
-    }
-
-    if (textures[fullPath] !== undefined)
-      return textures[fullPath]
-
-    let loader = this.manager.getHandler(fullPath)
-
-    if (loader === null) {
-      loader = (filePath.slice(-4).toLowerCase() === '.tga')
-        ? this._getTGALoader()
-        : this.textureLoader
-    }
-
-    // @ts-expect-error
-    const texture: DeferedTexture = loader.load(fullPath, (t: Texture) => {
-      // MMD toon texture is Axis-Y oriented
-      // but Three.js gradient map is Axis-X oriented.
-      // So here replaces the toon texture image with the rotated one.
-      if (params.isToonTexture === true) {
-        t.image = scope._getRotatedImage(t.image)
-
-        t.magFilter = NearestFilter
-        t.minFilter = NearestFilter
-        t.generateMipmaps = false
-      }
-
-      t.flipY = false
-      t.wrapS = RepeatWrapping
-      t.wrapT = RepeatWrapping
-      t.colorSpace = SRGBColorSpace
-
-      for (let i = 0; i < texture.readyCallbacks!.length; i++) {
-        texture.readyCallbacks![i](texture)
-      }
-
-      delete texture.readyCallbacks
-    }, onProgress, onError)
-
-    texture.readyCallbacks = []
-
-    textures[fullPath] = texture
-
-    return texture
-  }
-
   /**
    * @param {object} data - parsed PMD/PMX data
    * @param {BufferGeometry} geometry - some properties are depended on geometry
-   * @param {Function} onProgress
-   * @param {Function} onError
    * @return {Array<MMDToonMaterial>}
    */
-  build(data: Pmd|Pmx, geometry: BufferGeometry, onProgress?: unknown, onError?: unknown) {
+  build(data: Pmd | Pmx, geometry: BufferGeometry, _onProgress?: unknown, _onError?: unknown): MMDToonMaterial[] {
     const materials = []
 
     const textures = {}
@@ -701,7 +646,6 @@ class MaterialBuilder {
         let isDefaultToon, toonFileName
 
         if (material.toonIndex === -1 || material.toonFlag !== 0) {
-          // eslint-disable-next-line sonarjs/no-nested-template-literals
           toonFileName = `toon${(`0${material.toonIndex! + 1}`).slice(-2)}.bmp`
           isDefaultToon = true
         }
@@ -742,7 +686,7 @@ class MaterialBuilder {
     if (data.metadata.format === 'pmx') {
       // set transparent true if alpha morph is defined.
 
-      const checkAlphaMorph = (elements: (Pmd|Pmx)['morphs'][number]['elements'], materials: Material[]) => {
+      const checkAlphaMorph = (elements: (Pmd | Pmx)['morphs'][number]['elements'], materials: Material[]) => {
         for (let i = 0, il = elements.length; i < il; i++) {
           const element = elements[i]
 
@@ -798,77 +742,91 @@ class MaterialBuilder {
     this.resourcePath = resourcePath
     return this
   }
-}
 
-class CubicBezierKeyframeTrack extends KeyframeTrack {
-  interpolationParams: ArrayLike<number>
+  private _isDefaultToonTexture(name: string): boolean {
+    if (name.length !== 10)
+      return false
 
-  constructor(name: string, times: ArrayLike<number>, values:ArrayLike<number|string|boolean>, interpolationParams: ArrayLike<number>) {
-    super(name, times, values)
-    this.interpolationParams = interpolationParams
+    return /toon(?:10|0\d)\.bmp/.test(name)
   }
 
-  createInterpolant(result: number[]): CubicBezierInterpolation {
-    return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, this.interpolationParams)
+  private _loadTexture(filePath: string, textures: Record<string, DeferedTexture>, params?: { isDefaultToonTexture: boolean, isToonTexture: boolean }, onProgress?: () => void, onError?: () => void): DeferedTexture {
+    params = params || {} as MaterialBuilderPameters
+
+    const scope = this
+
+    let fullPath
+
+    if (params.isDefaultToonTexture === true) {
+      let index
+
+      try {
+        index = Number.parseInt(filePath.match(/toon(\d{2})\.bmp$/)![1])
+      }
+      catch {
+        console.warn(`MMDLoader: ${filePath} seems like a `
+          + 'not right default texture path. Using toon00.bmp instead.')
+
+        index = 0
+      }
+
+      fullPath = DEFAULT_TOON_TEXTURES[index]
+    }
+    else {
+      fullPath = this.resourcePath + filePath
+    }
+
+    if (textures[fullPath] !== undefined)
+      return textures[fullPath]
+
+    let loader = this.manager.getHandler(fullPath)
+
+    if (loader === null) {
+      loader = (filePath.slice(-4).toLowerCase() === '.tga')
+        ? this._getTGALoader()
+        : this.textureLoader
+    }
+
+    // @ts-expect-error
+    const texture: DeferedTexture = loader.load(fullPath, (t: Texture) => {
+      // MMD toon texture is Axis-Y oriented
+      // but Three.js gradient map is Axis-X oriented.
+      // So here replaces the toon texture image with the rotated one.
+      if (params.isToonTexture === true) {
+        t.image = scope._getRotatedImage(t.image)
+
+        t.magFilter = NearestFilter
+        t.minFilter = NearestFilter
+        t.generateMipmaps = false
+      }
+
+      t.flipY = false
+      t.wrapS = RepeatWrapping
+      t.wrapT = RepeatWrapping
+      t.colorSpace = SRGBColorSpace
+
+      for (let i = 0; i < texture.readyCallbacks!.length; i++) {
+        texture.readyCallbacks![i](texture)
+      }
+
+      delete texture.readyCallbacks
+    }, onProgress, onError)
+
+    texture.readyCallbacks = []
+
+    textures[fullPath] = texture
+
+    return texture
   }
 }
 
 export class AnimationBuilder {
-  private _createTrack(node: string, TrackClass: typeof VectorKeyframeTrack | typeof QuaternionKeyframeTrack | typeof CubicBezierKeyframeTrack, times: number[], values: number[], interpolations: number[]): InstanceType<typeof TrackClass> {
-    /*
-     * optimizes here not to let KeyframeTrackPrototype optimize
-     * because KeyframeTrackPrototype optimizes times and values but
-     * doesn't optimize interpolations.
-     */
-    if (times.length > 2) {
-      times = times.slice()
-      values = values.slice()
-      interpolations = interpolations.slice()
-
-      const stride = values.length / times.length
-      const interpolateStride = interpolations.length / times.length
-
-      let index = 1
-
-      for (let aheadIndex = 2, endIndex = times.length; aheadIndex < endIndex; aheadIndex++) {
-        for (let i = 0; i < stride; i++) {
-          if (values[index * stride + i] !== values[(index - 1) * stride + i]
-            || values[index * stride + i] !== values[aheadIndex * stride + i]) {
-            index++
-            break
-          }
-        }
-
-        if (aheadIndex > index) {
-          times[index] = times[aheadIndex]
-
-          for (let i = 0; i < stride; i++) {
-            values[index * stride + i] = values[aheadIndex * stride + i]
-          }
-
-          for (let i = 0; i < interpolateStride; i++) {
-            interpolations[index * interpolateStride + i] = interpolations[aheadIndex * interpolateStride + i]
-          }
-        }
-      }
-
-      times.length = index + 1
-      values.length = (index + 1) * stride
-      interpolations.length = (index + 1) * interpolateStride
-    }
-
-    // @ts-expect-error
-    const track = new TrackClass(node, times, values, interpolations)
-
-    return track
-  }
-
   /**
    * @param {object} vmd - parsed VMD data
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
    * @return {AnimationClip}
    */
-  build(vmd: Vmd, mesh: SkinnedMesh) {
+  build(vmd: Vmd, mesh: SkinnedMesh): AnimationClip {
     // combine skeletal and morph animations
 
     const tracks = this.buildSkeletalAnimation(vmd, mesh).tracks
@@ -885,7 +843,7 @@ export class AnimationBuilder {
    * @param {object} vmd - parsed VMD data
    * @return {AnimationClip}
    */
-  buildCameraAnimation(vmd: Vmd) {
+  buildCameraAnimation(vmd: Vmd): AnimationClip {
     const pushVector3 = (array: number[], vec: Vector3) => {
       array.push(vec.x)
       array.push(vec.y)
@@ -979,6 +937,54 @@ export class AnimationBuilder {
     tracks.push(this._createTrack('.fov', CubicBezierKeyframeTrack, times, fovs, fInterpolations))
 
     return new AnimationClip('', -1, tracks)
+  }
+
+  private _createTrack(node: string, TrackClass: typeof CubicBezierKeyframeTrack | typeof QuaternionKeyframeTrack | typeof VectorKeyframeTrack, times: number[], values: number[], interpolations: number[]): InstanceType<typeof TrackClass> {
+    /*
+     * optimizes here not to let KeyframeTrackPrototype optimize
+     * because KeyframeTrackPrototype optimizes times and values but
+     * doesn't optimize interpolations.
+     */
+    if (times.length > 2) {
+      times = times.slice()
+      values = values.slice()
+      interpolations = interpolations.slice()
+
+      const stride = values.length / times.length
+      const interpolateStride = interpolations.length / times.length
+
+      let index = 1
+
+      for (let aheadIndex = 2, endIndex = times.length; aheadIndex < endIndex; aheadIndex++) {
+        for (let i = 0; i < stride; i++) {
+          if (values[index * stride + i] !== values[(index - 1) * stride + i]
+            || values[index * stride + i] !== values[aheadIndex * stride + i]) {
+            index++
+            break
+          }
+        }
+
+        if (aheadIndex > index) {
+          times[index] = times[aheadIndex]
+
+          for (let i = 0; i < stride; i++) {
+            values[index * stride + i] = values[aheadIndex * stride + i]
+          }
+
+          for (let i = 0; i < interpolateStride; i++) {
+            interpolations[index * interpolateStride + i] = interpolations[aheadIndex * interpolateStride + i]
+          }
+        }
+      }
+
+      times.length = index + 1
+      values.length = (index + 1) * stride
+      interpolations.length = (index + 1) * interpolateStride
+    }
+
+    // @ts-expect-error
+
+    return new TrackClass(node, times, values, interpolations)
   }
 
   /**
@@ -1107,9 +1113,9 @@ export class AnimationBuilder {
  * @param {import('three').LoadingManager} manager
  */
 export class MeshBuilder {
-    crossOrigin = 'anonymous'
-    geometryBuilder: GeometryBuilder
-    materialBuilder: MaterialBuilder
+  crossOrigin = 'anonymous'
+  geometryBuilder: GeometryBuilder
+  materialBuilder: MaterialBuilder
   constructor(manager: LoadingManager) {
     this.geometryBuilder = new GeometryBuilder()
     this.materialBuilder = new MaterialBuilder(manager)
@@ -1121,7 +1127,7 @@ export class MeshBuilder {
    * @param onError
    * @return {SkinnedMesh}
    */
-  build(data: Pmd|Pmx, resourcePath: string, onProgress: () => void, onError: () => void): SkinnedMesh {
+  build(data: Pmd | Pmx, resourcePath: string, onProgress: () => void, onError: () => void): SkinnedMesh {
     const geometry = this.geometryBuilder.build(data)
     const material = this.materialBuilder
       .setCrossOrigin(this.crossOrigin)
