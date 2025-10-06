@@ -1,7 +1,23 @@
+/* eslint-disable sonarjs/redundant-type-aliases */
+/* eslint-disable ts/strict-boolean-expressions */
+/* eslint-disable ts/ban-ts-comment */
+/* eslint-disable sonarjs/different-types-comparison */
+/* eslint-disable ts/no-unsafe-assignment */
+/* eslint-disable ts/no-unsafe-member-access */
+/* eslint-disable ts/no-unsafe-argument */
+/* eslint-disable sonarjs/no-nested-template-literals */
+/* eslint-disable sonarjs/prefer-regexp-exec */
+/* eslint-disable ts/no-this-alias */
+/* eslint-disable perfectionist/sort-classes */
+
+import type { Pmd, PmdMaterialInfo, Pmx, PmxMaterialInfo, Vmd, VmdMorphFrame, VmdMotionFrame } from '@noname0310/mmd-parser'
+import type { BufferGeometry, LoadingManager, Material, MaterialParameters, Texture, TypedArray } from 'three'
+
 import {
   AddOperation,
   AnimationClip,
   Bone,
+
   Color,
   CustomBlending,
   DoubleSide,
@@ -9,6 +25,7 @@ import {
   Euler,
   FrontSide,
   Interpolant,
+
   MultiplyOperation,
   NearestFilter,
   NumberKeyframeTrack,
@@ -25,9 +42,11 @@ import {
   SkinnedMesh,
   SrcAlphaFactor,
   SRGBColorSpace,
+
   TextureLoader,
   Vector3,
   VectorKeyframeTrack,
+
 } from 'three'
 import { TGALoader } from 'three/addons/loaders/TGALoader.js'
 
@@ -62,8 +81,7 @@ import { GeometryBuilder } from './mmd-loader/geometry-builder'
  *  - more precise grant skinning support.
  *  - shadow support.
  */
-
-const initBones = (mesh) => {
+const initBones = (mesh: SkinnedMesh & { geometry: { bones?: any[] } }) => {
   const geometry = mesh.geometry
 
   const bones = []
@@ -138,18 +156,70 @@ const NON_ALPHA_CHANNEL_FORMATS = [
   RGB_PVRTC_2BPPV1_Format,
   RGB_ETC1_Format,
   RGB_ETC2_Format,
-]
+] as readonly number[]
 
+export interface MMDLoaderAnimationObject {
+  animation: AnimationClip
+  mesh: SkinnedMesh
+}
 // Builders. They build Three.js object from Object data parsed by MMDParser.
 
+interface LoadingTexture extends Texture {
+  readyCallbacks?: ((texture: Texture) => void)[]
+  transparent: boolean
+}
+
+interface MaterialBuilderPameters extends MaterialParameters {
+  diffuse?: Color
+  emissive: Color
+  fog: boolean
+  gradientMap: LoadingTexture
+  isDefaultToonTexture: boolean
+  isToonTexture: boolean
+  map?: LoadingTexture
+  matcap: Texture
+  matcapCombine: number
+
+  name?: string
+  opacity: number
+  shininess: number
+
+  specular: Color
+  transparent: boolean
+  userData: {
+    MMD: {
+      mapFileName: string
+      matcapFileName: string
+    }
+    outlineParameters: {
+      alpha: number
+      color: number[]
+      thickness: number
+      visible: boolean
+    }
+  }
+}
+
 class CubicBezierInterpolation extends Interpolant {
-  constructor(parameterPositions, sampleValues, sampleSize, resultBuffer, params) {
+  readonly interpolationParams: ArrayLike<number>
+  declare parameterPositions: ArrayLike<number>
+  declare resultBuffer: number[]
+  declare sampleSize: number
+  declare sampleValues: ArrayLike<number>
+
+  constructor(
+    parameterPositions: ArrayLike<number>,
+    sampleValues: ArrayLike<number>,
+    sampleSize: number,
+    resultBuffer: number[],
+    params: ArrayLike<number>,
+  ) {
     super(parameterPositions, sampleValues, sampleSize, resultBuffer)
 
     this.interpolationParams = params
   }
 
-  _calculate(x1, x2, y1, y2, x) {
+  _calculate(x1: number, x2: number, y1: number, y2: number, x: number): number {
     /*
      * Cubic Bezier curves
      *   https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Cubic_B.C3.A9zier_curves
@@ -194,7 +264,7 @@ class CubicBezierInterpolation extends Interpolant {
     const eps = 1e-5
     const math = Math
 
-    let sst3, stt3, ttt
+    let sst3: number, stt3: number, ttt: number
 
     for (let i = 0; i < loop; i++) {
       sst3 = 3.0 * s * s * t
@@ -212,12 +282,12 @@ class CubicBezierInterpolation extends Interpolant {
       s = 1.0 - t
     }
 
-    return (sst3 * y1) + (stt3 * y2) + ttt
+    return (sst3! * y1) + (stt3! * y2) + ttt!
   }
 
-  interpolate_(i1, t0, t, t1) {
+  interpolate_(i1: number, t0: number, t: number, t1: number): number[] {
     const result = this.resultBuffer
-    const values = this.sampleValues
+    const values = this.sampleValues as number[]
     const stride = this.valueSize
     const params = this.interpolationParams
 
@@ -270,32 +340,33 @@ class CubicBezierInterpolation extends Interpolant {
  * @param {import('three').LoadingManager} manager
  */
 class MaterialBuilder {
-  constructor(manager) {
+  crossOrigin = 'anonymous'
+  manager: LoadingManager
+  resourcePath?: string
+  textureLoader: TextureLoader
+  tgaLoader?: TGALoader = undefined
+
+  constructor(manager: LoadingManager) {
     this.manager = manager
-
-    this.textureLoader = new TextureLoader(this.manager)
-    this.tgaLoader = null // lazy generation
-
-    this.crossOrigin = 'anonymous'
-    this.resourcePath = undefined
+    this.textureLoader = new TextureLoader(manager)
   }
 
   // Check if the partial image area used by the texture is transparent.
-  _checkImageTransparency(map, geometry, groupIndex) {
-    map.readyCallbacks.push((texture) => {
+  _checkImageTransparency(map: LoadingTexture, geometry: BufferGeometry, groupIndex: number) {
+    map.readyCallbacks!.push((texture: Texture) => {
       // Is there any efficient ways?
-      const createImageData = (image) => {
+      const createImageData = (image: HTMLImageElement) => {
         const canvas = document.createElement('canvas')
         canvas.width = image.width
         canvas.height = image.height
 
-        const context = canvas.getContext('2d')
+        const context = canvas.getContext('2d')!
         context.drawImage(image, 0, 0)
 
         return context.getImageData(0, 0, canvas.width, canvas.height)
       }
 
-      const detectImageTransparency = (image, uvs, indices) => {
+      const detectImageTransparency = (image: ImageData, uvs: TypedArray, indices: TypedArray) => {
         const width = image.width
         const height = image.height
         const data = image.data
@@ -308,7 +379,7 @@ class MaterialBuilder {
         *   texture.wrapT = RepeatWrapping
         * TODO: more precise
         */
-        const getAlphaByUv = (image, uv) => {
+        const getAlphaByUv = (image: ImageData, uv: { x: number, y: number }) => {
           const width = image.width
           const height = image.height
 
@@ -352,6 +423,7 @@ class MaterialBuilder {
         return false
       }
 
+      // @ts-expect-error
       if (texture.isCompressedTexture === true) {
         if (NON_ALPHA_CHANNEL_FORMATS.includes(texture.format)) {
           map.transparent = false
@@ -364,7 +436,7 @@ class MaterialBuilder {
         return
       }
 
-      const imageData = texture.image.data !== undefined
+      const imageData: ImageData = texture.image.data !== undefined
         ? texture.image
         : createImageData(texture.image)
 
@@ -373,16 +445,16 @@ class MaterialBuilder {
       if (detectImageTransparency(
         imageData,
         geometry.attributes.uv.array,
-        geometry.index.array.slice(group.start, group.start + group.count),
+        geometry.index!.array.slice(group.start, group.start + group.count),
       )) {
         map.transparent = true
       }
     })
   }
 
-  _getRotatedImage(image) {
+  _getRotatedImage(image: HTMLImageElement) {
     const canvas = document.createElement('canvas')
-    const context = canvas.getContext('2d')
+    const context = canvas.getContext('2d')!
 
     const width = image.width
     const height = image.height
@@ -399,7 +471,7 @@ class MaterialBuilder {
     return context.getImageData(0, 0, width, height)
   }
 
-  _getTGALoader() {
+  _getTGALoader(): TGALoader {
     if (this.tgaLoader === null) {
       if (TGALoader === undefined) {
         throw new Error('MMDLoader: Import TGALoader')
@@ -408,20 +480,19 @@ class MaterialBuilder {
       this.tgaLoader = new TGALoader(this.manager)
     }
 
-    return this.tgaLoader
+    return this.tgaLoader!
   }
 
   // private methods
-
-  _isDefaultToonTexture(name) {
+  private _isDefaultToonTexture(name: string): boolean {
     if (name.length !== 10)
       return false
 
     return /toon(?:10|0\d)\.bmp/.test(name)
   }
 
-  _loadTexture(filePath, textures, params, onProgress, onError) {
-    params = params || {}
+  private _loadTexture(filePath: string, textures: Record<string, LoadingTexture>, params?: { isDefaultToonTexture: boolean, isToonTexture: boolean }, onProgress?: () => void, onError?: () => void): LoadingTexture {
+    params = params || {} as MaterialBuilderPameters
 
     const scope = this
 
@@ -431,11 +502,11 @@ class MaterialBuilder {
       let index
 
       try {
-        index = Number.parseInt(filePath.match(/toon(\d{2})\.bmp$/)[1])
+        index = Number.parseInt(filePath.match(/toon(\d{2})\.bmp$/)![1])
       }
       catch {
         console.warn(`MMDLoader: ${filePath} seems like a `
-          + `not right default texture path. Using toon00.bmp instead.`)
+          + 'not right default texture path. Using toon00.bmp instead.')
 
         index = 0
       }
@@ -457,7 +528,8 @@ class MaterialBuilder {
         : this.textureLoader
     }
 
-    const texture = loader.load(fullPath, (t) => {
+    // @ts-expect-error
+    const texture: LoadingTexture = loader.load(fullPath, (t: Texture) => {
       // MMD toon texture is Axis-Y oriented
       // but Three.js gradient map is Axis-X oriented.
       // So here replaces the toon texture image with the rotated one.
@@ -474,8 +546,8 @@ class MaterialBuilder {
       t.wrapT = RepeatWrapping
       t.colorSpace = SRGBColorSpace
 
-      for (let i = 0; i < texture.readyCallbacks.length; i++) {
-        texture.readyCallbacks[i](texture)
+      for (let i = 0; i < texture.readyCallbacks!.length; i++) {
+        texture.readyCallbacks![i](texture)
       }
 
       delete texture.readyCallbacks
@@ -491,11 +563,9 @@ class MaterialBuilder {
   /**
    * @param {object} data - parsed PMD/PMX data
    * @param {BufferGeometry} geometry - some properties are depended on geometry
-   * @param {Function} onProgress
-   * @param {Function} onError
    * @return {Array<MMDToonMaterial>}
    */
-  build(data, geometry /* , onProgress, onError */) {
+  build(data: Pmd | Pmx, geometry: BufferGeometry, _onProgress?: unknown, _onError?: unknown): MMDToonMaterial[] {
     const materials = []
 
     const textures = {}
@@ -505,9 +575,9 @@ class MaterialBuilder {
     // materials
 
     for (let i = 0; i < data.metadata.materialCount; i++) {
-      const material = data.materials[i]
+      const material: Partial<PmdMaterialInfo & PmxMaterialInfo> = data.materials[i]
 
-      const params = { userData: { MMD: {} } }
+      const params: MaterialBuilderPameters = { userData: { MMD: {} } } as any
 
       if (material.name !== undefined)
         params.name = material.name
@@ -523,15 +593,15 @@ class MaterialBuilder {
        * It'll be too bright if material has map texture so using coef 0.2.
        */
       params.diffuse = new Color().setRGB(
-        material.diffuse[0],
-        material.diffuse[1],
-        material.diffuse[2],
+        material.diffuse![0],
+        material.diffuse![1],
+        material.diffuse![2],
         SRGBColorSpace,
       )
-      params.opacity = material.diffuse[3]
-      params.specular = new Color().setRGB(...material.specular, SRGBColorSpace)
-      params.shininess = material.shininess
-      params.emissive = new Color().setRGB(...material.ambient, SRGBColorSpace)
+      params.opacity = material.diffuse![3]
+      params.specular = new Color().setRGB(...material.specular!, SRGBColorSpace)
+      params.shininess = material.shininess!
+      params.emissive = new Color().setRGB(...material.ambient!, SRGBColorSpace)
       params.transparent = params.opacity !== 1.0
 
       //
@@ -548,7 +618,7 @@ class MaterialBuilder {
 
       // side
 
-      if (data.metadata.format === 'pmx' && (material.flag & 0x1) === 1) {
+      if (data.metadata.format === 'pmx' && (material.flag! & 0x1) === 1) {
         params.side = DoubleSide
       }
       else {
@@ -585,7 +655,7 @@ class MaterialBuilder {
 
         const toonFileName = (material.toonIndex === -1)
           ? 'toon00.bmp'
-          : data.toonTextures[material.toonIndex].fileName
+          : (data as Pmd).toonTextures[material.toonIndex!].fileName
 
         params.gradientMap = this._loadTexture(
           toonFileName,
@@ -609,24 +679,24 @@ class MaterialBuilder {
         // map
 
         if (material.textureIndex !== -1) {
-          params.map = this._loadTexture(data.textures[material.textureIndex], textures)
+          params.map = this._loadTexture((data as Pmx).textures[material.textureIndex!], textures)
 
           // Since PMX spec don't have standard to list map files except color map and env map,
           // we need to save file name for further mapping, like matching normal map file names after model loaded.
           // ref: https://gist.github.com/felixjones/f8a06bd48f9da9a4539f#texture
-          params.userData.MMD.mapFileName = data.textures[material.textureIndex]
+          params.userData.MMD.mapFileName = (data as Pmx).textures[material.textureIndex!]
         }
 
         // matcap TODO: support m.envFlag === 3
 
         if (material.envTextureIndex !== -1 && (material.envFlag === 1 || material.envFlag === 2)) {
           params.matcap = this._loadTexture(
-            data.textures[material.envTextureIndex],
+            (data as Pmx).textures[material.envTextureIndex!],
             textures,
           )
 
           // Same as color map above, keep file name in userData for further usage.
-          params.userData.MMD.matcapFileName = data.textures[material.envTextureIndex]
+          params.userData.MMD.matcapFileName = (data as Pmx).textures[material.envTextureIndex!]
 
           params.matcapCombine = material.envFlag === 1
             ? MultiplyOperation
@@ -638,12 +708,11 @@ class MaterialBuilder {
         let isDefaultToon, toonFileName
 
         if (material.toonIndex === -1 || material.toonFlag !== 0) {
-          // eslint-disable-next-line sonarjs/no-nested-template-literals
-          toonFileName = `toon${(`0${material.toonIndex + 1}`).slice(-2)}.bmp`
+          toonFileName = `toon${(`0${material.toonIndex! + 1}`).slice(-2)}.bmp`
           isDefaultToon = true
         }
         else {
-          toonFileName = data.textures[material.toonIndex]
+          toonFileName = (data as Pmx).textures[material.toonIndex!]
           isDefaultToon = false
         }
 
@@ -658,10 +727,10 @@ class MaterialBuilder {
 
         // parameters for OutlineEffect
         params.userData.outlineParameters = {
-          alpha: material.edgeColor[3],
-          color: material.edgeColor.slice(0, 3),
-          thickness: material.edgeSize / 300, // TODO: better calculation?
-          visible: (material.flag & 0x10) !== 0 && material.edgeSize > 0.0,
+          alpha: material.edgeColor![3],
+          color: material.edgeColor!.slice(0, 3),
+          thickness: material.edgeSize! / 300, // TODO: better calculation?
+          visible: (material.flag! & 0x10) !== 0 && material.edgeSize! > 0.0,
         }
       }
 
@@ -679,7 +748,7 @@ class MaterialBuilder {
     if (data.metadata.format === 'pmx') {
       // set transparent true if alpha morph is defined.
 
-      const checkAlphaMorph = (elements, materials) => {
+      const checkAlphaMorph = (elements: (Pmd | Pmx)['morphs'][number]['elements'], materials: Material[]) => {
         for (let i = 0, il = elements.length; i < il; i++) {
           const element = elements[i]
 
@@ -688,6 +757,7 @@ class MaterialBuilder {
 
           const material = materials[element.index]
 
+          // @ts-expect-error
           if (material.opacity !== element.diffuse[3]) {
             material.transparent = true
           }
@@ -721,7 +791,7 @@ class MaterialBuilder {
    * @param {string} crossOrigin
    * @return {MaterialBuilder}
    */
-  setCrossOrigin(crossOrigin) {
+  setCrossOrigin(crossOrigin: string): this {
     this.crossOrigin = crossOrigin
     return this
   }
@@ -730,14 +800,14 @@ class MaterialBuilder {
    * @param {string} resourcePath
    * @return {MaterialBuilder}
    */
-  setResourcePath(resourcePath) {
+  setResourcePath(resourcePath: string): this {
     this.resourcePath = resourcePath
     return this
   }
 }
 
 export class AnimationBuilder {
-  _createTrack(node, TypedKeyframeTrack, times, values, interpolations) {
+  private _createTrack(node: string, TypedKeyframeTrack: typeof NumberKeyframeTrack | typeof QuaternionKeyframeTrack | typeof VectorKeyframeTrack, times: number[], values: number[], interpolations: number[]): InstanceType<typeof TypedKeyframeTrack> {
     /*
      * optimizes here not to let KeyframeTrackPrototype optimize
      * because KeyframeTrackPrototype optimizes times and values but
@@ -782,6 +852,7 @@ export class AnimationBuilder {
 
     const track = new TypedKeyframeTrack(node, times, values)
 
+    // @ts-expect-error monkey patch
     track.createInterpolant = function InterpolantFactoryMethodCubicBezier(result) {
       return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, new Float32Array(interpolations))
     }
@@ -794,7 +865,7 @@ export class AnimationBuilder {
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
    * @return {AnimationClip}
    */
-  build(vmd, mesh) {
+  build(vmd: Vmd, mesh: SkinnedMesh): AnimationClip {
     // combine skeletal and morph animations
 
     const tracks = this.buildSkeletalAnimation(vmd, mesh).tracks
@@ -811,21 +882,21 @@ export class AnimationBuilder {
    * @param {object} vmd - parsed VMD data
    * @return {AnimationClip}
    */
-  buildCameraAnimation(vmd) {
-    const pushVector3 = (array, vec) => {
+  buildCameraAnimation(vmd: Vmd): AnimationClip {
+    const pushVector3 = (array: number[], vec: Vector3) => {
       array.push(vec.x)
       array.push(vec.y)
       array.push(vec.z)
     }
 
-    const pushQuaternion = (array, q) => {
+    const pushQuaternion = (array: number[], q: Quaternion) => {
       array.push(q.x)
       array.push(q.y)
       array.push(q.z)
       array.push(q.w)
     }
 
-    const pushInterpolation = (array, interpolation, index) => {
+    const pushInterpolation = (array: number[], interpolation: number[], index: number) => {
       array.push(interpolation[index * 4 + 0] / 127) // x1
       array.push(interpolation[index * 4 + 1] / 127) // x2
       array.push(interpolation[index * 4 + 2] / 127) // y1
@@ -839,15 +910,15 @@ export class AnimationBuilder {
     })
 
     const times = []
-    const centers = []
-    const quaternions = []
-    const positions = []
+    const centers: number[] = []
+    const quaternions: number[] = []
+    const positions: number[] = []
     const fovs = []
 
-    const cInterpolations = []
-    const qInterpolations = []
-    const pInterpolations = []
-    const fInterpolations = []
+    const cInterpolations: number[] = []
+    const qInterpolations: number[] = []
+    const pInterpolations: number[] = []
+    const fInterpolations: number[] = []
 
     const quaternion = new Quaternion()
     const euler = new Euler()
@@ -912,11 +983,11 @@ export class AnimationBuilder {
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
    * @return {AnimationClip}
    */
-  buildMorphAnimation(vmd, mesh) {
+  private buildMorphAnimation(vmd: Vmd, mesh: SkinnedMesh): AnimationClip {
     const tracks = []
 
-    const morphs = {}
-    const morphTargetDictionary = mesh.morphTargetDictionary
+    const morphs: Record<string, VmdMorphFrame[]> = {}
+    const morphTargetDictionary = mesh.morphTargetDictionary!
 
     for (let i = 0; i < vmd.metadata.morphCount; i++) {
       const morph = vmd.morphs[i]
@@ -957,8 +1028,8 @@ export class AnimationBuilder {
    * @param {SkinnedMesh} mesh - tracks will be fitting to mesh
    * @return {AnimationClip}
    */
-  buildSkeletalAnimation(vmd, mesh) {
-    const pushInterpolation = (array, interpolation, index) => {
+  private buildSkeletalAnimation(vmd: Vmd, mesh: SkinnedMesh) {
+    const pushInterpolation = (array: number[], interpolation: number[], index: number) => {
       array.push(interpolation[index + 0] / 127) // x1
       array.push(interpolation[index + 8] / 127) // x2
       array.push(interpolation[index + 4] / 127) // y1
@@ -967,9 +1038,10 @@ export class AnimationBuilder {
 
     const tracks = []
 
-    const motions = {}
+    type BoneName = string
+    const motions: Record<BoneName, VmdMotionFrame[]> = {}
     const bones = mesh.skeleton.bones
-    const boneNameDictionary = {}
+    const boneNameDictionary: Record<BoneName, boolean> = {}
 
     for (let i = 0, il = bones.length; i < il; i++) {
       boneNameDictionary[bones[i].name] = true
@@ -993,13 +1065,13 @@ export class AnimationBuilder {
         return a.frameNum - b.frameNum
       })
 
-      const times = []
-      const positions = []
-      const rotations = []
-      const pInterpolations = []
-      const rInterpolations = []
+      const times: number[] = []
+      const positions: number[] = []
+      const rotations: number[] = []
+      const pInterpolations: number[] = []
+      const rInterpolations: number[] = []
 
-      const basePosition = mesh.skeleton.getBoneByName(key).position.toArray()
+      const basePosition = mesh.skeleton.getBoneByName(key)!.position.toArray()
 
       for (let i = 0, il = array.length; i < il; i++) {
         const time = array[i].frameNum / 30
@@ -1032,20 +1104,21 @@ export class AnimationBuilder {
  * @param {import('three').LoadingManager} manager
  */
 export class MeshBuilder {
-  constructor(manager) {
-    this.crossOrigin = 'anonymous'
+  crossOrigin = 'anonymous'
+  geometryBuilder: GeometryBuilder
+  materialBuilder: MaterialBuilder
+  constructor(manager: LoadingManager) {
     this.geometryBuilder = new GeometryBuilder()
     this.materialBuilder = new MaterialBuilder(manager)
   }
 
   /**
-   * @param {object} data - parsed PMD/PMX data
-   * @param {string} resourcePath
-   * @param {Function} onProgress
-   * @param {Function} onError
+   * @param data - parsed PMD/PMX data
+   * @param onProgress
+   * @param onError
    * @return {SkinnedMesh}
    */
-  build(data, resourcePath, onProgress, onError) {
+  build(data: Pmd | Pmx, resourcePath: string, onProgress: () => void, onError: () => void): SkinnedMesh {
     const geometry = this.geometryBuilder.build(data)
     const material = this.materialBuilder
       .setCrossOrigin(this.crossOrigin)
@@ -1062,11 +1135,7 @@ export class MeshBuilder {
     return mesh
   }
 
-  /**
-   * @param {string} crossOrigin
-   * @return {MeshBuilder}
-   */
-  setCrossOrigin(crossOrigin) {
+  setCrossOrigin(crossOrigin: string): this {
     this.crossOrigin = crossOrigin
     return this
   }
