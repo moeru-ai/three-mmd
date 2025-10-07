@@ -1,8 +1,24 @@
+/* eslint-disable sonarjs/redundant-type-aliases */
+/* eslint-disable ts/strict-boolean-expressions */
+/* eslint-disable ts/ban-ts-comment */
+/* eslint-disable sonarjs/different-types-comparison */
+/* eslint-disable ts/no-unsafe-assignment */
+/* eslint-disable ts/no-unsafe-member-access */
+/* eslint-disable ts/no-unsafe-argument */
+/* eslint-disable sonarjs/no-nested-template-literals */
+/* eslint-disable sonarjs/prefer-regexp-exec */
+/* eslint-disable ts/no-this-alias */
+/* eslint-disable perfectionist/sort-classes */
+
 import {
+  AnimationClip,
   AnimationMixer,
+  Camera,
   Object3D,
   Quaternion,
+  SkinnedMesh,
   Vector3,
+  Audio,
 } from 'three'
 import { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
 
@@ -11,10 +27,10 @@ import { GrantSolver } from './mmd-animation-helper/grant-solver'
 import { MMDPhysics } from './mmd-physics'
 
 // Keep working quaternions for less GC
-const _quaternions = []
+const _quaternions: Quaternion[] = []
 let _quaternionIndex = 0
 
-const getQuaternion = () => {
+const getQuaternion = (): Quaternion => {
   if (_quaternionIndex >= _quaternions.length)
     _quaternions.push(new Quaternion())
 
@@ -83,6 +99,38 @@ const updateOne = (mesh, boneIndex, ikSolver, grantSolver) => {
   quaternion.copy(bone.quaternion)
 }
 
+export interface MMDAnimationHelperAddParameter {
+  animation?: AnimationClip | AnimationClip[]
+  delayTime?: number
+  gravity?: number
+  maxStepNum?: number
+  physics?: boolean
+  unitStep?: number
+  warmup?: number
+}
+
+export interface MMDAnimationHelperMixer {
+  duration?: number
+  grantSolver: GrantSolver
+  ikSolver: CCDIKSolver
+  looped: boolean
+  mixer?: AnimationMixer
+  physics?: MMDPhysics
+}
+
+export interface MMDAnimationHelperParameter {
+  afterglow?: number
+  pmxAnimation?: boolean
+  resetPhysicsOnLoop?: boolean
+  sync?: boolean
+}
+
+export interface MMDAnimationHelperPoseParameter {
+  grant?: boolean
+  ik?: boolean
+  resetPose?: boolean
+}
+
 /**
  * MMDAnimationHelper handles animation of MMD assets loaded by MMDLoader
  * with MMD special features as IK, Grant, and Physics.
@@ -95,14 +143,40 @@ const updateOne = (mesh, boneIndex, ikSolver, grantSolver) => {
  * TODO
  *  - more precise grant skinning support.
  */
-class MMDAnimationHelper {
+export class MMDAnimationHelper {
+  meshes: SkinnedMesh[]
+  audio: Audio | null
+  audioManager: AudioManager | null
+  camera: Camera | null
+  cameraTarget: Object3D
+  configuration: {
+    afterglow: number
+    pmxAnimation: boolean
+    resetPhysicsOnLoop: boolean
+    sync: boolean
+  }
+
+  enabled: {
+    animation: boolean
+    cameraAnimation: boolean
+    grant: boolean
+    ik: boolean
+    physics: boolean
+  }
+
+  masterPhysics: null
+
+  objects: WeakMap<AudioManager | Camera | SkinnedMesh, MMDAnimationHelperMixer>
+  onBeforePhysics: (mesh: SkinnedMesh) => void
+  sharedPhysics: boolean
+
   /**
    * @param {object} params - (optional)
    * @param {boolean} params.sync - Whether animation durations of added objects are synched. Default is true.
    * @param {number} params.afterglow - Default is 0.0.
    * @param {boolean} params.resetPhysicsOnLoop - Default is true.
    */
-  constructor(params = {}) {
+  constructor(params: MMDAnimationHelperParameter = {}) {
     this.meshes = []
 
     this.camera = null
@@ -676,10 +750,12 @@ class MMDAnimationHelper {
    * @param {number} params.delayTime - Only for THREE.Audio. Default is 0.0.
    * @return {MMDAnimationHelper}
    */
-  add(object, params = {}) {
+  add(object: SkinnedMesh | Camera | Audio, params: MMDAnimationHelperAddParameter = {}): this {
+    // @ts-expect-error
     if (object.isSkinnedMesh) {
       this._addMesh(object, params)
     }
+    // @ts-expect-error
     else if (object.isCamera) {
       this._setupCamera(object, params)
     }
@@ -708,7 +784,7 @@ class MMDAnimationHelper {
    * @param {import('three').SkinnedMesh} mesh
    * @return {GrantSolver}
    */
-  createGrantSolver(mesh) {
+  createGrantSolver(mesh: SkinnedMesh): GrantSolver {
     return new GrantSolver(mesh, mesh.geometry.userData.MMD.grants)
   }
 
@@ -719,7 +795,7 @@ class MMDAnimationHelper {
    * @param {boolean} enabled
    * @return {MMDAnimationHelper}
    */
-  enable(key, enabled) {
+  enable(key: string, enabled: boolean): this {
     if (this.enabled[key] === undefined) {
       throw new Error(`MMDAnimationHelper.enable: `
         + `unknown key ${key}`)
@@ -747,7 +823,7 @@ class MMDAnimationHelper {
    * @param {boolean} params.grant - Default is true.
    * @return {MMDAnimationHelper}
    */
-  pose(mesh, vpd, params = {}) {
+  pose(mesh, vpd, params: MMDAnimationHelperPoseParameter = {}) {
     if (params.resetPose !== false)
       mesh.pose()
 
@@ -806,7 +882,7 @@ class MMDAnimationHelper {
    * @param {import('three').SkinnedMesh|import('three').Camera|import('three').Audio} object
    * @return {MMDAnimationHelper}
    */
-  remove(object) {
+  remove(object: SkinnedMesh | Camera | Audio): this {
     if (object.isSkinnedMesh) {
       this._removeMesh(object)
     }
@@ -836,7 +912,7 @@ class MMDAnimationHelper {
    * @param {number} delta
    * @return {MMDAnimationHelper}
    */
-  update(delta) {
+  update(delta: number): this {
     if (this.audioManager !== null)
       this.audioManager.control(delta)
 
@@ -853,5 +929,3 @@ class MMDAnimationHelper {
     return this
   }
 }
-
-export { MMDAnimationHelper }
