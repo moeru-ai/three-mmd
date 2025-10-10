@@ -99,8 +99,246 @@ export class MaterialBuilder {
     this.textureLoader = new TextureLoader(manager)
   }
 
+  /**
+   * @param data - parsed PMD/PMX data
+   * @param geometry - some properties are depended on geometry
+   */
+  public build(
+    data: Pmd | Pmx,
+    geometry: BufferGeometry,
+    _onProgress?: (event: ProgressEvent) => void,
+    _onError?: (event: ErrorEvent) => void,
+  ): MMDToonMaterial[] {
+    const materials = []
+
+    const textures = {}
+
+    this.textureLoader.setCrossOrigin(this.crossOrigin)
+
+    // materials
+    for (let i = 0; i < data.metadata.materialCount; i++) {
+      const material: Partial<PmdMaterialInfo & PmxMaterialInfo> = data.materials[i]
+
+      // TODO: rewrite this
+      // eslint-disable-next-line ts/no-unsafe-assignment
+      const params: MaterialBuilderParameters = { userData: { MMD: {} } } as any
+
+      if (material.name !== undefined)
+        params.name = material.name
+
+      /*
+       * Color
+       *
+       * MMD         MMDToonMaterial
+       * ambient  -  emissive * a
+       *               (a = 1.0 without map texture or 0.2 with map texture)
+       *
+       * MMDToonMaterial doesn't have ambient. Set it to emissive instead.
+       * It'll be too bright if material has map texture so using coef 0.2.
+       */
+      params.diffuse = new Color().setRGB(
+        material.diffuse![0],
+        material.diffuse![1],
+        material.diffuse![2],
+        SRGBColorSpace,
+      )
+      params.opacity = material.diffuse![3]
+      params.specular = new Color().setRGB(...material.specular!, SRGBColorSpace)
+      params.shininess = material.shininess!
+      params.emissive = new Color().setRGB(...material.ambient!, SRGBColorSpace)
+      params.transparent = params.opacity !== 1.0
+
+      //
+      params.fog = true
+
+      // blend
+      params.blending = CustomBlending
+      params.blendSrc = SrcAlphaFactor
+      params.blendDst = OneMinusSrcAlphaFactor
+      params.blendSrcAlpha = SrcAlphaFactor
+      params.blendDstAlpha = DstAlphaFactor
+
+      // side
+      if (data.metadata.format === 'pmx' && (material.flag! & 0x1) === 1) {
+        params.side = DoubleSide
+      }
+      else {
+        params.side = params.opacity === 1.0 ? FrontSide : DoubleSide
+      }
+
+      if (data.metadata.format === 'pmd') {
+        // map, matcap
+        // TODO: fix this
+        // Changing it to `!= null` will cause the material to fail.
+        // eslint-disable-next-line ts/strict-boolean-expressions
+        if (material.fileName) {
+          const fileName = material.fileName
+          const fileNames = fileName.split('*')
+
+          // fileNames[ 0 ]: mapFileName
+          // fileNames[ 1 ]: matcapFileName( optional )
+
+          params.map = this.loadTexture(fileNames[0], textures)
+
+          if (fileNames.length > 1) {
+            const extension = fileNames[1].slice(-4).toLowerCase()
+
+            params.matcap = this.loadTexture(
+              fileNames[1],
+              textures,
+            )
+
+            params.matcapCombine = extension === '.sph'
+              ? MultiplyOperation
+              : AddOperation
+          }
+        }
+
+        // gradientMap
+
+        const toonFileName = (material.toonIndex === -1)
+          ? 'toon00.bmp'
+          : (data as Pmd).toonTextures[material.toonIndex!].fileName
+
+        params.gradientMap = this.loadTexture(
+          toonFileName,
+          textures,
+          {
+            isDefaultToonTexture: this.isDefaultToonTexture(toonFileName),
+            isToonTexture: true,
+          },
+        )
+
+        // parameters for OutlineEffect
+
+        params.userData.outlineParameters = {
+          alpha: 1.0,
+          color: [0, 0, 0],
+          thickness: material.edgeFlag === 1 ? 0.003 : 0.0,
+          visible: material.edgeFlag === 1,
+        }
+      }
+      else {
+        // map
+
+        if (material.textureIndex !== -1) {
+          params.map = this.loadTexture((data as Pmx).textures[material.textureIndex!], textures)
+
+          // Since PMX spec don't have standard to list map files except color map and env map,
+          // we need to save file name for further mapping, like matching normal map file names after model loaded.
+          // ref: https://gist.github.com/felixjones/f8a06bd48f9da9a4539f#texture
+          params.userData.MMD.mapFileName = (data as Pmx).textures[material.textureIndex!]
+        }
+
+        // matcap TODO: support m.envFlag === 3
+
+        if (material.envTextureIndex !== -1 && (material.envFlag === 1 || material.envFlag === 2)) {
+          params.matcap = this.loadTexture(
+            (data as Pmx).textures[material.envTextureIndex!],
+            textures,
+          )
+
+          // Same as color map above, keep file name in userData for further usage.
+          params.userData.MMD.matcapFileName = (data as Pmx).textures[material.envTextureIndex!]
+
+          params.matcapCombine = material.envFlag === 1
+            ? MultiplyOperation
+            : AddOperation
+        }
+
+        // gradientMap
+
+        let isDefaultToon, toonFileName
+
+        if (material.toonIndex === -1 || material.toonFlag !== 0) {
+          // eslint-disable-next-line sonarjs/no-nested-template-literals
+          toonFileName = `toon${(`0${material.toonIndex! + 1}`).slice(-2)}.bmp`
+          isDefaultToon = true
+        }
+        else {
+          toonFileName = (data as Pmx).textures[material.toonIndex!]
+          isDefaultToon = false
+        }
+
+        params.gradientMap = this.loadTexture(
+          toonFileName,
+          textures,
+          {
+            isDefaultToonTexture: isDefaultToon,
+            isToonTexture: true,
+          },
+        )
+
+        // parameters for OutlineEffect
+        params.userData.outlineParameters = {
+          alpha: material.edgeColor![3],
+          color: material.edgeColor!.slice(0, 3),
+          thickness: material.edgeSize! / 300, // TODO: better calculation?
+          visible: (material.flag! & 0x10) !== 0 && material.edgeSize! > 0.0,
+        }
+      }
+
+      if (params.map !== undefined) {
+        if (!params.transparent)
+          this.checkImageTransparency(params.map, geometry, i)
+
+        params.emissive.multiplyScalar(0.2)
+      }
+
+      materials.push(new MMDToonMaterial(params))
+    }
+
+    if (data.metadata.format === 'pmx') {
+      // set transparent true if alpha morph is defined.
+      const checkAlphaMorph = (elements: (PmdMorphInfo | PmxMorphInfo)['elements'], materials: Material[]) => {
+        for (let i = 0, il = elements.length; i < il; i++) {
+          const element = elements[i]
+
+          if (element.index === -1)
+            continue
+
+          const material = materials[element.index]
+
+          if (material.opacity !== (element as MaterialMorph).diffuse[3])
+            material.transparent = true
+        }
+      }
+
+      for (let i = 0, il = data.morphs.length; i < il; i++) {
+        const morph = data.morphs[i]
+        const elements = morph.elements
+
+        if (morph.type === 0) {
+          for (let j = 0, jl = elements.length; j < jl; j++) {
+            const morph2 = data.morphs[elements[j].index]
+
+            if (morph2.type !== 8)
+              continue
+
+            checkAlphaMorph(morph2.elements, materials)
+          }
+        }
+        else if (morph.type === 8) {
+          checkAlphaMorph(elements, materials)
+        }
+      }
+    }
+
+    return materials
+  }
+
+  public setCrossOrigin(crossOrigin: string): this {
+    this.crossOrigin = crossOrigin
+    return this
+  }
+
+  public setResourcePath(resourcePath: string): this {
+    this.resourcePath = resourcePath
+    return this
+  }
+
   // Check if the partial image area used by the texture is transparent.
-  _checkImageTransparency(map: LoadingTexture, geometry: BufferGeometry, groupIndex: number) {
+  private checkImageTransparency(map: LoadingTexture, geometry: BufferGeometry, groupIndex: number) {
     map.readyCallbacks!.push((texture: Texture) => {
       // Is there any efficient ways?
       const createImageData = (image: HTMLImageElement) => {
@@ -199,7 +437,7 @@ export class MaterialBuilder {
     })
   }
 
-  _getRotatedImage(image: HTMLImageElement) {
+  private getRotatedImage(image: HTMLImageElement) {
     const canvas = document.createElement('canvas')
     const context = canvas.getContext('2d')!
 
@@ -218,261 +456,21 @@ export class MaterialBuilder {
     return context.getImageData(0, 0, width, height)
   }
 
-  _getTGALoader(): TGALoader {
+  private getTGALoader(): TGALoader {
     if (this.tgaLoader == null)
       this.tgaLoader = new TGALoader(this.manager)
 
     return this.tgaLoader
   }
 
-  /**
-   * @param data - parsed PMD/PMX data
-   * @param geometry - some properties are depended on geometry
-   */
-  build(
-    data: Pmd | Pmx,
-    geometry: BufferGeometry,
-    _onProgress?: (event: ProgressEvent) => void,
-    _onError?: (event: ErrorEvent) => void,
-  ): MMDToonMaterial[] {
-    const materials = []
-
-    const textures = {}
-
-    this.textureLoader.setCrossOrigin(this.crossOrigin)
-
-    // materials
-    for (let i = 0; i < data.metadata.materialCount; i++) {
-      const material: Partial<PmdMaterialInfo & PmxMaterialInfo> = data.materials[i]
-
-      // TODO: rewrite this
-      // eslint-disable-next-line ts/no-unsafe-assignment
-      const params: MaterialBuilderParameters = { userData: { MMD: {} } } as any
-
-      if (material.name !== undefined)
-        params.name = material.name
-
-      /*
-       * Color
-       *
-       * MMD         MMDToonMaterial
-       * ambient  -  emissive * a
-       *               (a = 1.0 without map texture or 0.2 with map texture)
-       *
-       * MMDToonMaterial doesn't have ambient. Set it to emissive instead.
-       * It'll be too bright if material has map texture so using coef 0.2.
-       */
-      params.diffuse = new Color().setRGB(
-        material.diffuse![0],
-        material.diffuse![1],
-        material.diffuse![2],
-        SRGBColorSpace,
-      )
-      params.opacity = material.diffuse![3]
-      params.specular = new Color().setRGB(...material.specular!, SRGBColorSpace)
-      params.shininess = material.shininess!
-      params.emissive = new Color().setRGB(...material.ambient!, SRGBColorSpace)
-      params.transparent = params.opacity !== 1.0
-
-      //
-      params.fog = true
-
-      // blend
-      params.blending = CustomBlending
-      params.blendSrc = SrcAlphaFactor
-      params.blendDst = OneMinusSrcAlphaFactor
-      params.blendSrcAlpha = SrcAlphaFactor
-      params.blendDstAlpha = DstAlphaFactor
-
-      // side
-      if (data.metadata.format === 'pmx' && (material.flag! & 0x1) === 1) {
-        params.side = DoubleSide
-      }
-      else {
-        params.side = params.opacity === 1.0 ? FrontSide : DoubleSide
-      }
-
-      if (data.metadata.format === 'pmd') {
-        // map, matcap
-        // TODO: fix this
-        // Changing it to `!= null` will cause the material to fail.
-        // eslint-disable-next-line ts/strict-boolean-expressions
-        if (material.fileName) {
-          const fileName = material.fileName
-          const fileNames = fileName.split('*')
-
-          // fileNames[ 0 ]: mapFileName
-          // fileNames[ 1 ]: matcapFileName( optional )
-
-          params.map = this._loadTexture(fileNames[0], textures)
-
-          if (fileNames.length > 1) {
-            const extension = fileNames[1].slice(-4).toLowerCase()
-
-            params.matcap = this._loadTexture(
-              fileNames[1],
-              textures,
-            )
-
-            params.matcapCombine = extension === '.sph'
-              ? MultiplyOperation
-              : AddOperation
-          }
-        }
-
-        // gradientMap
-
-        const toonFileName = (material.toonIndex === -1)
-          ? 'toon00.bmp'
-          : (data as Pmd).toonTextures[material.toonIndex!].fileName
-
-        params.gradientMap = this._loadTexture(
-          toonFileName,
-          textures,
-          {
-            isDefaultToonTexture: this._isDefaultToonTexture(toonFileName),
-            isToonTexture: true,
-          },
-        )
-
-        // parameters for OutlineEffect
-
-        params.userData.outlineParameters = {
-          alpha: 1.0,
-          color: [0, 0, 0],
-          thickness: material.edgeFlag === 1 ? 0.003 : 0.0,
-          visible: material.edgeFlag === 1,
-        }
-      }
-      else {
-        // map
-
-        if (material.textureIndex !== -1) {
-          params.map = this._loadTexture((data as Pmx).textures[material.textureIndex!], textures)
-
-          // Since PMX spec don't have standard to list map files except color map and env map,
-          // we need to save file name for further mapping, like matching normal map file names after model loaded.
-          // ref: https://gist.github.com/felixjones/f8a06bd48f9da9a4539f#texture
-          params.userData.MMD.mapFileName = (data as Pmx).textures[material.textureIndex!]
-        }
-
-        // matcap TODO: support m.envFlag === 3
-
-        if (material.envTextureIndex !== -1 && (material.envFlag === 1 || material.envFlag === 2)) {
-          params.matcap = this._loadTexture(
-            (data as Pmx).textures[material.envTextureIndex!],
-            textures,
-          )
-
-          // Same as color map above, keep file name in userData for further usage.
-          params.userData.MMD.matcapFileName = (data as Pmx).textures[material.envTextureIndex!]
-
-          params.matcapCombine = material.envFlag === 1
-            ? MultiplyOperation
-            : AddOperation
-        }
-
-        // gradientMap
-
-        let isDefaultToon, toonFileName
-
-        if (material.toonIndex === -1 || material.toonFlag !== 0) {
-          // eslint-disable-next-line sonarjs/no-nested-template-literals
-          toonFileName = `toon${(`0${material.toonIndex! + 1}`).slice(-2)}.bmp`
-          isDefaultToon = true
-        }
-        else {
-          toonFileName = (data as Pmx).textures[material.toonIndex!]
-          isDefaultToon = false
-        }
-
-        params.gradientMap = this._loadTexture(
-          toonFileName,
-          textures,
-          {
-            isDefaultToonTexture: isDefaultToon,
-            isToonTexture: true,
-          },
-        )
-
-        // parameters for OutlineEffect
-        params.userData.outlineParameters = {
-          alpha: material.edgeColor![3],
-          color: material.edgeColor!.slice(0, 3),
-          thickness: material.edgeSize! / 300, // TODO: better calculation?
-          visible: (material.flag! & 0x10) !== 0 && material.edgeSize! > 0.0,
-        }
-      }
-
-      if (params.map !== undefined) {
-        if (!params.transparent) {
-          this._checkImageTransparency(params.map, geometry, i)
-        }
-
-        params.emissive.multiplyScalar(0.2)
-      }
-
-      materials.push(new MMDToonMaterial(params))
-    }
-
-    if (data.metadata.format === 'pmx') {
-      // set transparent true if alpha morph is defined.
-      const checkAlphaMorph = (elements: (PmdMorphInfo | PmxMorphInfo)['elements'], materials: Material[]) => {
-        for (let i = 0, il = elements.length; i < il; i++) {
-          const element = elements[i]
-
-          if (element.index === -1)
-            continue
-
-          const material = materials[element.index]
-
-          if (material.opacity !== (element as MaterialMorph).diffuse[3])
-            material.transparent = true
-        }
-      }
-
-      for (let i = 0, il = data.morphs.length; i < il; i++) {
-        const morph = data.morphs[i]
-        const elements = morph.elements
-
-        if (morph.type === 0) {
-          for (let j = 0, jl = elements.length; j < jl; j++) {
-            const morph2 = data.morphs[elements[j].index]
-
-            if (morph2.type !== 8)
-              continue
-
-            checkAlphaMorph(morph2.elements, materials)
-          }
-        }
-        else if (morph.type === 8) {
-          checkAlphaMorph(elements, materials)
-        }
-      }
-    }
-
-    return materials
-  }
-
-  setCrossOrigin(crossOrigin: string): this {
-    this.crossOrigin = crossOrigin
-    return this
-  }
-
-  setResourcePath(resourcePath: string): this {
-    this.resourcePath = resourcePath
-    return this
-  }
-
-  // private methods
-  private _isDefaultToonTexture(name: string): boolean {
+  private isDefaultToonTexture(name: string): boolean {
     if (name.length !== 10)
       return false
 
     return /toon(?:10|0\d)\.bmp/.test(name)
   }
 
-  private _loadTexture(filePath: string, textures: Record<string, LoadingTexture>, params?: { isDefaultToonTexture: boolean, isToonTexture: boolean }, onProgress?: () => void, onError?: () => void): LoadingTexture {
+  private loadTexture(filePath: string, textures: Record<string, LoadingTexture>, params?: { isDefaultToonTexture: boolean, isToonTexture: boolean }, onProgress?: () => void, onError?: () => void): LoadingTexture {
     params = params || {} as MaterialBuilderParameters
 
     let fullPath
@@ -503,7 +501,7 @@ export class MaterialBuilder {
 
     if (loader === null) {
       loader = (filePath.slice(-4).toLowerCase() === '.tga')
-        ? this._getTGALoader()
+        ? this.getTGALoader()
         : this.textureLoader
     }
 
@@ -514,7 +512,7 @@ export class MaterialBuilder {
       // but Three.js gradient map is Axis-X oriented.
       // So here replaces the toon texture image with the rotated one.
       if (params.isToonTexture === true) {
-        t.image = this._getRotatedImage(t.image as HTMLImageElement)
+        t.image = this.getRotatedImage(t.image as HTMLImageElement)
 
         t.magFilter = NearestFilter
         t.minFilter = NearestFilter
