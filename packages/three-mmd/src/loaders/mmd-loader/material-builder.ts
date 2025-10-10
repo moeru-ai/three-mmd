@@ -229,7 +229,12 @@ export class MaterialBuilder {
    * @param data - parsed PMD/PMX data
    * @param geometry - some properties are depended on geometry
    */
-  build(data: Pmd | Pmx, geometry: BufferGeometry, _onProgress?: unknown, _onError?: unknown): MMDToonMaterial[] {
+  build(
+    data: Pmd | Pmx,
+    geometry: BufferGeometry,
+    _onProgress?: (event: ProgressEvent) => void,
+    _onError?: (event: ErrorEvent) => void,
+  ): MMDToonMaterial[] {
     const materials = []
 
     const textures = {}

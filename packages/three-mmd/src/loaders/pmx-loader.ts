@@ -5,7 +5,7 @@ import { FileLoader, Loader } from 'three'
 
 import { extractModelExtension } from '../utils/_extract-model-extension'
 import { resolveResourcePath } from '../utils/_resolve-resource-path'
-import { MeshBuilder } from './MMDLoader'
+import { MeshBuilder } from './mmd-loader/mesh-builder'
 
 /** @experimental */
 export class PMXLoader extends Loader<SkinnedMesh> {
