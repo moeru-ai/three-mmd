@@ -21,8 +21,10 @@ const Debug3 = () => {
     })
 
     return () => {
-      if (helper.meshes.includes(mesh))
-        helper.remove(mesh)
+      if (!helper.meshes.includes(mesh))
+        return
+
+      helper.remove(mesh)
     }
   }, [mesh, vmd, helper])
 
