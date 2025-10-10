@@ -16,14 +16,6 @@ export class Constraint {
   params: PmdConstraintInfo | PmxConstraintInfo
   world: Ammo.btDiscreteDynamicsWorld
 
-  /**
-   * @param {import('three').SkinnedMesh} mesh
-   * @param {Ammo.btDiscreteDynamicsWorld} world
-   * @param {RigidBody} bodyA
-   * @param {RigidBody} bodyB
-   * @param {object} params
-   * @param {ResourceManager} manager
-   */
   constructor(
     mesh: SkinnedMesh,
     world: Ammo.btDiscreteDynamicsWorld,

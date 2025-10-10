@@ -154,8 +154,6 @@ export class MMDPhysics {
     this.world!.stepSimulation(stepTime, maxStepNum, unitStep)
   }
 
-  // private methods
-
   _updateBones() {
     for (let i = 0, il = this.bodies.length; i < il; i++) {
       this.bodies[i].updateBone()
@@ -177,10 +175,8 @@ export class MMDPhysics {
 
   /**
    * Resets rigid bodies transform to current bone's.
-   *
-   * @return {MMDPhysics}
    */
-  reset() {
+  reset(): MMDPhysics {
     for (let i = 0, il = this.bodies.length; i < il; i++) {
       this.bodies[i].reset()
     }
