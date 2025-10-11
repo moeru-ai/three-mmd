@@ -18,9 +18,7 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   }
 
   const getAttributes = () => {
-    const { vertices } = pmx
-    const vertexCount = vertices.length
-    // const additionalUvs: Float32Array[] = []
+    const vertexCount = pmx.vertices.length
 
     const positions = new Float32Array(vertexCount * 3)
     const normals = new Float32Array(vertexCount * 3)
@@ -28,9 +26,7 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
     const boneIndices = new Float32Array(vertexCount * 4)
     const boneWeights = new Float32Array(vertexCount * 4)
 
-    for (let vertexIndex = 0; vertexIndex < vertexCount; ++vertexIndex) {
-      const vertex = vertices[vertexIndex]
-
+    pmx.vertices.forEach((vertex, vertexIndex) => {
       positions[vertexIndex * 3 + 0] = vertex.position[0]
       positions[vertexIndex * 3 + 1] = vertex.position[1]
       positions[vertexIndex * 3 + 2] = vertex.position[2]
@@ -41,14 +37,6 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
 
       uvs[vertexIndex * 2 + 0] = vertex.uv[0]
       uvs[vertexIndex * 2 + 1] = 1 - vertex.uv[1] // flip y axis
-
-      // const additionalVec4 = vertex.additionalVec4;
-      // for (let k = 0; k < additionalUvs.length; ++k) {
-      //   additionalUvs[k][vertexIndex * 4 + 0] = additionalVec4[k][0];
-      //   additionalUvs[k][vertexIndex * 4 + 1] = additionalVec4[k][1];
-      //   additionalUvs[k][vertexIndex * 4 + 2] = additionalVec4[k][2];
-      //   additionalUvs[k][vertexIndex * 4 + 3] = additionalVec4[k][3];
-      // }
 
       switch (vertex.weightType) {
         case PmxObject.Vertex.BoneWeightType.Bdef1:
@@ -120,7 +108,7 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
           }
           break
       }
-    }
+    })
 
     return { boneIndices, boneWeights, normals, positions, uvs }
   }
@@ -136,22 +124,16 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   geometry.setIndex(indices)
 
   // groups
-  const groups = []
   let offset = 0
-  for (let i = 0; i < pmx.materials.length; i++) {
-    const material = pmx.materials[i]
-
-    groups.push({
-      count: material.indexCount * 3,
-      offset: offset * 3,
-    })
+  pmx.materials.forEach((material, index) => {
+    geometry.addGroup(
+      offset * 3,
+      material.indexCount * 3,
+      index,
+    )
 
     offset += material.indexCount
-  }
-
-  for (let i = 0, il = groups.length; i < il; i++) {
-    geometry.addGroup(groups[i].offset, groups[i].count, i)
-  }
+  })
 
   // geometry.morphAttributes.position = morphPositions
 
