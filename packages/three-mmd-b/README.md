@@ -6,9 +6,9 @@ Experimental version of `@moeru/three-mmd`, built on `babylon-mmd`.
 
 - [x] PMDLoader, PMXLoader (just return PmxObject)
 - [x] buildGeometry (To be tested)
-- [ ] buildMaterial (WIP)
-- [ ] buildMesh (without Material)
-- [ ] buildAnimation (WIP)
+- [x] buildMaterial (To be tested)
+- [x] buildMesh (To be tested)
+- [ ] buildAnimation (TODO)
 
 ## License
 
