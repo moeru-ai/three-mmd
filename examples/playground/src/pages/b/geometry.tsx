@@ -20,7 +20,7 @@ const BGeometry = () => {
       const geometry = buildGeometry(pmx)
       const material = buildMaterial(pmx, geometry, LoaderUtils.extractUrlBase(pmdUrl))
 
-      mesh = new Mesh(old.geometry, material)
+      mesh = new Mesh(geometry, material)
 
       // mesh = new Mesh(geometry, new MeshNormalMaterial())
       // mesh.scale.set(0.1, 0.1, 0.1)
