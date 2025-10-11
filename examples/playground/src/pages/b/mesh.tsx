@@ -4,6 +4,7 @@ import { createMMDAnimationClip, MMDAnimationHelper, VMDLoader } from '@moeru/th
 import { buildMesh, PMDLoader } from '@moeru/three-mmd-b'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
+import { LoaderUtils } from 'three'
 
 import pmdUrl from '../../../../basic/src/assets/miku/miku_v2.pmd?url'
 import vmdUrl from '../../../../basic/src/assets/vmds/wavefile_v2.vmd?url'
@@ -24,7 +25,7 @@ const BMesh = () => {
       // mesh = new Mesh(geometry, new MeshNormalMaterial())
       // mesh.scale.set(0.1, 0.1, 0.1)
       // scene.add(mesh)
-      mesh = buildMesh(pmx)
+      mesh = buildMesh(pmx, LoaderUtils.extractUrlBase(pmdUrl))
       mesh.scale.set(0.1, 0.1, 0.1)
       scene.add(mesh)
 

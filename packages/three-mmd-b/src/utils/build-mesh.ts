@@ -1,14 +1,27 @@
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 
-import { Bone, MeshNormalMaterial, Skeleton, SkinnedMesh } from 'three'
+import {
+  Bone,
+  Skeleton,
+  SkinnedMesh,
+} from 'three'
 
 import { buildGeometry } from './build-geometry'
+import { buildMaterial } from './build-material'
 
 /** @experimental */
-export const buildMesh = (pmx: PmxObject): SkinnedMesh => {
+export const buildMesh = (
+  pmx: PmxObject,
+  resourcePath: string,
+): SkinnedMesh => {
   const geometry = buildGeometry(pmx)
+  const material = buildMaterial(
+    pmx,
+    geometry,
+    resourcePath,
+  )
 
-  const mesh = new SkinnedMesh(geometry, new MeshNormalMaterial())
+  const mesh = new SkinnedMesh(geometry, material)
 
   // bones
   const bones: Bone[] = []
