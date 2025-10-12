@@ -16,7 +16,10 @@ const WithUseAnimations = () => {
   })
 
   return (
-    <primitive object={object} ref={ref} scale={0.1} />
+    <>
+      <primitive object={object} ref={ref} scale={0.1} />
+      <skeletonHelper args={[object]} />
+    </>
   )
 }
 

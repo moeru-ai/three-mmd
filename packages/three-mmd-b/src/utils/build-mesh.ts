@@ -29,7 +29,14 @@ export const buildMesh = (
     const bone = new Bone()
 
     bone.name = boneInfo.name
-    bone.position.fromArray(boneInfo.position)
+
+    const { position } = boneInfo
+    if (boneInfo.parentBoneIndex >= 0 && boneInfo.parentBoneIndex < pmx.bones.length) {
+      position[0] -= pmx.bones[boneInfo.parentBoneIndex].position[0]
+      position[1] -= pmx.bones[boneInfo.parentBoneIndex].position[1]
+      position[2] -= pmx.bones[boneInfo.parentBoneIndex].position[2]
+    }
+    bone.position.fromArray(position)
 
     bones.push(bone)
   })
@@ -39,6 +46,7 @@ export const buildMesh = (
     else
       mesh.add(bones[i])
   })
+  // mesh.add(...bones)
 
   mesh.updateMatrixWorld(true)
 
