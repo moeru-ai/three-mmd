@@ -27,7 +27,7 @@ export const buildBones = (pmx: PmxObject, mesh: SkinnedMesh): Bone[] => {
       mesh.add(bones[i])
   })
 
-  mesh.updateMatrixWorld()
+  mesh.updateMatrixWorld(true)
 
   return bones
 }
