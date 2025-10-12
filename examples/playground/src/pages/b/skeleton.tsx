@@ -23,6 +23,8 @@ const BSkeleton = () => {
         mesh = await mmdLoader.loadAsync(pmdUrl)
 
       setObject(mesh)
+
+      console.warn(mesh.skeleton.bones[0])
     })
   }, [babylonMMD, babylonMmdLoader, mmdLoader])
 
