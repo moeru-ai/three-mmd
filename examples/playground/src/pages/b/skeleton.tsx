@@ -8,7 +8,7 @@ import { startTransition, useEffect, useMemo, useState } from 'react'
 import pmdUrl from '../../../../basic/src/assets/miku/miku_v2.pmd?url'
 
 const BSkeleton = () => {
-  const { babylonMMD } = useControls({ babylonMMD: false })
+  const { babylonMMD } = useControls({ babylonMMD: true })
 
   const mmdLoader = useMemo(() => new MMDLoader(), [])
   const babylonMmdLoader = useMemo(() => new BabylonMMDLoader(), [])

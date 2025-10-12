@@ -38,20 +38,23 @@ export const buildMesh = (
     }
     bone.position.fromArray(position)
 
+    // bone.quaternion.fromArray([0, 0, 0, 1])
+    // bone.scale.fromArray([1, 1, 1])
+
     bones.push(bone)
   })
-  pmx.bones.forEach(({ parentBoneIndex }, i) => {
-    if (parentBoneIndex != null && parentBoneIndex !== -1 && bones.at(parentBoneIndex) != null)
-      bones.at(parentBoneIndex)!.add(bones[i])
+  pmx.bones.forEach((boneInfo, i) => {
+    if (boneInfo.parentBoneIndex >= 0 && boneInfo.parentBoneIndex < pmx.bones.length)
+      bones.at(boneInfo.parentBoneIndex)!.add(bones[i])
     else
       mesh.add(bones[i])
   })
   // mesh.add(...bones)
 
-  mesh.updateMatrixWorld(true)
-
   const skeleton = new Skeleton(bones)
   mesh.bind(skeleton)
+
+  mesh.updateMatrixWorld(true)
 
   return mesh
 }
