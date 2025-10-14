@@ -589,8 +589,7 @@ export class MMDAnimationHelper {
       const masterPhysics = this._getMasterPhysics()
 
       if (masterPhysics !== null)
-      // TODO: what is this?
-
+        // TODO: what is this?
         // @ts-expect-error
         // eslint-disable-next-line sonarjs/no-implicit-global
         world = masterPhysics.world
@@ -813,17 +812,17 @@ export class MMDAnimationHelper {
   /**
    * Enables/Disables an animation feature.
    *
-   * @param {string} key
+   * @param key
    * @param {boolean} enabled
    * @return {MMDAnimationHelper}
    */
-  enable(key: string, enabled: boolean): this {
-    if (this.enabled[key as keyof typeof this.enabled] === undefined) {
+  enable(key: keyof typeof this.enabled, enabled: boolean): this {
+    if (this.enabled[key] === undefined) {
       throw new Error('MMDAnimationHelper.enable: '
         + `unknown key ${key}`)
     }
 
-    this.enabled[key as keyof typeof this.enabled] = enabled
+    this.enabled[key] = enabled
 
     if (key === 'physics') {
       for (let i = 0, il = this.meshes.length; i < il; i++) {
