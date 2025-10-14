@@ -1,33 +1,35 @@
-/* eslint-disable sonarjs/redundant-type-aliases */
 /* eslint-disable ts/strict-boolean-expressions */
 /* eslint-disable ts/ban-ts-comment */
 /* eslint-disable sonarjs/different-types-comparison */
 /* eslint-disable ts/no-unsafe-assignment */
 /* eslint-disable ts/no-unsafe-member-access */
 /* eslint-disable ts/no-unsafe-argument */
-/* eslint-disable sonarjs/no-nested-template-literals */
-/* eslint-disable sonarjs/prefer-regexp-exec */
-/* eslint-disable ts/no-this-alias */
+
 /* eslint-disable perfectionist/sort-classes */
 
-import {
+import type { PmxBoneInfo } from '@noname0310/mmd-parser'
+import type {
   AnimationClip,
-  AnimationMixer,
+  Audio,
+  Bone,
   Camera,
+  PerspectiveCamera,
+  SkinnedMesh,
+} from 'three'
+
+import {
+  AnimationMixer,
   Object3D,
   Quaternion,
-  SkinnedMesh,
   Vector3,
-  Audio,
-  PerspectiveCamera,
-  Bone,
 } from 'three'
 import { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
 
+import type { MMDPhysicsParameter } from './mmd-physics'
+
 import { AudioManager } from './mmd-animation-helper/audio-manager'
 import { GrantSolver } from './mmd-animation-helper/grant-solver'
-import { MMDPhysics, type MMDPhysicsParameter } from './mmd-physics'
-import type { PmxBoneInfo } from '@noname0310/mmd-parser'
+import { MMDPhysics } from './mmd-physics'
 
 // Keep working quaternions for less GC
 const _quaternions: Quaternion[] = []
@@ -104,13 +106,14 @@ const updateOne = (mesh: SkinnedMesh, boneIndex: number, ikSolver: CCDIKSolver |
 
 export interface MMDAnimationHelperAddParameter extends MMDPhysicsParameter {
   animation?: AnimationClip | AnimationClip[]
+  animationWarmup?: boolean
   delayTime?: number
   physics?: boolean
   warmup?: number
-  animationWarmup?: boolean
 }
 
 export interface MMDAnimationHelperMixer {
+  backupBones?: Float32Array
   duration?: number
   grantSolver?: GrantSolver
   ikSolver?: CCDIKSolver
@@ -122,7 +125,6 @@ export interface MMDAnimationHelperMixer {
   }
   physics?: MMDPhysics
   sortedBonesData?: PmxBoneInfo[]
-  backupBones?: Float32Array
 }
 
 export interface MMDAnimationHelperParameter {
@@ -171,9 +173,9 @@ export class MMDAnimationHelper {
     physics: boolean
   }
 
-  masterPhysics: null | MMDPhysics
+  masterPhysics: MMDPhysics | null
 
-  objects: WeakMap<AudioManager | Camera | SkinnedMesh | AnimationClip, MMDAnimationHelperMixer>
+  objects: WeakMap<AnimationClip | AudioManager | Camera | SkinnedMesh, MMDAnimationHelperMixer>
   onBeforePhysics: (mesh: SkinnedMesh) => void
   sharedPhysics: boolean
 
@@ -219,7 +221,7 @@ export class MMDAnimationHelper {
 
   private _addMesh(mesh: SkinnedMesh, params: MMDAnimationHelperAddParameter) {
     if (this.meshes.includes(mesh)) {
-      throw new Error(`MMDAnimationHelper._addMesh: `
+      throw new Error('MMDAnimationHelper._addMesh: '
         + `SkinnedMesh '${mesh.name}' has already been added.`)
     }
 
@@ -329,7 +331,7 @@ export class MMDAnimationHelper {
 
   private _clearAudio(audio: Audio) {
     if (audio !== this.audio) {
-      throw new Error(`MMDAnimationHelper._clearAudio: `
+      throw new Error('MMDAnimationHelper._clearAudio: '
         + `Audio '${audio.name}' has not been set yet.`)
     }
 
@@ -343,7 +345,7 @@ export class MMDAnimationHelper {
 
   private _clearCamera(camera: Camera) {
     if (camera !== this.camera) {
-      throw new Error(`MMDAnimationHelper._clearCamera: `
+      throw new Error('MMDAnimationHelper._clearCamera: '
         + `Camera '${camera.name}' has not been set yet.`)
     }
 
@@ -380,7 +382,7 @@ export class MMDAnimationHelper {
 
   private _getMasterPhysics(): MMDPhysics | null {
     if (this.masterPhysics !== null)
-      return this.masterPhysics!
+      return this.masterPhysics
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
       // @ts-expect-error
@@ -434,7 +436,7 @@ export class MMDAnimationHelper {
     }
 
     if (!found) {
-      throw new Error(`THREE.MMDAnimationHelper._removeMesh: `
+      throw new Error('THREE.MMDAnimationHelper._removeMesh: '
         + `SkinnedMesh '${mesh.name}' has not been added yet.`)
     }
 
@@ -490,7 +492,7 @@ export class MMDAnimationHelper {
 
   private _setupAudio(audio: Audio, params: MMDAnimationHelperAddParameter) {
     if (this.audio === audio) {
-      throw new Error(`MMDAnimationHelper._setupAudio: `
+      throw new Error('MMDAnimationHelper._setupAudio: '
         + `Audio '${audio.name}' has already been set.`)
     }
 
@@ -509,7 +511,7 @@ export class MMDAnimationHelper {
 
   private _setupCamera(camera: Camera, params: MMDAnimationHelperAddParameter) {
     if (this.camera === camera) {
-      throw new Error(`MMDAnimationHelper._setupCamera: `
+      throw new Error('MMDAnimationHelper._setupCamera: '
         + `Camera '${camera.name}' has already been set.`)
     }
 
@@ -584,8 +586,8 @@ export class MMDAnimationHelper {
       const masterPhysics = this._getMasterPhysics()
 
       if (masterPhysics !== null)
-        // TODO: what is this?
-        // eslint-disable-next-line sonarjs/no-implicit-global, no-undef
+      // TODO: what is this?
+
         // @ts-expect-error
         world = masterPhysics.world
     }
@@ -767,7 +769,7 @@ export class MMDAnimationHelper {
    * @param {number} params.delayTime - Only for THREE.Audio. Default is 0.0.
    * @return {MMDAnimationHelper}
    */
-  add(object: SkinnedMesh | Camera | Audio, params: MMDAnimationHelperAddParameter = {}): this {
+  add(object: Audio | Camera | SkinnedMesh, params: MMDAnimationHelperAddParameter = {}): this {
     // @ts-expect-error
     if (object.isSkinnedMesh) {
       this._addMesh(object as SkinnedMesh, params)
@@ -814,7 +816,7 @@ export class MMDAnimationHelper {
    */
   enable(key: string, enabled: boolean): this {
     if (this.enabled[key as keyof typeof this.enabled] === undefined) {
-      throw new Error(`MMDAnimationHelper.enable: `
+      throw new Error('MMDAnimationHelper.enable: '
         + `unknown key ${key}`)
     }
 
@@ -902,7 +904,7 @@ export class MMDAnimationHelper {
    * @param {import('three').SkinnedMesh|import('three').Camera|import('three').Audio} object
    * @return {MMDAnimationHelper}
    */
-  remove(object: SkinnedMesh | Camera | Audio): this {
+  remove(object: Audio | Camera | SkinnedMesh): this {
     if ((object as SkinnedMesh).isSkinnedMesh) {
       this._removeMesh(object as SkinnedMesh)
     }
