@@ -19,13 +19,14 @@ import {
   SkinnedMesh,
   Vector3,
   Audio,
+  PerspectiveCamera,
+  Bone,
 } from 'three'
 import { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
 
 import { AudioManager } from './mmd-animation-helper/audio-manager'
 import { GrantSolver } from './mmd-animation-helper/grant-solver'
 import { MMDPhysics, type MMDPhysicsParameter } from './mmd-physics'
-import type Ammo from 'ammojs-typed'
 import type { PmxBoneInfo } from '@noname0310/mmd-parser'
 
 // Keep working quaternions for less GC
@@ -116,6 +117,7 @@ export interface MMDAnimationHelperMixer {
   looped?: boolean
   mixer?: AnimationMixer
   physics?: MMDPhysics
+  sortedBonesData?: PmxBoneInfo[]
 }
 
 export interface MMDAnimationHelperParameter {
@@ -164,7 +166,7 @@ export class MMDAnimationHelper {
     physics: boolean
   }
 
-  masterPhysics: null
+  masterPhysics: null | MMDPhysics
 
   objects: WeakMap<AudioManager | Camera | SkinnedMesh, MMDAnimationHelperMixer>
   onBeforePhysics: (mesh: SkinnedMesh) => void
@@ -232,9 +234,9 @@ export class MMDAnimationHelper {
     const mixer = this.objects.get(camera)!.mixer
 
     if (mixer && this.enabled.cameraAnimation) {
-      mixer.update(delta)
+      mixer.update(delta);
 
-      camera.updateProjectionMatrix()
+      (camera as PerspectiveCamera).updateProjectionMatrix()
 
       camera.up.set(0, 1, 0)
       camera.up.applyQuaternion(camera.quaternion)
@@ -307,7 +309,7 @@ export class MMDAnimationHelper {
   // you are recommended to set constructor parameter "pmxAnimation: true"
   // only if your PMX model animation doesn't work well.
   // If you need better method you would be required to write your own.
-  private _animatePMXMesh(mesh: SkinnedMesh, sortedBonesData: MMDAnimationHelperMixer[], ikSolver: CCDIKSolver | null, grantSolver: GrantSolver | null) {
+  private _animatePMXMesh(mesh: SkinnedMesh, sortedBonesData: PmxBoneInfo[], ikSolver: CCDIKSolver | null, grantSolver: GrantSolver | null) {
     _quaternionIndex = 0
     _grantResultMap.clear()
 
@@ -370,16 +372,16 @@ export class MMDAnimationHelper {
     )
   }
 
-  private _getMasterPhysics() {
+  private _getMasterPhysics(): MMDPhysics | null {
     if (this.masterPhysics !== null)
-      return this.masterPhysics
+      return this.masterPhysics!
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
       const physics = this.meshes[i].physics
 
       if (physics !== undefined && physics !== null) {
         this.masterPhysics = physics
-        return this.masterPhysics
+        return this.masterPhysics!
       }
     }
 
@@ -437,6 +439,7 @@ export class MMDAnimationHelper {
   private _restoreBones(mesh: SkinnedMesh) {
     const objects = this.objects.get(mesh)!
 
+    // @ts-expect-error
     const backupBones = objects.backupBones
 
     if (backupBones === undefined)
@@ -465,6 +468,7 @@ export class MMDAnimationHelper {
 
     const bones = mesh.skeleton.bones
 
+    // @ts-expect-error
     let backupBones = objects.backupBones
 
     if (backupBones === undefined) {
@@ -576,6 +580,7 @@ export class MMDAnimationHelper {
       if (masterPhysics !== null)
         // TODO: what is this?
         // eslint-disable-next-line sonarjs/no-implicit-global, no-undef
+        // @ts-expect-error
         world = masterPhysics.world
     }
 
@@ -652,13 +657,13 @@ export class MMDAnimationHelper {
             })
           }
 
-          max = Math.max(max, objects.get(clip).duration)
+          max = Math.max(max, objects.get(clip)!.duration!)
         }
       }
     }
 
     if (audioManager !== null) {
-      max = Math.max(max, objects.get(audioManager).duration)
+      max = Math.max(max, objects.get(audioManager)!.duration!)
     }
 
     max += this.configuration.afterglow
@@ -666,7 +671,7 @@ export class MMDAnimationHelper {
     // update the duration
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
-      const mixer = this.objects.get(this.meshes[i]).mixer
+      const mixer = this.objects.get(this.meshes[i])!.mixer
 
       if (mixer === undefined)
         continue
@@ -677,7 +682,7 @@ export class MMDAnimationHelper {
     }
 
     if (camera !== null) {
-      const mixer = this.objects.get(camera).mixer
+      const mixer = this.objects.get(camera)!.mixer
 
       if (mixer !== undefined) {
         for (let i = 0, il = mixer._actions.length; i < il; i++) {
@@ -692,7 +697,7 @@ export class MMDAnimationHelper {
   }
 
   private _updatePropertyMixersBuffer(mesh: SkinnedMesh) {
-    const mixer = this.objects.get(mesh).mixer
+    const mixer = this.objects.get(mesh)!.mixer
 
     const propertyMixers = mixer._bindings
     const accuIndex = mixer._accuIndex
@@ -724,6 +729,7 @@ export class MMDAnimationHelper {
       }
     }
 
+    // @ts-expect-error nonexisting method?
     physics.stepSimulation(delta)
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
@@ -797,12 +803,12 @@ export class MMDAnimationHelper {
    * @return {MMDAnimationHelper}
    */
   enable(key: string, enabled: boolean): this {
-    if (this.enabled[key] === undefined) {
+    if (this.enabled[key as keyof typeof this.enabled] === undefined) {
       throw new Error(`MMDAnimationHelper.enable: `
         + `unknown key ${key}`)
     }
 
-    this.enabled[key] = enabled
+    this.enabled[key as keyof typeof this.enabled] = enabled
 
     if (key === 'physics') {
       for (let i = 0, il = this.meshes.length; i < il; i++) {
@@ -829,9 +835,10 @@ export class MMDAnimationHelper {
       mesh.pose()
 
     const bones = mesh.skeleton.bones
-    const boneParams = vpd.bones
+    // @ts-expect-error
+    const boneParams = vpd.bones as Bone[]
 
-    const boneNameDictionary = {}
+    const boneNameDictionary: Record<string, number> = {}
 
     for (let i = 0, il = bones.length; i < il; i++) {
       boneNameDictionary[bones[i].name] = i
@@ -848,7 +855,9 @@ export class MMDAnimationHelper {
         continue
 
       const bone = bones[boneIndex]
+      // @ts-expect-error
       bone.position.add(vector.fromArray(boneParam.translation))
+      // @ts-expect-error
       bone.quaternion.multiply(quaternion.fromArray(boneParam.quaternion))
     }
 
@@ -884,14 +893,14 @@ export class MMDAnimationHelper {
    * @return {MMDAnimationHelper}
    */
   remove(object: SkinnedMesh | Camera | Audio): this {
-    if (object.isSkinnedMesh) {
-      this._removeMesh(object)
+    if ((object as SkinnedMesh).isSkinnedMesh) {
+      this._removeMesh(object as SkinnedMesh)
     }
-    else if (object.isCamera) {
-      this._clearCamera(object)
+    else if ((object as Camera).isCamera) {
+      this._clearCamera(object as Camera)
     }
     else if (object.type === 'Audio') {
-      this._clearAudio(object)
+      this._clearAudio(object as Audio)
     }
     else {
       throw new Error('MMDAnimationHelper.remove: '
