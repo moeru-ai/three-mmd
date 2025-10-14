@@ -3,6 +3,7 @@
 /* eslint-disable sonarjs/different-types-comparison */
 /* eslint-disable ts/no-unsafe-assignment */
 /* eslint-disable ts/no-unsafe-member-access */
+/* eslint-disable ts/no-unsafe-call */
 /* eslint-disable ts/no-unsafe-argument */
 
 /* eslint-disable perfectionist/sort-classes */
@@ -33,6 +34,7 @@ import { MMDPhysics } from './mmd-physics'
 
 // Keep working quaternions for less GC
 const _quaternions: Quaternion[] = []
+/* eslint-disable-next-line @masknet/no-top-level */
 let _quaternionIndex = 0
 
 const getQuaternion = (): Quaternion => {
@@ -122,6 +124,7 @@ export interface MMDAnimationHelperMixer {
     _actions?: {
       _clip: AnimationClip
     }[]
+    _bindings?: any[]
   }
   physics?: MMDPhysics
   sortedBonesData?: PmxBoneInfo[]
@@ -589,6 +592,7 @@ export class MMDAnimationHelper {
       // TODO: what is this?
 
         // @ts-expect-error
+        // eslint-disable-next-line sonarjs/no-implicit-global
         world = masterPhysics.world
     }
 
@@ -707,8 +711,7 @@ export class MMDAnimationHelper {
   private _updatePropertyMixersBuffer(mesh: SkinnedMesh) {
     const mixer = this.objects.get(mesh)!.mixer!
 
-    // @ts-expect-error
-    const propertyMixers = mixer._bindings
+    const propertyMixers = mixer._bindings!
     // @ts-expect-error
     const accuIndex = mixer._accuIndex
 
