@@ -115,9 +115,14 @@ export interface MMDAnimationHelperMixer {
   grantSolver?: GrantSolver
   ikSolver?: CCDIKSolver
   looped?: boolean
-  mixer?: AnimationMixer
+  mixer?: AnimationMixer & {
+    _actions?: {
+      _clip: AnimationClip
+    }[]
+  }
   physics?: MMDPhysics
   sortedBonesData?: PmxBoneInfo[]
+  backupBones?: Float32Array
 }
 
 export interface MMDAnimationHelperParameter {
@@ -168,7 +173,7 @@ export class MMDAnimationHelper {
 
   masterPhysics: null | MMDPhysics
 
-  objects: WeakMap<AudioManager | Camera | SkinnedMesh, MMDAnimationHelperMixer>
+  objects: WeakMap<AudioManager | Camera | SkinnedMesh | AnimationClip, MMDAnimationHelperMixer>
   onBeforePhysics: (mesh: SkinnedMesh) => void
   sharedPhysics: boolean
 
@@ -314,6 +319,7 @@ export class MMDAnimationHelper {
     _grantResultMap.clear()
 
     for (let i = 0, il = sortedBonesData.length; i < il; i++) {
+      // @ts-expect-error
       updateOne(mesh, sortedBonesData[i].index, ikSolver, grantSolver)
     }
 
@@ -377,6 +383,7 @@ export class MMDAnimationHelper {
       return this.masterPhysics!
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
+      // @ts-expect-error
       const physics = this.meshes[i].physics
 
       if (physics !== undefined && physics !== null) {
@@ -439,7 +446,6 @@ export class MMDAnimationHelper {
   private _restoreBones(mesh: SkinnedMesh) {
     const objects = this.objects.get(mesh)!
 
-    // @ts-expect-error
     const backupBones = objects.backupBones
 
     if (backupBones === undefined)
@@ -468,7 +474,6 @@ export class MMDAnimationHelper {
 
     const bones = mesh.skeleton.bones
 
-    // @ts-expect-error
     let backupBones = objects.backupBones
 
     if (backupBones === undefined) {
@@ -554,6 +559,7 @@ export class MMDAnimationHelper {
 
       // TODO: find a workaround not to access ._clip looking like a private property
       objects.mixer.addEventListener('loop', (event) => {
+        // @ts-expect-error
         const tracks = event.action._clip.tracks
 
         if (tracks.length > 0 && tracks[0].name.slice(0, 6) !== '.bones')
@@ -631,8 +637,8 @@ export class MMDAnimationHelper {
       if (mixer === undefined)
         continue
 
-      for (let j = 0; j < mixer._actions.length; j++) {
-        const clip = mixer._actions[j]._clip
+      for (let j = 0; j < mixer._actions!.length; j++) {
+        const clip = mixer._actions![j]._clip
 
         if (!objects.has(clip)) {
           objects.set(clip, {
@@ -648,8 +654,8 @@ export class MMDAnimationHelper {
       const mixer = this.objects.get(camera)!.mixer
 
       if (mixer !== undefined) {
-        for (let i = 0, il = mixer._actions.length; i < il; i++) {
-          const clip = mixer._actions[i]._clip
+        for (let i = 0, il = mixer._actions!.length; i < il; i++) {
+          const clip = mixer._actions![i]._clip
 
           if (!objects.has(clip)) {
             objects.set(clip, {
@@ -676,8 +682,8 @@ export class MMDAnimationHelper {
       if (mixer === undefined)
         continue
 
-      for (let j = 0, jl = mixer._actions.length; j < jl; j++) {
-        mixer._actions[j]._clip.duration = max
+      for (let j = 0, jl = mixer._actions!.length; j < jl; j++) {
+        mixer._actions![j]._clip.duration = max
       }
     }
 
@@ -685,8 +691,8 @@ export class MMDAnimationHelper {
       const mixer = this.objects.get(camera)!.mixer
 
       if (mixer !== undefined) {
-        for (let i = 0, il = mixer._actions.length; i < il; i++) {
-          mixer._actions[i]._clip.duration = max
+        for (let i = 0, il = mixer._actions!.length; i < il; i++) {
+          mixer._actions![i]._clip.duration = max
         }
       }
     }
@@ -697,9 +703,11 @@ export class MMDAnimationHelper {
   }
 
   private _updatePropertyMixersBuffer(mesh: SkinnedMesh) {
-    const mixer = this.objects.get(mesh)!.mixer
+    const mixer = this.objects.get(mesh)!.mixer!
 
+    // @ts-expect-error
     const propertyMixers = mixer._bindings
+    // @ts-expect-error
     const accuIndex = mixer._accuIndex
 
     for (let i = 0, il = propertyMixers.length; i < il; i++) {
@@ -722,6 +730,7 @@ export class MMDAnimationHelper {
       return
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
+      // @ts-expect-error
       const p = this.meshes[i].physics
 
       if (p !== null && p !== undefined) {
@@ -733,6 +742,7 @@ export class MMDAnimationHelper {
     physics.stepSimulation(delta)
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
+      // @ts-expect-error
       const p = this.meshes[i].physics
 
       if (p !== null && p !== undefined) {
