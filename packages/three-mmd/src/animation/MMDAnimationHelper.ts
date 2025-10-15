@@ -15,6 +15,7 @@ import type {
   Bone,
   Camera,
   PerspectiveCamera,
+  PropertyMixer,
   SkinnedMesh,
 } from 'three'
 
@@ -124,7 +125,7 @@ export interface MMDAnimationHelperMixer {
     _actions?: {
       _clip: AnimationClip
     }[]
-    _bindings?: any[]
+    _bindings?: PropertyMixer[]
   }
   physics?: MMDPhysics
   sortedBonesData?: PmxBoneInfo[]
@@ -716,10 +717,12 @@ export class MMDAnimationHelper {
 
     for (let i = 0, il = propertyMixers.length; i < il; i++) {
       const propertyMixer = propertyMixers[i]
+      // @ts-expect-error
       const buffer = propertyMixer.buffer
       const stride = propertyMixer.valueSize
       const offset = (accuIndex + 1) * stride
 
+      // @ts-expect-error
       propertyMixer.binding.getValue(buffer, offset)
     }
   }
