@@ -913,7 +913,7 @@ export class MMDAnimationHelper {
     if ('isSkinnedMesh' in object && object.isSkinnedMesh === true) {
       this._removeMesh(object as SkinnedMesh)
     }
-    else if ((object as Camera).isCamera) {
+    else if ('isCamera' in object && object.isCamera === true) {
       this._clearCamera(object as Camera)
     }
     else if (object.type === 'Audio') {
