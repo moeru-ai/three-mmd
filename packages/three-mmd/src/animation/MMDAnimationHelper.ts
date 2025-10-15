@@ -244,7 +244,7 @@ export class MMDAnimationHelper {
     const mixer = this.objects.get(camera)!.mixer
 
     if (mixer && this.enabled.cameraAnimation) {
-      mixer.update(delta);
+      mixer.update(delta)
 
       (camera as PerspectiveCamera).updateProjectionMatrix()
 
