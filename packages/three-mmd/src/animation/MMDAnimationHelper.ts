@@ -914,7 +914,7 @@ export class MMDAnimationHelper {
       this._removeMesh(object as SkinnedMesh)
     }
     else if ('isCamera' in object && object.isCamera === true) {
-      this._clearCamera(object as Camera)
+      this._clearCamera(object)
     }
     else if (object.type === 'Audio') {
       this._clearAudio(object as Audio)
