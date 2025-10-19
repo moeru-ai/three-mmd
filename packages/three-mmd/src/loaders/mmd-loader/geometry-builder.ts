@@ -286,7 +286,7 @@ export class GeometryBuilder {
       // Build a tree representing grant hierarchy
       for (const grantEntry of Object.values(grantEntryMap)) {
         const parentGrantEntry = grantEntry.param?.parentIndex != null
-          ? grantEntryMap[grantEntry.param.parentIndex]
+          ? grantEntryMap[grantEntry.param.parentIndex] ?? rootEntry
           : rootEntry
 
         grantEntry.parent = parentGrantEntry
