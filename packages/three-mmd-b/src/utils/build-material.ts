@@ -361,7 +361,7 @@ export const buildMaterial = (
     // gradientMap
     let isDefaultToon, toonFileName
 
-    if (material.isSharedToonTexture) {
+    if (material.isSharedToonTexture || material.toonTextureIndex === -1) {
       // eslint-disable-next-line sonarjs/no-nested-template-literals
       toonFileName = `toon${(`0${material.toonTextureIndex + 1}`).slice(-2)}.bmp`
       isDefaultToon = true
