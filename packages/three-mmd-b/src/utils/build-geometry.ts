@@ -15,7 +15,7 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   pmx.vertices.forEach((v, i) => {
     positions.set(v.position, i * 3)
     normals.set(v.normal, i * 3)
-    uvs.set([v.uv[0], 1 - v.uv[1]], i * 2) // Flip Y Axis
+    uvs.set(v.uv, i * 2)
 
     switch (v.weightType) {
       case PmxObject.Vertex.BoneWeightType.Bdef1: {
