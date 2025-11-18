@@ -16,7 +16,8 @@
     "leva": "catalog:r3f",
     "react": "catalog:r3f",
     "react-dom": "catalog:r3f",
-    "three": "catalog:"
+    "three": "catalog:",
+    "three-stdlib": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:r3f",
