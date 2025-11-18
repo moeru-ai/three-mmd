@@ -7,9 +7,9 @@ export type Path =
   | `/`
   | `/b/mesh`
   | `/b/skeleton`
-  | `/debug`
-  | `/debug2`
-  | `/debug3`
+  | `/debug/mesh`
+  | `/debug/physics-correct`
+  | `/debug/physics-incorrect`
   | `/with-use-animations`
 
 export type Params = {

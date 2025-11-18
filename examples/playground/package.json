@@ -13,6 +13,7 @@
     "@moeru/three-mmd-r3f": "workspace:^",
     "@react-three/drei": "catalog:r3f",
     "@react-three/fiber": "catalog:r3f",
+    "foxact": "catalog:",
     "leva": "catalog:r3f",
     "react": "catalog:r3f",
     "react-dom": "catalog:r3f",

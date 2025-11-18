@@ -45,6 +45,9 @@ catalogs:
     eslint-plugin-react-refresh:
       specifier: ^0.4.23
       version: 0.4.23
+    foxact:
+      specifier: ^0.2.49
+      version: 0.2.49
     pkgroll:
       specifier: ^2.18.0
       version: 2.18.0
@@ -175,6 +178,9 @@ importers:
       '@react-three/fiber':
         specifier: catalog:r3f
         version: 9.3.0(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(three@0.180.0)
+      foxact:
+        specifier: 'catalog:'
+        version: 0.2.49(react@19.2.0)
       leva:
         specifier: catalog:r3f
         version: 0.10.0(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -1588,6 +1594,9 @@ packages:
     resolution: {integrity: sha512-GfisEZEJvzKrmGWkvfhgzcz/BllN1USeqD2V6tg14OAOgaCD2Z/PUEuxnAZ/nPvmaHRG7a8y77p1T/IRQ4D1Hw==}
     engines: {node: '>=4'}
 
+  client-only@0.0.1:
+    resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
+
   color-convert@2.0.1:
     resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
     engines: {node: '>=7.0.0'}
@@ -2108,6 +2117,14 @@ packages:
   format@0.2.2:
     resolution: {integrity: sha512-wzsgA6WOq+09wrU1tsJ09udeR/YZRaeArL9e1wPbFg3GG2yDnC2ldKpxs4xunpFF9DgqCqOIra3bc1HWrJ37Ww==}
     engines: {node: '>=0.4.x'}
+
+  foxact@0.2.49:
+    resolution: {integrity: sha512-9Pbu4IbkaNqtS/H4887/QWegclMpBn54mzbPp3t1mg0iJuB83jpQGBY2fshal50NmchlAFIT/GSWBFsa0YI31Q==}
+    peerDependencies:
+      react: '*'
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -2847,6 +2864,9 @@ packages:
     resolution: {integrity: sha512-RF0Fw+rO5AMf9MAyaRXI4AV0Ulj5lMHqVxxdSgiVbixSCXoEmmX/jk0CuJw4+3SqroYO9VoUh+HcuJivvtJemA==}
     engines: {node: '>=10'}
     hasBin: true
+
+  server-only@0.0.1:
+    resolution: {integrity: sha512-qepMx2JxAa5jjfzxG79yPPq+8BuFToHd1hm7kI+Z4zAq1ftQiP7HcxMhDDItrbtwVeLg/cY2JnKnrcFkmiswNA==}
 
   set-cookie-parser@2.7.1:
     resolution: {integrity: sha512-IOc8uWeOZgnb3ptbCURJWNjWUPcO3ZnTTdzsurqERrP6nPyv+paC55vJM0LpOlT2ne+Ix+9+CRG1MNLlyZ4GjQ==}
@@ -4620,6 +4640,8 @@ snapshots:
     dependencies:
       escape-string-regexp: 1.0.5
 
+  client-only@0.0.1: {}
+
   color-convert@2.0.1:
     dependencies:
       color-name: 1.1.4
@@ -5252,6 +5274,13 @@ snapshots:
   for-in@1.0.2: {}
 
   format@0.2.2: {}
+
+  foxact@0.2.49(react@19.2.0):
+    dependencies:
+      client-only: 0.0.1
+      server-only: 0.0.1
+    optionalDependencies:
+      react: 19.2.0
 
   fsevents@2.3.3:
     optional: true
@@ -6154,6 +6183,8 @@ snapshots:
   semver@6.3.1: {}
 
   semver@7.7.2: {}
+
+  server-only@0.0.1: {}
 
   set-cookie-parser@2.7.1: {}
 

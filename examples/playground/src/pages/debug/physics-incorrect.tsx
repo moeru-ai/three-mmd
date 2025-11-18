@@ -3,10 +3,10 @@ import { useMMD, useVMD } from '@moeru/three-mmd-r3f'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 
-import pmdUrl from '../../../basic/src/assets/miku/miku_v2.pmd?url'
-import vmdUrl from '../../../basic/src/assets/vmds/wavefile_v2.vmd?url'
+import pmdUrl from '../../../../basic/src/assets/miku/miku_v2.pmd?url'
+import vmdUrl from '../../../../basic/src/assets/vmds/wavefile_v2.vmd?url'
 
-const Debug3 = () => {
+const PhysicsIncorrect = () => {
   const mesh = useMMD(pmdUrl)
   const vmd = useVMD(vmdUrl)
 
@@ -35,4 +35,4 @@ const Debug3 = () => {
   )
 }
 
-export default Debug3
+export default PhysicsIncorrect
