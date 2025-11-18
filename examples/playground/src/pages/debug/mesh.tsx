@@ -3,7 +3,7 @@ import type { SkinnedMesh } from 'three'
 import { useControls } from 'leva'
 import { startTransition, useEffect, useMemo, useState } from 'react'
 
-import pmdUrl from '../../../../basic/src/assets/miku/miku_v2.pmd?url'
+import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 import { useMMDLoader } from '../../hooks/use-mmd-loader'
 
 const Mesh = () => {
@@ -12,7 +12,7 @@ const Mesh = () => {
 
   const [object, setObject] = useState<SkinnedMesh>()
 
-  useEffect(() => startTransition(async () => setObject(await loader.loadAsync(pmdUrl))), [loader])
+  useEffect(() => startTransition(async () => setObject(await loader.loadAsync(pmxUrl))), [loader])
 
   const { showSkeleton } = useControls({
     showSkeleton: false,
