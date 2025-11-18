@@ -25,7 +25,7 @@ const Mesh = () => {
     <>
       <primitive
         object={object}
-        rotation={[0, Math.PI, 0]}
+        // rotation={[0, Math.PI, 0]}
         scale={0.1}
       />
       {showSkeleton && (
