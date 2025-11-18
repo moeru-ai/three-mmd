@@ -110,7 +110,7 @@ loader.load(
         physics: true,
       })
 
-      const ikHelper = helper.objects.get(mesh)!.ikSolver.createHelper()
+      const ikHelper = helper.objects.get(mesh)!.ikSolver!.createHelper()
       ikHelper.visible = false
       scene.add(ikHelper)
 
@@ -132,11 +132,11 @@ loader.load(
         }
 
         guiControls.add(lilStatesControls, 'Animation').onChange(() => {
-          helper.enable('Animation', lilStatesControls.Animation)
+          helper.enable('animation', lilStatesControls.Animation)
         })
 
         guiControls.add(lilStatesControls, 'IK').onChange(() => {
-          helper.enable('IK', lilStatesControls.IK)
+          helper.enable('ik', lilStatesControls.IK)
         })
 
         guiControls.add(lilStatesControls, 'Outline').onChange(() => {
