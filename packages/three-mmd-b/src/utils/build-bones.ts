@@ -15,6 +15,9 @@ export const buildBones = (pmx: PmxObject, mesh: SkinnedMesh): Bone[] => {
       pos[1] -= parentInfo.position[1]
       pos[2] -= parentInfo.position[2]
     }
+    // Flip Z axis
+    pos[2] = -pos[2]
+
     bone.position.fromArray(pos)
     return bone
   })
