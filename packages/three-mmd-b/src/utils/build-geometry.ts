@@ -12,7 +12,7 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   const skinIndices = new Uint16Array(vertexCount * 4)
   const skinWeights = new Float32Array(vertexCount * 4)
 
-  pmx.vertices.forEach((v, i) => { 
+  pmx.vertices.forEach((v, i) => {
     // Need to fix the chirality of the model
     // Flip Z axis
     const position = [v.position[0], v.position[1], -v.position[2]]
@@ -57,7 +57,7 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   geometry.setAttribute('skinWeight', new BufferAttribute(skinWeights, 4))
 
   // Need to flip the face winding order
-   const indices = Array.from(pmx.indices)
+  const indices = Array.from(pmx.indices)
   for (let i = 0; i < indices.length; i += 3) {
     const tmp = indices[i + 1]
     indices[i + 1] = indices[i + 2]
