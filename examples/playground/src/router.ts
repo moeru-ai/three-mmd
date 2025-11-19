@@ -5,6 +5,7 @@ import { components, hooks, utils } from '@generouted/react-router/client'
 
 export type Path =
   | `/`
+  | `/b/animation`
   | `/b/mesh`
   | `/b/skeleton`
   | `/debug/mesh`
