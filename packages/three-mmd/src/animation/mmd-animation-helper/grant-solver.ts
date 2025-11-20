@@ -3,7 +3,7 @@ import type { Bone, SkinnedMesh } from 'three'
 
 import { Quaternion } from 'three'
 
-interface Grant extends NonNullable<PmxBoneInfo['grant']> {
+export interface Grant extends NonNullable<PmxBoneInfo['grant']> {
   index: number
 }
 
