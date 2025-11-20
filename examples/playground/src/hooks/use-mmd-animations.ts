@@ -22,13 +22,15 @@ interface Api<T extends AnimationClip> {
 export const useMMDAnimations = <T extends AnimationClip>(
   clips: T[],
   root: SkinnedMesh,
+  iks?: IK[],
+  grants?: Grant[],
 ): Api<T> => {
   const { restoreBones, saveBones } = processBones()
 
   const mixer = useMemo(() => new AnimationMixer(root), [root])
 
-  const ikSolver = useMemo(() => new CCDIKSolver(root, (root.geometry.userData.MMD as { iks: IK[] }).iks), [root])
-  const grantSolver = useMemo(() => new GrantSolver(root, (root.geometry.userData.MMD as { grants: Grant[] }).grants), [root])
+  const ikSolver = useMemo(() => new CCDIKSolver(root, iks ?? (root.geometry.userData.MMD as { iks: IK[] }).iks), [root, iks])
+  const grantSolver = useMemo(() => new GrantSolver(root, grants ?? (root.geometry.userData.MMD as { grants: Grant[] }).grants), [root, grants])
 
   const lazyActions = useRef<Api<AnimationClip>['actions']>({})
 

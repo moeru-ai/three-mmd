@@ -1,13 +1,15 @@
 import { buildAnimation, ExperimentalMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
-import { useAnimations } from '@react-three/drei'
-import { useFrame, useLoader } from '@react-three/fiber'
+import { useLoader } from '@react-three/fiber'
+import { useControls } from 'leva'
 import { useEffect, useMemo } from 'react'
-import { CCDIKHelper, CCDIKSolver } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
+import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
-import vmdUrl from '../../../../basic/src/assets/vmds/wavefile_v2.vmd?url'
+import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
 const BAnimation = () => {
+  const { showIK, showSkeleton } = useControls({ showIK: false, showSkeleton: false })
+
   const { iks, mesh } = useLoader(ExperimentalMMDLoader, pmxUrl)
 
   const vmd = useLoader(VMDLoader, vmdUrl)
@@ -18,25 +20,20 @@ const BAnimation = () => {
     return animation
   }, [vmd, mesh])
 
-  const ikSolver = useMemo(() => new CCDIKSolver(mesh, iks), [mesh, iks])
-  const ikHelper = useMemo(() => new CCDIKHelper(mesh, iks), [mesh, iks])
+  const { actions, ikSolver } = useMMDAnimations([animation], mesh, iks, [])
 
-  const { actions, ref } = useAnimations([animation])
+  const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
 
   useEffect(() => {
     // console.log(mesh.skeleton.bones)
     actions?.dance?.play()
   })
 
-  useFrame((_, delta) => {
-    mesh.updateMatrixWorld(true)
-    ikSolver.update(delta)
-  })
-
   return (
     <>
-      <primitive object={mesh} ref={ref} rotation={[0, Math.PI, 0]} scale={0.1} />
-      <primitive object={ikHelper} />
+      <primitive object={mesh} rotation={[0, Math.PI, 0]} scale={0.1} />
+      {showIK && <primitive object={ikHelper} />}
+      {showSkeleton && <skeletonHelper args={[mesh]} />}
     </>
 
   )
