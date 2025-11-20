@@ -28,7 +28,10 @@ const BAnimation = () => {
     actions?.dance?.play()
   })
 
-  useFrame(() => ikSolver.update())
+  useFrame((_, delta) => {
+    mesh.updateMatrixWorld(true)
+    ikSolver.update(delta)
+  })
 
   return (
     <>

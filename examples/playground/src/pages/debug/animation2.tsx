@@ -1,11 +1,6 @@
 import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
-import {
-  // createMMDAnimationClip,
-  // MMDAnimationHelper,
-  MMDLoader,
-  // VMDLoader
-} from '@moeru/three-mmd'
+import { MMDLoader } from '@moeru/three-mmd'
 import { buildAnimation, VMDLoader } from '@moeru/three-mmd-b'
 import { useAnimations } from '@react-three/drei'
 import { useFrame, useLoader } from '@react-three/fiber'
@@ -23,7 +18,6 @@ const DebugAnimation2 = () => {
   const vmd = useLoader(VMDLoader, vmdUrl)
 
   const animation = useMemo(() => {
-    // const animation = createMMDAnimationClip(vmd, object)
     const animation = buildAnimation(vmd, object)
     animation.name = 'dance'
     return animation
@@ -32,7 +26,7 @@ const DebugAnimation2 = () => {
   const ikSolver = useMemo(() => new CCDIKSolver(object, (object.geometry.userData.MMD as { iks: IK[] }).iks), [object])
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
 
-  const { actions, ref } = useAnimations([animation])
+  const { actions } = useAnimations([animation], object)
 
   useEffect(() => {
     // console.log(object.skeleton.bones)
@@ -48,7 +42,7 @@ const DebugAnimation2 = () => {
     <>
       <primitive
         object={object}
-        ref={ref}
+        // ref={ref}
         scale={0.1}
       />
       {showIK && <primitive object={ikHelper} />}
