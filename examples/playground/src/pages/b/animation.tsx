@@ -24,7 +24,7 @@ const BAnimation = () => {
   const { actions, ref } = useAnimations([animation])
 
   useEffect(() => {
-    console.log(mesh.skeleton.bones)
+    // console.log(mesh.skeleton.bones)
     actions?.dance?.play()
   })
 

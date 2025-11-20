@@ -17,7 +17,7 @@ import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 
 const DebugAnimation2 = () => {
-  const { showIK } = useControls({ showIK: false })
+  const { showIK, showSkeleton } = useControls({ showIK: false, showSkeleton: false })
 
   const object = useLoader(MMDLoader, pmxUrl)
   const vmd = useLoader(VMDLoader, vmdUrl)
@@ -35,13 +35,13 @@ const DebugAnimation2 = () => {
   const { actions, ref } = useAnimations([animation])
 
   useEffect(() => {
-    console.log(object.skeleton.bones)
+    // console.log(object.skeleton.bones)
     actions?.dance?.play()
   })
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     object.updateMatrixWorld(true)
-    ikSolver.update()
+    ikSolver.update(delta)
   })
 
   return (
@@ -52,6 +52,7 @@ const DebugAnimation2 = () => {
         scale={0.1}
       />
       {showIK && <primitive object={ikHelper} />}
+      {showSkeleton && <skeletonHelper args={[object]} />}
     </>
   )
 }
