@@ -25,7 +25,6 @@ export const buildBones = (pmx: PmxObject, mesh: SkinnedMesh): Bone[] => {
   pmx.bones.forEach((boneInfo, i) => {
     if (boneInfo.parentBoneIndex >= 0 && boneInfo.parentBoneIndex < pmx.bones.length) {
       bones[boneInfo.parentBoneIndex].add(bones[i])
-      bones[i].parent = bones[boneInfo.parentBoneIndex]
     }
     else {
       mesh.add(bones[i])
