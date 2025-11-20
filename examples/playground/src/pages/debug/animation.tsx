@@ -23,7 +23,7 @@ const DebugAnimation = () => {
     return animation
   }, [vmd, object])
 
-  const helper = useMemo(() => new MMDAnimationHelper({ afterglow: 2 }), [])
+  const helper = useMemo(() => new MMDAnimationHelper(), [])
   const ikHelper = useMemo(() => new CCDIKHelper(object, (object.geometry.userData.MMD as { iks: IK[] }).iks), [object])
 
   useEffect(() => {

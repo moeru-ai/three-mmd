@@ -1,16 +1,12 @@
-import type { Grant } from '@moeru/three-mmd'
-import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
-
-import { GrantSolver, MMDLoader } from '@moeru/three-mmd'
+import { MMDLoader } from '@moeru/three-mmd'
 import { buildAnimation, VMDLoader } from '@moeru/three-mmd-b'
-import { useAnimations } from '@react-three/drei'
-import { useFrame, useLoader } from '@react-three/fiber'
+import { useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo } from 'react'
-import { CCDIKSolver } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
+import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
 const DebugAnimation2 = () => {
   const { showIK, showSkeleton } = useControls({ showIK: false, showSkeleton: false })
@@ -24,22 +20,17 @@ const DebugAnimation2 = () => {
     return animation
   }, [vmd, object])
 
-  const ikSolver = useMemo(() => new CCDIKSolver(object, (object.geometry.userData.MMD as { iks: IK[] }).iks), [object])
+  const { actions, ikSolver } = useMMDAnimations([animation], object)
+
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
-
-  const grantSolver = useMemo(() => new GrantSolver(object, (object.geometry.userData.MMD as { grants: Grant[] }).grants), [object])
-
-  const { actions } = useAnimations([animation], object)
 
   useEffect(() => {
     // console.log(object.skeleton.bones)
     actions?.dance?.play()
-  })
 
-  useFrame((_, delta) => {
-    object.updateMatrixWorld(true)
-    ikSolver.update(delta)
-    grantSolver.update()
+    return () => {
+      object.pose()
+    }
   })
 
   return (
