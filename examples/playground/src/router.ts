@@ -8,6 +8,7 @@ export type Path =
   | `/b/animation`
   | `/b/mesh`
   | `/b/skeleton`
+  | `/debug/animation`
   | `/debug/mesh`
   | `/debug/physics-correct`
   | `/debug/physics-incorrect`
