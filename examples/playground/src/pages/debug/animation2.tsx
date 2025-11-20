@@ -1,6 +1,7 @@
+import type { Grant } from '@moeru/three-mmd'
 import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
-import { MMDLoader } from '@moeru/three-mmd'
+import { GrantSolver, MMDLoader } from '@moeru/three-mmd'
 import { buildAnimation, VMDLoader } from '@moeru/three-mmd-b'
 import { useAnimations } from '@react-three/drei'
 import { useFrame, useLoader } from '@react-three/fiber'
@@ -26,6 +27,8 @@ const DebugAnimation2 = () => {
   const ikSolver = useMemo(() => new CCDIKSolver(object, (object.geometry.userData.MMD as { iks: IK[] }).iks), [object])
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
 
+  const grantSolver = useMemo(() => new GrantSolver(object, (object.geometry.userData.MMD as { grants: Grant[] }).grants), [object])
+
   const { actions } = useAnimations([animation], object)
 
   useEffect(() => {
@@ -36,6 +39,7 @@ const DebugAnimation2 = () => {
   useFrame((_, delta) => {
     object.updateMatrixWorld(true)
     ikSolver.update(delta)
+    grantSolver.update()
   })
 
   return (
