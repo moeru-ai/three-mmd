@@ -272,8 +272,15 @@ class AnimationBuilder {
 
         times.push(time)
 
-        for (let j = 0; j < 3; j++) positions.push(basePosition[j] + position[j])
-        for (let j = 0; j < 4; j++) rotations.push(rotation[j])
+        positions.push(basePosition[0] + position[0])
+        positions.push(basePosition[1] + position[1])
+        positions.push(basePosition[2] - position[2])
+
+        rotations.push(-rotation[0])
+        rotations.push(-rotation[1])
+        rotations.push(rotation[2])
+        rotations.push(rotation[3])
+
         for (let j = 0; j < 3; j++) pushInterpolation(pInterpolations, interpolation, j)
 
         pushInterpolation(rInterpolations, interpolation, 3)
