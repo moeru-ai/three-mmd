@@ -1,11 +1,12 @@
 import { Ammo } from '@moeru/three-mmd-r3f'
-import { Environment, Loader, OrbitControls } from '@react-three/drei'
+import { Environment, Loader, OrbitControls, Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Suspense } from 'react'
 import { Outlet } from 'react-router'
 
 const App = () => (
   <>
+    <Stats />
     <Loader />
     <Canvas
       gl={{ localClippingEnabled: true }}
