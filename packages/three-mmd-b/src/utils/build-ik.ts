@@ -10,18 +10,14 @@ export const buildIK = (pmx: PmxObject): IK[] => {
   for (const [index, { ik }] of pmx.bones.entries()) {
     if (ik === undefined)
       continue
-    // console.debug('IK found: ', ik)
-    // console.debug('IK target bone: ', pmx.bones[ik.target].name)
     const param: IK = {
       effector: ik.target,
       iteration: ik.iteration,
       links: [],
-      // maxAngle: ik.rotationConstraint,
       maxAngle: ik.rotationConstraint > 0 ? ik.rotationConstraint : undefined,
       target: index,
     }
 
-    // console.debug('IK link: ', ik.links)
     const links: IK['links'] = ik.links.map((link) => {
       const result: IK['links'][number] = {
         enabled: true,
@@ -31,18 +27,19 @@ export const buildIK = (pmx: PmxObject): IK[] => {
       const boneName = pmx.bones[link.target].name
       if (boneName.includes('ひざ')) {
         result.limitation = new Vector3(1, 0, 0)
-      } else if (link.limitation) {
+      }
+      else if (link.limitation) {
         const rotationMin = link.limitation.minimumAngle
         const rotationMax = link.limitation.maximumAngle
 
         // Convert Left to Right coordinate by myself because
         // MMDParser doesn't convert. It's a MMDParser's bug
-        const tmp1 = -rotationMax[0]
-        const tmp2 = -rotationMax[1]
-        rotationMax[0] = -rotationMin[0]
-        rotationMax[1] = -rotationMin[1]
-        rotationMin[0] = tmp1
-        rotationMin[1] = tmp2
+        // const tmp1 = -rotationMax[0]
+        // const tmp2 = -rotationMax[1]
+        // rotationMax[0] = -rotationMin[0]
+        // rotationMax[1] = -rotationMin[1]
+        // rotationMin[0] = tmp1
+        // rotationMin[1] = tmp2
 
         result.rotationMin = new Vector3().fromArray(rotationMin)
         result.rotationMax = new Vector3().fromArray(rotationMax)
