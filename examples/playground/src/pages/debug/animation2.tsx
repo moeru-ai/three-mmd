@@ -1,4 +1,5 @@
-import { buildAnimation, ExperimentalMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
+import { MMDLoader } from '@moeru/three-mmd'
+import { buildAnimation, VMDLoader } from '@moeru/three-mmd-b'
 import { useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo } from 'react'
@@ -7,39 +8,42 @@ import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
-const BAnimation = () => {
+const DebugAnimation2 = () => {
   const { showIK, showSkeleton } = useControls({ showIK: false, showSkeleton: false })
 
-  const mmd = useLoader(ExperimentalMMDLoader, pmxUrl)
-
+  const object = useLoader(MMDLoader, pmxUrl)
   const vmd = useLoader(VMDLoader, vmdUrl)
 
   const animation = useMemo(() => {
-    const animation = buildAnimation(vmd, mmd.mesh)
+    const animation = buildAnimation(vmd, object)
     animation.name = 'dance'
     return animation
-  }, [vmd, mmd])
+  }, [vmd, object])
 
-  const { actions, ikSolver } = useMMDAnimations([animation], mmd.mesh, mmd.iks, mmd.grants)
+  const { actions, ikSolver } = useMMDAnimations([animation], object)
 
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
 
   useEffect(() => {
+    // console.log(object.skeleton.bones)
     actions?.dance?.play()
 
     return () => {
-      mmd.mesh.pose()
+      object.pose()
     }
   })
 
   return (
     <>
-      <primitive object={mmd.mesh} scale={0.1} />
+      <primitive
+        object={object}
+        // ref={ref}
+        scale={0.1}
+      />
       {showIK && <primitive object={ikHelper} />}
-      {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
+      {showSkeleton && <skeletonHelper args={[object]} />}
     </>
-
   )
 }
 
-export default BAnimation
+export default DebugAnimation2
