@@ -1,26 +1,13 @@
-import type { LoadingManager, SkinnedMesh } from 'three'
-import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
-import type { Grant } from '../utils/build-grants'
+import type { LoadingManager } from 'three'
 
 import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
-import {
-  FileLoader,
-  Loader,
-  LoaderUtils,
-} from 'three'
+import { FileLoader, Loader, LoaderUtils } from 'three'
+
+import type { MMD } from '../utils/build-mmd'
 
 import { extractModelExtension } from '../../../three-mmd/src/utils/_extract-model-extension'
-import { buildIK } from '../utils/build-ik'
-import { buildMesh } from '../utils/build-mesh'
-import { buildGrants } from '../utils/build-grants'
-
-/** @experimental */
-export interface MMD {
-  iks: IK[]
-  mesh: SkinnedMesh
-  grants: Grant[]
-}
+import { buildMMD } from '../utils/build-mmd'
 
 /** @experimental */
 export class ExperimentalMMDLoader extends Loader<MMD> {
@@ -62,11 +49,7 @@ export class ExperimentalMMDLoader extends Loader<MMD> {
 
           void (modelExtension === 'pmd' ? PmdReader : PmxReader)
             .ParseAsync(buffer as ArrayBuffer)
-            .then(pmx => onLoad({
-              iks: buildIK(pmx),
-              mesh: buildMesh(pmx, resourcePath),
-              grants: buildGrants(pmx),
-            }))
+            .then(pmx => onLoad(buildMMD(pmx, resourcePath)))
             .catch(onError)
         }
         catch (e) {
