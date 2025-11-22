@@ -5,7 +5,7 @@ import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 import { GrantSolver } from '@moeru/three-mmd'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
-import { AnimationMixer, Vector3 } from 'three'
+import { AnimationMixer } from 'three'
 import { CCDIKSolver } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
 import { processBones } from '../utils/process-bones'
@@ -29,8 +29,9 @@ export const useMMDAnimations = <T extends AnimationClip>(
 
   const mixer = useMemo(() => new AnimationMixer(root), [root])
 
-  // const ikSolver = useMemo(() => new CCDIKSolver(root, iks ?? (root.geometry.userData.MMD as { iks: IK[] }).iks), [root, iks])
-  const ikSolver = useMemo(() => new CCDIKSolver(root, iks), [root, iks])
+  // TODO: remove fallback
+  const ikSolver = useMemo(() => new CCDIKSolver(root, iks ?? (root.geometry.userData.MMD as { iks: IK[] }).iks), [root, iks])
+  // const ikSolver = useMemo(() => new CCDIKSolver(root, iks), [root, iks])
   const grantSolver = useMemo(() => new GrantSolver(root, grants ?? (root.geometry.userData.MMD as { grants: Grant[] }).grants), [root, grants])
   // const grantSolver = useMemo(() => new GrantSolver(root, grants), [root, grants])
 
@@ -61,16 +62,7 @@ export const useMMDAnimations = <T extends AnimationClip>(
 
     root.updateMatrixWorld(true)
 
-    // const bones = root.skeleton.bones
-    // const ik = ikSolver.iks.find(i => bones[i.target].name.includes('左足ＩＫ'))
-    // const w1 = bones[ik!.effector].getWorldPosition(new Vector3())
-    // const w2 = bones[ik!.target].getWorldPosition(new Vector3())
-    // console.log('before', w1.toArray(), 'target', w2.toArray())
-
     ikSolver.update(delta)
-
-    // const w3 = bones[ik!.effector].getWorldPosition(new Vector3())
-    // console.log('after', w3.toArray())
 
     grantSolver.update()
   })

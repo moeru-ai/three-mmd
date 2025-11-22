@@ -10,45 +10,33 @@ import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 const BAnimation = () => {
   const { showIK, showSkeleton } = useControls({ showIK: false, showSkeleton: false })
 
-  const { iks, mesh, grants } = useLoader(ExperimentalMMDLoader, pmxUrl)
-  // check iks
-  // const { bones } = mesh.skeleton
-  // iks.forEach((ik) => {
-  //   console.log(
-  //     'target', ik.target, bones[ik.target].name,
-  //     'effector', ik.effector, bones[ik.effector].name,
-  //     'links', ik.links.map(l => `${l.index}:${bones[l.index].name}`)
-  //   )
-  // })
-  
+  const mmd = useLoader(ExperimentalMMDLoader, pmxUrl)
+
   const vmd = useLoader(VMDLoader, vmdUrl)
 
   const animation = useMemo(() => {
-    const animation = buildAnimation(vmd, mesh)
+    const animation = buildAnimation(vmd, mmd.mesh)
     animation.name = 'dance'
     return animation
-  }, [vmd, mesh])
+  }, [vmd, mmd])
 
-  const { actions, ikSolver } = useMMDAnimations([animation], mesh, iks, grants)
-
-  // console.log(
-  //   animation.tracks
-  //     .map(t => t.name)
-  //     .filter(n => n.includes('ＩＫ') || n.toLowerCase().includes('ik'))
-  // )
+  const { actions, ikSolver } = useMMDAnimations([animation], mmd.mesh, mmd.iks, mmd.grants)
 
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
 
   useEffect(() => {
-    // console.log(mesh.skeleton.bones)
     actions?.dance?.play()
+
+    return () => {
+      mmd.mesh.pose()
+    }
   })
 
   return (
     <>
-      <primitive object={mesh} rotation={[0, Math.PI, 0]} scale={0.1} />
+      <primitive object={mmd.mesh} scale={0.1} />
       {showIK && <primitive object={ikHelper} />}
-      {showSkeleton && <skeletonHelper args={[mesh]} />}
+      {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
     </>
 
   )
