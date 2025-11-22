@@ -4,10 +4,8 @@ import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils } from 'three'
 
-import type { MMD } from '../utils/build-mmd'
-
 import { extractModelExtension } from '../../../three-mmd/src/utils/_extract-model-extension'
-import { buildMMD } from '../utils/build-mmd'
+import { MMD } from '../utils/mmd'
 
 /** @experimental */
 export class ExperimentalMMDLoader extends Loader<MMD> {
@@ -49,7 +47,7 @@ export class ExperimentalMMDLoader extends Loader<MMD> {
 
           void (modelExtension === 'pmd' ? PmdReader : PmxReader)
             .ParseAsync(buffer as ArrayBuffer)
-            .then(pmx => onLoad(buildMMD(pmx, resourcePath)))
+            .then(pmx => onLoad(new MMD(pmx, resourcePath)))
             .catch(onError)
         }
         catch (e) {
