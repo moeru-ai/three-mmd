@@ -1,5 +1,5 @@
 import { buildAnimation, ExperimentalMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
-import { useLoader } from '@react-three/fiber'
+import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo } from 'react'
 
@@ -8,7 +8,17 @@ import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初�
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
 const BAnimation = () => {
-  const { showIK, showSkeleton } = useControls({ showIK: false, showSkeleton: false })
+  const {
+    showColliders,
+    showIK,
+    showJoints,
+    showSkeleton,
+  } = useControls({
+    showColliders: false,
+    showIK: false,
+    showJoints: false,
+    showSkeleton: false,
+  })
 
   const mmd = useLoader(ExperimentalMMDLoader, pmxUrl)
 
@@ -32,11 +42,23 @@ const BAnimation = () => {
     }
   })
 
+  useFrame((_, delta) => mmd.update(delta))
+
+  const colliderHelpers = useMemo(() => mmd.createColliderHelpers(), [mmd])
+  const jointHelpers = useMemo(() => mmd.createJointHelpers(), [mmd])
+
   return (
     <>
-      <primitive object={mmd.mesh} scale={0.1} />
+      <primitive
+        object={mmd.mesh}
+        scale={0.1}
+      />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
+      {/* eslint-disable-next-line react/no-array-index-key */}
+      {showColliders && colliderHelpers.map((h, i) => <primitive key={i} object={h} />)}
+      {/* eslint-disable-next-line react/no-array-index-key */}
+      {showJoints && jointHelpers.map((h, i) => <primitive key={i} object={h} />)}
     </>
 
   )
