@@ -1,5 +1,6 @@
 import type { LoadingManager, SkinnedMesh } from 'three'
 import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
+import type { Grant } from '../utils/build-grants'
 
 import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
@@ -12,11 +13,13 @@ import {
 import { extractModelExtension } from '../../../three-mmd/src/utils/_extract-model-extension'
 import { buildIK } from '../utils/build-ik'
 import { buildMesh } from '../utils/build-mesh'
+import { buildGrants } from '../utils/build-grants'
 
 /** @experimental */
 export interface MMD {
   iks: IK[]
   mesh: SkinnedMesh
+  grants: Grant[]
 }
 
 /** @experimental */
@@ -62,6 +65,7 @@ export class ExperimentalMMDLoader extends Loader<MMD> {
             .then(pmx => onLoad({
               iks: buildIK(pmx),
               mesh: buildMesh(pmx, resourcePath),
+              grants: buildGrants(pmx),
             }))
             .catch(onError)
         }

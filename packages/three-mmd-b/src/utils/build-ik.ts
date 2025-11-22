@@ -6,25 +6,32 @@ import { Vector3 } from 'three'
 export const buildIK = (pmx: PmxObject): IK[] => {
   const iks: IK[] = []
 
+  // Traverse bones to find IK settings
   for (const [index, { ik }] of pmx.bones.entries()) {
     if (ik === undefined)
       continue
-
+    // console.debug('IK found: ', ik)
+    // console.debug('IK target bone: ', pmx.bones[ik.target].name)
     const param: IK = {
       effector: ik.target,
       iteration: ik.iteration,
       links: [],
-      maxAngle: ik.rotationConstraint,
+      // maxAngle: ik.rotationConstraint,
+      maxAngle: ik.rotationConstraint > 0 ? ik.rotationConstraint : undefined,
       target: index,
     }
 
-    const links: IK['links'] = ik.links.map((link, index) => {
+    // console.debug('IK link: ', ik.links)
+    const links: IK['links'] = ik.links.map((link) => {
       const result: IK['links'][number] = {
         enabled: true,
-        index,
+        index: link.target,
       }
 
-      if (link.limitation) {
+      const boneName = pmx.bones[link.target].name
+      if (boneName.includes('ひざ')) {
+        result.limitation = new Vector3(1, 0, 0)
+      } else if (link.limitation) {
         const rotationMin = link.limitation.minimumAngle
         const rotationMax = link.limitation.maximumAngle
 

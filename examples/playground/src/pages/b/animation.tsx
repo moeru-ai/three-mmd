@@ -10,8 +10,17 @@ import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 const BAnimation = () => {
   const { showIK, showSkeleton } = useControls({ showIK: false, showSkeleton: false })
 
-  const { iks, mesh } = useLoader(ExperimentalMMDLoader, pmxUrl)
-
+  const { iks, mesh, grants } = useLoader(ExperimentalMMDLoader, pmxUrl)
+  // check iks
+  // const { bones } = mesh.skeleton
+  // iks.forEach((ik) => {
+  //   console.log(
+  //     'target', ik.target, bones[ik.target].name,
+  //     'effector', ik.effector, bones[ik.effector].name,
+  //     'links', ik.links.map(l => `${l.index}:${bones[l.index].name}`)
+  //   )
+  // })
+  
   const vmd = useLoader(VMDLoader, vmdUrl)
 
   const animation = useMemo(() => {
@@ -20,7 +29,13 @@ const BAnimation = () => {
     return animation
   }, [vmd, mesh])
 
-  const { actions, ikSolver } = useMMDAnimations([animation], mesh, iks, [])
+  const { actions, ikSolver } = useMMDAnimations([animation], mesh, iks, grants)
+
+  // console.log(
+  //   animation.tracks
+  //     .map(t => t.name)
+  //     .filter(n => n.includes('ＩＫ') || n.toLowerCase().includes('ik'))
+  // )
 
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
 
