@@ -1,5 +1,5 @@
 import { buildAnimation, ExperimentalMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
-import { useLoader } from '@react-three/fiber'
+import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo } from 'react'
 
@@ -32,11 +32,17 @@ const BAnimation = () => {
     }
   })
 
+  useFrame((_, delta) => mmd.update(delta))
+
+  const helpers = useMemo(() => mmd.createHelper(), [mmd])
+
   return (
     <>
       <primitive object={mmd.mesh} scale={0.1} />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
+      {/* eslint-disable-next-line react/no-array-index-key */}
+      {helpers.map((h, i) => <primitive key={i} object={h} />)}
     </>
 
   )
