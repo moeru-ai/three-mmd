@@ -5,8 +5,8 @@ import { useEffect, useMemo } from 'react'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
-// import pmxUrl from '../../../../assets/安比/安比.pmx?url'
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
+// import { VRMSpringBoneColliderShapeCapsule, VRMSpringBoneColliderShapeSphere } from '@pixiv/three-vrm'
 
 const BAnimation = () => {
   const {
@@ -35,6 +35,26 @@ const BAnimation = () => {
 
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
 
+  // https://github.com/pixiv/three-vrm/blob/dev/guides/spring-bones-on-scaled-models.md
+  // useEffect(() => {
+  //   const scale = 0.1
+
+  //   mmd.mesh.scale.setScalar(scale)
+  //   for (const joint of mmd.springBoneManager.joints) {
+  //     joint.settings.stiffness *= scale;
+  //     joint.settings.hitRadius *= scale;
+  //   }
+  //   for (const collider of mmd.springBoneManager.colliders) {
+  //     const shape = collider.shape;
+  //     if (shape instanceof VRMSpringBoneColliderShapeCapsule) {
+  //       shape.radius *= scale;
+  //       shape.tail.multiplyScalar(scale);
+  //     } else if (shape instanceof VRMSpringBoneColliderShapeSphere) {
+  //       shape.radius *= scale;
+  //     }
+  //   }
+  // }, [mmd])
+
   useEffect(() => {
     actions?.dance?.play()
 
@@ -52,7 +72,7 @@ const BAnimation = () => {
     <>
       <primitive
         object={mmd.mesh}
-        // scale={scale}
+      scale={0.1}
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}

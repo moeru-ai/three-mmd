@@ -143,7 +143,7 @@ export class MMD {
             // Maybe box shape
             const collider = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeCapsule({
               offset: offsetLocal,
-              // Box shapSize [width, height, depth]
+              // Box shapeSize [width, height, depth]
               radius: Math.min(Math.max(rigidBody.shapeSize[0], rigidBody.shapeSize[2]), boneLen * 0.5),
               tail: dirSeg.normalize().multiplyScalar(
                 Math.min(rigidBody.shapeSize[1], boneLen),
@@ -173,10 +173,8 @@ export class MMD {
       ].some(v => bone.name.includes(v)))
       .forEach(bone => bone.children.forEach(childBone =>
         this.springBoneJoints.push(new VRMSpringBoneJoint(bone, childBone, {
-          dragForce: 0.4,
-          gravityPower: 0.1,
-          hitRadius: 0.02,
-          stiffness: 1.0,
+          hitRadius: 0.05,
+          stiffness: 0.75,
         })),
       ))
   }
@@ -189,7 +187,12 @@ export class MMD {
         'Skirt',
       ].some(v => bone.name.includes(v)))
       .forEach(bone => bone.children.forEach((childBone) => {
-        const joint = new VRMSpringBoneJoint(bone, childBone)
+        const joint = new VRMSpringBoneJoint(bone, childBone, {
+          dragForce: 1,
+          gravityPower: 2,
+          hitRadius: 0.01,
+          stiffness: 1,
+        })
         joint.colliderGroups = [{ colliders: this.springBoneColliders }]
         this.springBoneJoints.push(joint)
       }))
