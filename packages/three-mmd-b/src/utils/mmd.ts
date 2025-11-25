@@ -1,18 +1,20 @@
 // import type { VRMSpringBoneColliderShape } from '@pixiv/three-vrm-springbone'
-import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
-import type { SkinnedMesh } from 'three'
+import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import type { Bone, SkinnedMesh } from 'three'
 import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
 import {
   VRMSpringBoneCollider,
   VRMSpringBoneColliderHelper,
+  VRMSpringBoneColliderShape,
   VRMSpringBoneColliderShapeCapsule,
+  VRMSpringBoneColliderShapeSphere,
   // VRMSpringBoneColliderShapeSphere,
   VRMSpringBoneJoint,
   VRMSpringBoneJointHelper,
   VRMSpringBoneManager,
 } from '@pixiv/three-vrm-springbone'
-import { Vector3 } from 'three'
+import { Quaternion, Vector3 } from 'three'
 
 import type { Grant } from './build-grants'
 
@@ -24,6 +26,7 @@ export class MMD {
   public grants: Grant[]
   public iks: IK[]
   public mesh: SkinnedMesh
+  public pmx: PmxObject
 
   public springBoneManager: VRMSpringBoneManager = new VRMSpringBoneManager()
 
@@ -34,6 +37,7 @@ export class MMD {
     this.grants = buildGrants(pmx)
     this.iks = buildIK(pmx)
     this.mesh = buildMesh(pmx, resourcePath)
+    this.pmx = pmx
 
     // console.log(this.mesh.skeleton.bones.map(bone => bone.name))
 
@@ -68,60 +72,93 @@ export class MMD {
   }
 
   private _initColliders() {
-    const leftLeg = this.mesh.skeleton.bones.find(b => b.name === '左足' || b.name === 'Left Leg')
-    const rightLeg = this.mesh.skeleton.bones.find(b => b.name === '右足' || b.name === 'Right Leg')
+    // TODO: need to consider the scale of the model, currently assuming scale is 1
+    const bones = this.mesh.skeleton.bones
+    this.mesh.updateMatrixWorld(true)
 
-    if (leftLeg) {
-      const leftLegCollider = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeCapsule({
-        // offset: leftLeg.getWorldPosition(new Vector3()),
-        radius: 0.1,
-        tail: new Vector3(1.0, 1.0, 1.0),
-      }))
+    // Find leg bones
+    const legBones = bones
+      .map((bone, idx) => ({ bone, idx }))
+      .filter(({ bone }) => ['左足', '右足', '左足D', '右足D', '左ひざ', '右ひざ', '左足首', '右足首'].includes(bone.name))
+    console.debug(legBones)
+    // Map leg bones to their rigid bodies
+    const legRigidBodiesMap = new Map<number, PmxObject.RigidBody[]>()
+    this.pmx.rigidBodies.forEach((rigidBody) => {
+      const boneIndexList = legRigidBodiesMap.get(rigidBody.boneIndex) ?? []
+      boneIndexList.push(rigidBody)
+      legRigidBodiesMap.set(rigidBody.boneIndex, boneIndexList)
+    })
+    console.debug(legRigidBodiesMap)
 
-      leftLeg.add(leftLegCollider)
-      this.springBoneColliders.push(leftLegCollider)
+    const addColliderToBone = (bone: Bone, collider: VRMSpringBoneCollider) => {
+      bone.add(collider)
+      this.springBoneColliders.push(collider)
     }
+    // Add colliders to leg bones
+    legBones.forEach(({ bone, idx }) => {
+      const child = bone.children[0]
+      if (!child) return
 
-    if (rightLeg) {
-      const rightLegCollider = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeCapsule({
-        // offset: rightLeg.getWorldPosition(new Vector3()),
-        radius: 0.1,
-        tail: new Vector3(1.0, 1.0, 1.0),
-      }))
+      // Compute bone length and direction
+      const childWorldPos = child.getWorldPosition(new Vector3())
+      const boneWorldPos = bone.getWorldPosition(new Vector3())
+      const segLocal = child.position.clone();
+      const dirSeg = segLocal.clone().normalize()
+      const boneLen = childWorldPos.distanceTo(boneWorldPos)
+      console.debug(`Bone: ${bone.name}, Length: ${boneLen}`) 
 
-      rightLeg.add(rightLegCollider)
-      this.springBoneColliders.push(rightLegCollider)
-    }
-
-    // pmx.rigidBodies
-    //   .filter(rigidBody => ['右足', '左足'].includes(rigidBody.name))
-    //   .forEach((rigidBody) => {
-    //     let shape: undefined | VRMSpringBoneColliderShape
-    //     const shapeSize = new Vector3().fromArray(rigidBody.shapeSize).setZ(1)
-    //     if (rigidBody.shapeType === PmxObject.RigidBody.ShapeType.Sphere) {
-    //       shape = new VRMSpringBoneColliderShapeSphere({
-    //         offset: shapeSize,
-    //       })
-    //     }
-    //     else if (rigidBody.shapeType === PmxObject.RigidBody.ShapeType.Capsule) {
-    //       shape = new VRMSpringBoneColliderShapeCapsule({
-    //         offset: new Vector3().fromArray(rigidBody.shapePosition),
-    //         radius: rigidBody.shapeSize[0], // x
-    //       })
-    //     }
-
-    //     if (shape != null) {
-    //       const collider = new VRMSpringBoneCollider(shape)
-
-    //       // if (rigidBody.shapePosition.every(n => !Number.isNaN(n)))
-    //       //   collider.position.set(...rigidBody.shapePosition)
-
-    //       // if (rigidBody.shapeRotation.every(n => !Number.isNaN(n)))
-    //       //   collider.rotation.set(...rigidBody.shapeRotation)
-
-    //       this.springBoneColliders.push(collider)
-    //     }
-    //   })
+      const rigidBodies = legRigidBodiesMap.get(idx)
+      console.debug(`Setting up colliders for bone: ${bone.name}`)
+      console.debug('corresponding rigid bodies: ', rigidBodies);
+      if (rigidBodies && rigidBodies.length > 0) {
+        rigidBodies.forEach((rigidBody) => {
+          // find the local offset
+          const offsetWorld = new Vector3().fromArray([
+            rigidBody.shapePosition[0],
+            rigidBody.shapePosition[1],
+            -rigidBody.shapePosition[2] // Invert Z axis
+          ]).applyMatrix4(this.mesh.matrixWorld)
+          const offsetLocal = bone.worldToLocal(offsetWorld.clone())
+          // Create collider shape sphere
+          if(rigidBody.shapeType === PmxObject.RigidBody.ShapeType.Sphere) {
+            const collider = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeSphere({
+              offset: offsetLocal,
+              // Sphere shapeSize [radius, ignore, ignore]
+              radius: Math.min(rigidBody.shapeSize[0], boneLen * 0.5),
+            }))
+            addColliderToBone(bone, collider)
+          } else if(rigidBody.shapeType === PmxObject.RigidBody.ShapeType.Capsule) {
+            const collider = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeCapsule({
+              offset: offsetLocal,
+              // Capsule shapeSize [radius, height, ignore]
+              radius: Math.min(rigidBody.shapeSize[0], boneLen * 0.5),
+              tail: dirSeg.normalize().multiplyScalar(
+                Math.min(rigidBody.shapeSize[1], boneLen)
+              ),
+            }))
+            addColliderToBone(bone, collider)
+          } else {
+            // Maybe box shape
+            const collider = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeCapsule({
+              offset: offsetLocal,
+              // Box shapSize [width, height, depth]
+              radius: Math.min(Math.max(rigidBody.shapeSize[0], rigidBody.shapeSize[2]), boneLen * 0.5),
+              tail: dirSeg.normalize().multiplyScalar(
+                Math.min(rigidBody.shapeSize[1], boneLen)
+              ),
+            }))
+            addColliderToBone(bone, collider)
+          }
+        })
+      } else {
+        // No rigid body for this leg bone, add a default collider
+        const radius = Math.min(boneLen * 0.1 * 1.2, boneLen * 0.5)
+        const tail = dirSeg.clone().multiplyScalar(boneLen)
+        addColliderToBone(bone, new VRMSpringBoneCollider(
+          new VRMSpringBoneColliderShapeCapsule({ radius, tail }),
+        ))
+      }
+    })
   }
 
   private _initHairJoints() {

@@ -47,7 +47,9 @@ export class ExperimentalMMDLoader extends Loader<MMD> {
 
           void (modelExtension === 'pmd' ? PmdReader : PmxReader)
             .ParseAsync(buffer as ArrayBuffer)
-            .then(pmx => onLoad(new MMD(pmx, resourcePath)))
+            .then(pmx => {
+              onLoad(new MMD(pmx, resourcePath))}
+            )
             .catch(onError)
         }
         catch (e) {

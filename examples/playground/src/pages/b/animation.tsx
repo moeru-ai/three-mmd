@@ -5,6 +5,7 @@ import { useEffect, useMemo } from 'react'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
+// import pmxUrl from '../../../../assets/安比/安比.pmx?url'
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
 const BAnimation = () => {
@@ -51,7 +52,7 @@ const BAnimation = () => {
     <>
       <primitive
         object={mmd.mesh}
-        scale={0.1}
+        // scale={scale}
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
