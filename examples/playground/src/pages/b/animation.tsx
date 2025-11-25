@@ -72,7 +72,7 @@ const BAnimation = () => {
     <>
       <primitive
         object={mmd.mesh}
-      scale={0.1}
+        scale={0.1}
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
