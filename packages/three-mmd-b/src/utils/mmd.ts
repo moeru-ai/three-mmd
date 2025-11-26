@@ -26,17 +26,33 @@ export class MMD {
   public iks: IK[]
   public mesh: SkinnedMesh
   public pmx: PmxObject
+  public scale: number
 
   public springBoneManager: VRMSpringBoneManager = new VRMSpringBoneManager()
 
   private springBoneColliders: VRMSpringBoneCollider[] = []
   private springBoneJoints: VRMSpringBoneJoint[] = []
 
+  // Cache original joint and collider sizes for scaling
+  private jointSizeMap: Map<
+  VRMSpringBoneJoint, { 
+    hitRadius: number; 
+    stiffness: number; 
+    dragForce?: number; 
+    gravityPower?: number 
+  }> = new Map()
+  private baseColliderShapes: Map<
+  VRMSpringBoneCollider, { 
+    radius: number; 
+    tail?: Vector3 
+  }> = new Map()
+
   constructor(pmx: PmxObject, resourcePath: string) {
     this.grants = buildGrants(pmx)
     this.iks = buildIK(pmx)
     this.mesh = buildMesh(pmx, resourcePath)
     this.pmx = pmx
+    this.scale = 1
 
     // console.log(this.mesh.skeleton.bones.map(bone => bone.name))
 
@@ -48,6 +64,8 @@ export class MMD {
 
     this.mesh.updateMatrixWorld(true)
     this.springBoneManager.setInitState()
+
+    this.cacheJointsAndColliders()
   }
 
   public createColliderHelpers(): VRMSpringBoneColliderHelper[] {
@@ -68,17 +86,23 @@ export class MMD {
 
   public update(delta: number) {
     this.springBoneManager.update(delta)
+    // const iterations = 32
+    // const step = delta / iterations
+    // for (let i = 0; i < iterations; i++) {
+    //   this.springBoneManager.update(step)
+    // }
   }
 
   private _initColliders() {
     // TODO: need to consider the scale of the model, currently assuming scale is 1
     const bones = this.mesh.skeleton.bones
+    // console.debug('bones:', bones)
     this.mesh.updateMatrixWorld(true)
 
     // Find leg bones
     const legBones = bones
       .map((bone, idx) => ({ bone, idx }))
-      .filter(({ bone }) => ['右ひざ', '右足', '右足D', '右足首', '左ひざ', '左足', '左足D', '左足首'].includes(bone.name))
+      .filter(({ bone }) => ['右ひざ', '右足', '右足D', '左ひざ', '左足', '左足D', 'センター', '上半身'].includes(bone.name))
     // console.debug(legBones)
     // Map leg bones to their rigid bodies
     const legRigidBodiesMap = new Map<number, PmxObject.RigidBody[]>()
@@ -124,7 +148,7 @@ export class MMD {
             const collider = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeSphere({
               offset: offsetLocal,
               // Sphere shapeSize [radius, ignore, ignore]
-              radius: Math.min(rigidBody.shapeSize[0], boneLen * 0.5),
+              radius: rigidBody.shapeSize[0] * 1.1,
             }))
             addColliderToBone(bone, collider)
           }
@@ -132,7 +156,7 @@ export class MMD {
             const collider = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeCapsule({
               offset: offsetLocal,
               // Capsule shapeSize [radius, height, ignore]
-              radius: Math.min(rigidBody.shapeSize[0], boneLen * 0.5),
+              radius: rigidBody.shapeSize[0] * 1.1,
               tail: dirSeg.normalize().multiplyScalar(
                 Math.min(rigidBody.shapeSize[1], boneLen),
               ),
@@ -144,7 +168,7 @@ export class MMD {
             const collider = new VRMSpringBoneCollider(new VRMSpringBoneColliderShapeCapsule({
               offset: offsetLocal,
               // Box shapeSize [width, height, depth]
-              radius: Math.min(Math.max(rigidBody.shapeSize[0], rigidBody.shapeSize[2]), boneLen * 0.5),
+              radius: Math.max(rigidBody.shapeSize[0], rigidBody.shapeSize[2]) * 1.1,
               tail: dirSeg.normalize().multiplyScalar(
                 Math.min(rigidBody.shapeSize[1], boneLen),
               ),
@@ -164,6 +188,7 @@ export class MMD {
     })
   }
 
+  // Initialize hair joints based on bone names
   private _initHairJoints() {
     this.mesh.skeleton.bones
       .filter(bone => [
@@ -179,6 +204,7 @@ export class MMD {
       ))
   }
 
+  // Initialize skirt joints based on bone names
   private _initSkirtJoints() {
     this.mesh.skeleton.bones
       .filter(bone => [
@@ -188,13 +214,75 @@ export class MMD {
       ].some(v => bone.name.includes(v)))
       .forEach(bone => bone.children.forEach((childBone) => {
         const joint = new VRMSpringBoneJoint(bone, childBone, {
-          dragForce: 1,
-          gravityPower: 2,
-          hitRadius: 0.01,
-          stiffness: 1,
+          dragForce: 0.1,
+          gravityPower: 1,
+          hitRadius: 0.15,
+          stiffness: 5,
         })
         joint.colliderGroups = [{ colliders: this.springBoneColliders }]
         this.springBoneJoints.push(joint)
       }))
+  }
+
+  private cacheJointsAndColliders() {
+    // Cache original joint sizes
+    this.springBoneJoints.forEach(joint => {
+      this.jointSizeMap.set(joint, {
+        hitRadius: joint.settings.hitRadius,
+        stiffness: joint.settings.stiffness,
+        dragForce: joint.settings.dragForce,
+        gravityPower: joint.settings.gravityPower,
+      })
+    })
+    // Cache original collider sizes
+    this.springBoneColliders.forEach(collider => {
+      const shape = collider.shape
+      if (shape instanceof VRMSpringBoneColliderShapeSphere) {
+        this.baseColliderShapes.set(collider, {
+          radius: shape.radius,
+        })
+      } else if (shape instanceof VRMSpringBoneColliderShapeCapsule) {
+        this.baseColliderShapes.set(collider, {
+          radius: shape.radius,
+          tail: shape.tail.clone(),
+        })
+      }
+    })
+  }
+
+  public setScale(scale: number) {
+    if (this.scale === scale) return
+    this.scale = scale
+    this.mesh.scale.setScalar(scale)
+
+    // Update joint sizes
+    this.springBoneJoints.forEach(joint => {
+      const baseSize = this.jointSizeMap.get(joint)
+      if (!baseSize) return
+      joint.settings.hitRadius = baseSize.hitRadius * scale
+      // joint.settings.stiffness = baseSize.stiffness / scale
+      // if (baseSize.dragForce !== undefined)
+        // joint.settings.dragForce = baseSize.dragForce / scale
+      if (baseSize.gravityPower !== undefined)
+        joint.settings.gravityPower = baseSize.gravityPower * scale
+    })
+
+    // Update collider sizes
+    this.springBoneColliders.forEach(collider => {
+      const baseShape = this.baseColliderShapes.get(collider)
+      if (!baseShape) return
+      const shape = collider.shape
+      if (shape instanceof VRMSpringBoneColliderShapeSphere) {
+        shape.radius = baseShape.radius * scale
+      } else if (shape instanceof VRMSpringBoneColliderShapeCapsule) {
+        shape.radius = baseShape.radius * scale
+        shape.tail = baseShape.tail!.clone().multiplyScalar(scale)
+      }
+    })
+
+    this.mesh.updateMatrixWorld(true)
+    this.mesh.skeleton.pose()
+    this.mesh.updateMatrixWorld(true)
+    this.springBoneManager.setInitState()
   }
 }
