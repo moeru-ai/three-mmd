@@ -1,7 +1,7 @@
 import { buildAnimation, ExperimentalMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
-import { act, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 // import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
@@ -12,30 +12,30 @@ import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 const BAnimation = () => {
   const [editingScale, setEditingScale] = useState(false)
   const {
+    mmdScale,
     showColliders,
     showIK,
     showJoints,
     showSkeleton,
-    mmdScale,
   } = useControls({
-    showColliders: false,
-    showIK: false,
-    showJoints: false,
-    showSkeleton: false,
-    mmdScale: { 
-      value: 0.1, 
-      min: 0.01, 
-      max: 1, 
-      step: 0.01,
-      onEditStart: () => {
-        // console.log('start setting scale')
-        setEditingScale(true)
-      },
+    mmdScale: {
+      max: 1,
+      min: 0.01,
       onEditEnd: () => {
         // console.log('end setting scale')
         setEditingScale(false)
       },
+      onEditStart: () => {
+        // console.log('start setting scale')
+        setEditingScale(true)
+      },
+      step: 0.01,
+      value: 0.1,
     },
+    showColliders: false,
+    showIK: false,
+    showJoints: false,
+    showSkeleton: false,
   })
 
   const mmd = useLoader(ExperimentalMMDLoader, pmxUrl)
@@ -77,7 +77,8 @@ const BAnimation = () => {
 
   // Play the animation on mount
   useEffect(() => {
-    if (!actions?.dance) return
+    if (!actions?.dance)
+      return
     actions?.dance?.play()
 
     return () => {
@@ -92,19 +93,22 @@ const BAnimation = () => {
   }, [mmd, mmdScale])
 
   useEffect(() => {
-    if (!actions?.dance) return
+    if (!actions?.dance)
+      return
     if (editingScale) {
       actions.dance.paused = true
       actions?.dance?.stop()
       mmd.mesh.pose()
-    } else {
+    }
+    else {
       actions.dance.paused = false
       actions?.dance?.play()
     }
   }, [actions, editingScale])
 
   useFrame((_, delta) => {
-    if( editingScale ) return
+    if (editingScale)
+      return
     mmd.update(delta)
   })
 
