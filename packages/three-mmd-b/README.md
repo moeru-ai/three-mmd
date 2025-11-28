@@ -5,10 +5,15 @@ Experimental version of `@moeru/three-mmd`, built on `babylon-mmd`.
 ## What works?
 
 - [x] PMDLoader, PMXLoader (just return PmxObject)
-- [x] buildGeometry (To be tested)
-- [x] buildMaterial (To be tested)
-- [x] buildMesh (To be tested)
-- [ ] buildAnimation (TODO)
+- [x] buildGeometry
+- [x] buildMaterial
+- [x] buildMesh
+- [x] buildAnimation
+
+### MMDAnimation
+
+- [x] Spring Bone (Needs improvement)
+- [ ] Physics
 
 ## License
 
