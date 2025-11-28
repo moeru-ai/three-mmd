@@ -6,12 +6,10 @@ import {
   VRMSpringBoneColliderHelper,
   VRMSpringBoneColliderShapeCapsule,
   VRMSpringBoneColliderShapeSphere,
-  // VRMSpringBoneColliderShapeSphere,
   VRMSpringBoneJoint,
   VRMSpringBoneJointHelper,
   VRMSpringBoneManager,
 } from '@pixiv/three-vrm-springbone'
-// import type { VRMSpringBoneColliderShape } from '@pixiv/three-vrm-springbone'
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import { Vector3 } from 'three'
 
@@ -21,7 +19,7 @@ import { buildGrants } from './build-grants'
 import { buildIK } from './build-ik'
 import { buildMesh } from './build-mesh'
 
-export class MMD {
+export class SpringBoneMMD {
   public grants: Grant[]
   public iks: IK[]
   public mesh: SkinnedMesh
@@ -89,7 +87,8 @@ export class MMD {
     return helpers
   }
 
-  public setScale(scale: number) {
+  // https://github.com/pixiv/three-vrm/blob/dev/guides/spring-bones-on-scaled-models.md
+  public setScalar(scale: number) {
     if (this.scale === scale)
       return
     this.scale = scale

@@ -1,13 +1,12 @@
-import { buildAnimation, ExperimentalMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
+import { buildAnimation, SpringBoneMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
-// import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
-import pmxUrl from '../../../../assets/安比/安比.pmx?url'
+import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
+// import pmxUrl from '../../../../assets/安比/安比.pmx?url'
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
-// import { VRMSpringBoneColliderShapeCapsule, VRMSpringBoneColliderShapeSphere } from '@pixiv/three-vrm'
 
 const BAnimation = () => {
   const [editingScale, setEditingScale] = useState(false)
@@ -38,7 +37,7 @@ const BAnimation = () => {
     showSkeleton: false,
   })
 
-  const mmd = useLoader(ExperimentalMMDLoader, pmxUrl)
+  const mmd = useLoader(SpringBoneMMDLoader, pmxUrl)
 
   const vmd = useLoader(VMDLoader, vmdUrl)
 
@@ -50,51 +49,30 @@ const BAnimation = () => {
 
   const { actions, ikSolver } = useMMDAnimations([animation], mmd.mesh, mmd.iks, mmd.grants)
 
-  // https://github.com/pixiv/three-vrm/blob/dev/guides/spring-bones-on-scaled-models.md
-  // useEffect(() => {
-  //   const scale = 0.1
-
-  //   mmd.mesh.scale.setScalar(scale)
-  //   for (const joint of mmd.springBoneManager.joints) {
-  //     joint.settings.stiffness *= scale;
-  //     joint.settings.hitRadius *= scale;
-  //   }
-  //   for (const collider of mmd.springBoneManager.colliders) {
-  //     const shape = collider.shape;
-  //     if (shape instanceof VRMSpringBoneColliderShapeCapsule) {
-  //       shape.radius *= scale;
-  //       shape.tail.multiplyScalar(scale);
-  //     } else if (shape instanceof VRMSpringBoneColliderShapeSphere) {
-  //       shape.radius *= scale;
-  //     }
-  //   }
-  // }, [mmd])
-
   // Helpers
-  const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver, mmd])
+  const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
   const colliderHelpers = useMemo(() => mmd.createColliderHelpers(), [mmd])
   const jointHelpers = useMemo(() => mmd.createJointHelpers(), [mmd])
 
   // Play the animation on mount
   useEffect(() => {
-    if (!actions?.dance)
-      return
-    actions?.dance?.play()
+    actions.dance?.play()
 
     return () => {
-      actions?.dance?.stop()
+      actions.dance?.stop()
       mmd.mesh.pose()
     }
-  }, [actions])
+  }, [actions, mmd])
 
   // Scale handling
   useEffect(() => {
-    mmd.setScale(mmdScale)
+    mmd.setScalar(mmdScale)
   }, [mmd, mmdScale])
 
   useEffect(() => {
     if (!actions?.dance)
       return
+
     if (editingScale) {
       actions.dance.paused = true
       actions?.dance?.stop()
@@ -104,11 +82,12 @@ const BAnimation = () => {
       actions.dance.paused = false
       actions?.dance?.play()
     }
-  }, [actions, editingScale])
+  }, [actions, mmd, editingScale])
 
   useFrame((_, delta) => {
     if (editingScale)
       return
+
     mmd.update(delta)
   })
 
