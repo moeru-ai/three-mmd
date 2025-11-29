@@ -64,21 +64,16 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
   // Initialize hair joints based on bone names
   const setupHairJoints = () => {
     const { bones } = opts.mesh.skeleton
-    
     bones
-      .filter((bone) => 
-        ['髪', 'Hair', 'Twin'].some((v) => bone.name.includes(v)),
-      )
-      .forEach((bone) => {
-        bone.children.forEach((child) => {
+      .filter(bone => ['髪', 'Hair', 'Twin'].some((v) => bone.name.includes(v)))
+      .forEach(bone => bone.children.forEach((child) => {
           joints.push(
             new VRMSpringBoneJoint(bone, child, {
               hitRadius: 0.05,
               stiffness: 0.75,
-            }),
+            })
           )
-        })  
-      })
+      }))
   }
 
   // Initialize skirt joints based on bone names
