@@ -1,10 +1,10 @@
-import { threeMMDLoader } from '@moeru/three-mmd-b'
+import { ThreeMMDLoader } from '@moeru/three-mmd-b'
 import { useLoader } from '@react-three/fiber'
 
 import pmdUrl from '../../../../basic/src/assets/miku/miku_v2.pmd?url'
 
 const BMesh = () => {
-  const object = useLoader(threeMMDLoader, pmdUrl)
+  const object = useLoader(ThreeMMDLoader, pmdUrl)
 
   return (
     <>

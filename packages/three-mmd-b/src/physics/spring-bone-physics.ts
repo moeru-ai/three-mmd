@@ -11,14 +11,15 @@ import {
   VRMSpringBoneJointHelper,
   VRMSpringBoneManager,
 } from '@pixiv/three-vrm-springbone'
-import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import type { Bone } from 'three'
+
+import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import { Vector3 } from 'three'
 
 import type { BuildPhysicsOptions, PhysicsStrategy } from '../utils/build-physics'
 
 // Type of the spring bone helpers
-export interface SpringBoneHelpers { colliderHelpers: VRMSpringBoneColliderHelper[]; jointHelpers: VRMSpringBoneJointHelper[] }
+export interface SpringBoneHelpers { colliderHelpers: VRMSpringBoneColliderHelper[], jointHelpers: VRMSpringBoneJointHelper[] }
 
 /**
  * Spring bone physics strategy built on top of @pixiv/three-vrm-springbone.
@@ -29,7 +30,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
   const colliders: VRMSpringBoneCollider[] = []
   const joints: VRMSpringBoneJoint[] = []
 
-  const baseColliderShapes = new Map<VRMSpringBoneCollider, { radius: number; tail?: Vector3 }>()
+  const baseColliderShapes = new Map<VRMSpringBoneCollider, { radius: number, tail?: Vector3 }>()
   const baseJointSizes = new Map<
     VRMSpringBoneJoint,
     {
@@ -62,14 +63,14 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
 
   // Initialize hair joints based on bone names
   const setupHairJoints = () => {
-    opts.mesh.skeleton.bones
-      .filter(bone => ['髪', 'Hair', 'Twin'].some(v => bone.name.includes(v)))
-      .forEach(bone => bone.children.forEach(child =>
-    joints.push(new VRMSpringBoneJoint(bone, child, {
-      hitRadius: 0.05,
-      stiffness: 0.75,
-    })),
-      ))
+    opts.mesh.skeleton.bones.filter(
+      bone => ['髪', 'Hair', 'Twin'].some(v => bone.name.includes(v))).forEach(bone => bone.children.forEach(
+        child => joints.push(new VRMSpringBoneJoint(bone, child, {
+          hitRadius: 0.05,
+          stiffness: 0.75,
+        })),
+      )
+    )
   }
 
   // Initialize skirt joints based on bone names

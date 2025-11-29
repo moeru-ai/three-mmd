@@ -23,6 +23,11 @@ export class MMD {
     this.physics = physics
   }
 
+  public createPhysicsHelpers() {
+    if (this.physics)
+      return this.physics.createPhysicsHelpers?.()
+  }
+
   // https://github.com/pixiv/three-vrm/blob/dev/guides/spring-bones-on-scaled-models.md
   public setScalar(scale: number) {
     if (this.scale === scale)
@@ -31,11 +36,6 @@ export class MMD {
     this.mesh.scale.setScalar(scale)
     // Physics scaling
     this.physics?.setScale?.(this.scale)
-  }
-
-  public createPhysicsHelpers() {
-    if (this.physics)
-      return this.physics.createPhysicsHelpers?.()
   }
 
   public update(delta: number) {

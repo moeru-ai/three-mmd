@@ -3,20 +3,17 @@
  * Thin OOP shell over the functional pipeline: fetch PMD/PMX, parse via babylon-mmd,
  * then wrap the result in MMD for bone/IK/grant/spring setup.
  */
-import type { LoadingManager } from 'three'
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import type { LoadingManager } from 'three'
+import type { ThreeMMDLoaderDeps, ThreeMMDPlugin } from './loader-deps'
+
 import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils } from 'three'
 
 import { extractModelExtension } from '../../../three-mmd/src/utils/_extract-model-extension'
 import { MMD } from '../utils/mmd'
-import {
-  defaultDeps,
-  resolveDeps,
-  type ThreeMMDLoaderDeps,
-  type ThreeMMDPlugin,
-} from './loader-deps'
+import { defaultDeps, resolveDeps } from './loader-deps'
 
 /** @experimental */
 export class ThreeMMDLoader extends Loader<MMD> {
@@ -25,12 +22,6 @@ export class ThreeMMDLoader extends Loader<MMD> {
   constructor(plugins: ThreeMMDPlugin[] = [], manager?: LoadingManager) {
     super(manager)
     this.plugins.push(...plugins)
-  }
-
-  // If loaded then register new plugins, it will only be effective at the next load
-  public register(plugin: ThreeMMDPlugin) {
-    this.plugins.push(plugin)
-    return this
   }
 
   public load(
@@ -90,8 +81,10 @@ export class ThreeMMDLoader extends Loader<MMD> {
     return super.loadAsync(url, onProgress)
   }
 
-  private getResolvedDeps() {
-    return resolveDeps(this.plugins, defaultDeps)
+  // If loaded then register new plugins, it will only be effective at the next load
+  public register(plugin: ThreeMMDPlugin) {
+    this.plugins.push(plugin)
+    return this
   }
 
   // MMD model assembly pipeline
@@ -120,9 +113,13 @@ export class ThreeMMDLoader extends Loader<MMD> {
     const skinnedMesh = buildBones(pmx, rawMesh)
     const grants = buildGrants(pmx)
     const iks = buildIK(pmx)
-    const physics = buildPhysics({ pmx, mesh: skinnedMesh, grants, iks })
+    const physics = buildPhysics({ grants, iks, mesh: skinnedMesh, pmx })
 
     const mmd = new MMD(skinnedMesh, grants, iks, physics)
     return mmd
+  }
+
+  private getResolvedDeps() {
+    return resolveDeps(this.plugins, defaultDeps)
   }
 }

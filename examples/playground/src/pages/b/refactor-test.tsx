@@ -1,13 +1,15 @@
-import { buildAnimation, threeMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
+import { buildAnimation, ThreeMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
 
+import type { SpringBoneHelpers } from '../../../../../packages/three-mmd-b/src/physics/spring-bone-physics'
+
+import { useMMDAnimations } from '../../hooks/use-mmd-animations'
+
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 // import pmxUrl from '../../../../assets/安比/安比.pmx?url'
-import type { SpringBoneHelpers } from '../../../../../packages/three-mmd-b/src/physics/spring-bone-physics'
-import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
 const BAnimation = () => {
   const [editingScale, setEditingScale] = useState(false)
@@ -38,7 +40,7 @@ const BAnimation = () => {
     showSkeleton: false,
   })
 
-  const mmd = useLoader(threeMMDLoader, pmxUrl)
+  const mmd = useLoader(ThreeMMDLoader, pmxUrl)
 
   const vmd = useLoader(VMDLoader, vmdUrl)
 
