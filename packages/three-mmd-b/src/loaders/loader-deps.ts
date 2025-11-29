@@ -3,48 +3,49 @@
  * Plugins can override any step (parse, post-process, geometry, materials, bones, IK, grants, mesh creation)
  * by returning Partial<ThreeMMDLoaderDeps> and letting resolveDeps merge overrides on top of defaults.
  */
-import type { PmxObject } from "babylon-mmd/esm/Loader/Parser/pmxObject"
-import type { BufferGeometry, SkinnedMesh } from "three"
-import type { MMDToonMaterial } from "../materials/mmd-toon-material"
-import type { IK } from "three/examples/jsm/animation/CCDIKSolver.js"
-import { buildPhysics, type BuildPhysicsOptions, type PhysicsStrategy } from "../utils/build-physics"
+import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import type { BufferGeometry, SkinnedMesh } from 'three'
+import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
-import { buildGeometry } from "../utils/build-geometry"
-import { buildIK } from "../utils/build-ik"
-import { buildGrants, type Grant } from "../utils/build-grants"
-import { postParseProcessing } from "../utils/post-parse"
-import { buildBones } from "../utils/build-bones"
-import { buildMaterial } from "../utils/build-material"
-import { buildMesh } from "../utils/build-mesh"
-
+import type { MMDToonMaterial } from '../materials/mmd-toon-material'
+import type { BuildPhysicsOptions, PhysicsStrategy } from '../utils/build-physics'
+import type { Grant } from '../utils/build-grants'
+import { buildBones } from '../utils/build-bones'
+import { buildGeometry } from '../utils/build-geometry'
+import { buildGrants } from '../utils/build-grants'
+import { buildIK } from '../utils/build-ik'
+import { buildMaterial } from '../utils/build-material'
+import { buildMesh } from '../utils/build-mesh'
+import { buildPhysics } from '../utils/build-physics'
+import { postParseProcessing } from '../utils/post-parse'
 
 export interface ThreeMMDLoaderDeps {
-  postParseProcessing: (pmx: PmxObject) => PmxObject
-  buildGeometry: (pmx: PmxObject) => BufferGeometry
-  buildMaterials: (pmx: PmxObject, geo: BufferGeometry, rp: string) => MMDToonMaterial[]
   buildBones: (pmx: PmxObject, mesh: SkinnedMesh) => SkinnedMesh
-  buildMesh: (geometry: BufferGeometry, materials: MMDToonMaterial[]) => SkinnedMesh
-  buildIK: (pmx: PmxObject) => IK[]
+  buildGeometry: (pmx: PmxObject) => BufferGeometry
   buildGrants: (pmx: PmxObject) => Grant[]
+  buildIK: (pmx: PmxObject) => IK[]
+  buildMaterials: (pmx: PmxObject, geo: BufferGeometry, rp: string) => MMDToonMaterial[]
+  buildMesh: (geometry: BufferGeometry, materials: MMDToonMaterial[]) => SkinnedMesh
   buildPhysics: (opt: BuildPhysicsOptions) => PhysicsStrategy | undefined
+  postParseProcessing: (pmx: PmxObject) => PmxObject
 }
 
 export const defaultDeps: Required<ThreeMMDLoaderDeps> = {
-  postParseProcessing,
-  buildGeometry,
-  buildMaterials: (pmx, geo, rp) => buildMaterial(pmx, geo, rp),
   buildBones,
-  buildIK,
+  buildGeometry,
   buildGrants,
+  buildIK,
+  buildMaterials: (pmx, geo, rp) => buildMaterial(pmx, geo, rp),
   buildMesh,
-  buildPhysics
+  buildPhysics,
+  postParseProcessing,
 }
 
 // Plugin register
 export type ThreeMMDPlugin = (deps: ThreeMMDLoaderDeps) => Partial<ThreeMMDLoaderDeps>
 export const resolveDeps = (
-  plugins: ThreeMMDPlugin[] = [], 
-  baseDeps: ThreeMMDLoaderDeps = defaultDeps
+  plugins: ThreeMMDPlugin[] = [],
+  baseDeps: ThreeMMDLoaderDeps = defaultDeps,
 ): ThreeMMDLoaderDeps => {
   let mergedDeps = { ...baseDeps }
   plugins.forEach((p) => {

@@ -1,4 +1,7 @@
-
+/**
+ * Post-PMX parse normalization: flip Z to right-handed coords once so downstream builders
+ * (geometry/bones/morphs/rigid bodies) don't need scattered Z flips.
+ */
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 
 // Default post PMX parsing process: Z-flip

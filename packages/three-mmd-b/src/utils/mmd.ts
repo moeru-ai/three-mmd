@@ -8,13 +8,12 @@ import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 import type { Grant } from './build-grants'
 import type { PhysicsStrategy } from './build-physics'
 
-
 export class MMD {
   public grants: Grant[] = []
   public iks: IK[] = []
   public mesh: SkinnedMesh
-  public scale: number
   public physics: PhysicsStrategy | undefined
+  public scale: number
 
   constructor(mesh: SkinnedMesh, grants: Grant[], iks: IK[], physics: PhysicsStrategy | undefined) {
     this.grants = grants
@@ -34,14 +33,13 @@ export class MMD {
     this.physics?.setScale?.(this.scale)
   }
 
-  public update(delta: number) {
-    if(this.physics)
-      this.physics.update(delta)
-  }
-
   public createPhysicsHelpers() {
-    if(this.physics)
+    if (this.physics)
       return this.physics.createPhysicsHelpers?.()
   }
 
+  public update(delta: number) {
+    if (this.physics)
+      this.physics.update(delta)
+  }
 }

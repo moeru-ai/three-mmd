@@ -1,5 +1,5 @@
 import { MMDLoader as MoeruMMDLoader } from '@moeru/three-mmd'
-import { threeMMDLoader as MoeruBabylonMMDLoader } from '@moeru/three-mmd-b'
+// import { threeMMDLoader as MoeruBabylonMMDLoader } from '@moeru/three-mmd-b'
 import { useLocalStorage } from 'foxact/use-local-storage'
 import { useControls } from 'leva'
 import { startTransition, useEffect, useMemo } from 'react'

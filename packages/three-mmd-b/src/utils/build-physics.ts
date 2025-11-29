@@ -3,26 +3,26 @@
  * Default is spring-bone backed by @pixiv/three-vrm-springbone; plugins can override buildPhysics via loader deps.
  */
 // packages/three-mmd-b/src/utils/build-physics.ts
-import type { SkinnedMesh } from 'three'
-import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
+import type { SkinnedMesh } from 'three'
 
-import type { Grant } from './build-grants'
 import { createSpringBonePhysics } from '../physics/spring-bone-physics'
+import type { Grant } from './build-grants'
 
 export interface PhysicsStrategy<THelpers = unknown> {
   name: string
-  update(delta: number): void
-  setScale?(scale: number): void
-  dispose?(): void
-  createPhysicsHelpers?(): THelpers
+  createPhysicsHelpers?: () => THelpers
+  dispose?: () => void
+  setScale?: (scale: number) => void
+  update: (delta: number) => void
 }
 
 export interface BuildPhysicsOptions {
-  pmx: PmxObject
-  mesh: SkinnedMesh
   grants: Grant[]
   iks: IK[]
+  mesh: SkinnedMesh
+  pmx: PmxObject
 }
 
 /** Default physics factory. Plugins can override to swap spring bone with other implementations. */

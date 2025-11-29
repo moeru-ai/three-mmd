@@ -2,9 +2,6 @@
  * Spring bone physics strategy (functional): builds colliders/joints once from PMX + mesh,
  * powered by @pixiv/three-vrm-springbone. Exposes a PhysicsStrategy for plugging into MMD.
  */
-import type { Bone } from 'three'
-import { Vector3 } from 'three'
-import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import {
   VRMSpringBoneCollider,
   VRMSpringBoneColliderHelper,
@@ -14,11 +11,14 @@ import {
   VRMSpringBoneJointHelper,
   VRMSpringBoneManager,
 } from '@pixiv/three-vrm-springbone'
+import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import type { Bone } from 'three'
+import { Vector3 } from 'three'
 
 import type { BuildPhysicsOptions, PhysicsStrategy } from '../utils/build-physics'
 
 // Type of the spring bone helpers
-export type SpringBoneHelpers = { colliderHelpers: VRMSpringBoneColliderHelper[]; jointHelpers: VRMSpringBoneJointHelper[] }
+export interface SpringBoneHelpers { colliderHelpers: VRMSpringBoneColliderHelper[]; jointHelpers: VRMSpringBoneJointHelper[] }
 
 /**
  * Spring bone physics strategy built on top of @pixiv/three-vrm-springbone.
@@ -31,7 +31,8 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
 
   const baseColliderShapes = new Map<VRMSpringBoneCollider, { radius: number; tail?: Vector3 }>()
   const baseJointSizes = new Map<
-    VRMSpringBoneJoint, { 
+    VRMSpringBoneJoint,
+    {
       dragForce?: number
       gravityPower?: number
       hitRadius: number
@@ -45,7 +46,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
       dragForce: j.settings.dragForce,
       gravityPower: j.settings.gravityPower,
       hitRadius: j.settings.hitRadius,
-      stiffness: j.settings.stiffness
+      stiffness: j.settings.stiffness,
     }))
 
     colliders.forEach((c) => {
@@ -64,10 +65,10 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
     opts.mesh.skeleton.bones
       .filter(bone => ['髪', 'Hair', 'Twin'].some(v => bone.name.includes(v)))
       .forEach(bone => bone.children.forEach(child =>
-        joints.push(new VRMSpringBoneJoint(bone, child, {
-          hitRadius: 0.05,
-          stiffness: 0.75,
-        })),
+    joints.push(new VRMSpringBoneJoint(bone, child, {
+      hitRadius: 0.05,
+      stiffness: 0.75,
+    })),
       ))
   }
 
@@ -178,15 +179,10 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
   return {
     name: 'spring-bone',
 
-    update(delta: number) {
-      manager.update(delta)
-    },
-
-    setScale(scale?: number) {
+    setScale: (scale?: number) => {
       if (scale === undefined)
         return
 
-      // Update joint sizes
       joints.forEach((joint) => {
         const base = baseJointSizes.get(joint)
         if (!base)
@@ -198,7 +194,6 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
         // TODO need to know a better way to scale physical parameters
       })
 
-      // Update collider sizes
       colliders.forEach((collider) => {
         const base = baseColliderShapes.get(collider)
         if (!base)
@@ -220,7 +215,11 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
       manager.setInitState()
     },
 
-    dispose() {
+    update: (delta: number) => {
+      manager.update(delta)
+    },
+
+    dispose: () => {
       manager = new VRMSpringBoneManager()
       colliders.length = 0
       joints.length = 0
@@ -228,11 +227,9 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
       baseJointSizes.clear()
     },
 
-    createPhysicsHelpers() {
-      return {
-        colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
-        jointHelpers: joints.map(j => new VRMSpringBoneJointHelper(j)),
-      }
-    },
+    createPhysicsHelpers: () => ({
+      colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
+      jointHelpers: joints.map(j => new VRMSpringBoneJointHelper(j)),
+    }),
   }
 }
