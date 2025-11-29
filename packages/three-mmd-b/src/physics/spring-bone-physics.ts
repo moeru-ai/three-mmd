@@ -2,6 +2,8 @@
  * Spring bone physics strategy (functional): builds colliders/joints once from PMX + mesh,
  * powered by @pixiv/three-vrm-springbone. Exposes a PhysicsStrategy for plugging into MMD.
  */
+import type { Bone } from 'three'
+
 import {
   VRMSpringBoneCollider,
   VRMSpringBoneColliderHelper,
@@ -11,8 +13,6 @@ import {
   VRMSpringBoneJointHelper,
   VRMSpringBoneManager,
 } from '@pixiv/three-vrm-springbone'
-import type { Bone } from 'three'
-
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import { Vector3 } from 'three'
 
@@ -63,14 +63,22 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
 
   // Initialize hair joints based on bone names
   const setupHairJoints = () => {
-    opts.mesh.skeleton.bones.filter(
-      bone => ['髪', 'Hair', 'Twin'].some(v => bone.name.includes(v))).forEach(bone => bone.children.forEach(
-        child => joints.push(new VRMSpringBoneJoint(bone, child, {
-          hitRadius: 0.05,
-          stiffness: 0.75,
-        })),
+    const { bones } = opts.mesh.skeleton
+    
+    bones
+      .filter((bone) => 
+        ['髪', 'Hair', 'Twin'].some((v) => bone.name.includes(v)),
       )
-    )
+      .forEach((bone) => {
+        bone.children.forEach((child) => {
+          joints.push(
+            new VRMSpringBoneJoint(bone, child, {
+              hitRadius: 0.05,
+              stiffness: 0.75,
+            }),
+          )
+        })  
+      })
   }
 
   // Initialize skirt joints based on bone names
@@ -216,9 +224,10 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
       manager.setInitState()
     },
 
-    update: (delta: number) => {
-      manager.update(delta)
-    },
+    createPhysicsHelpers: () => ({
+      colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
+      jointHelpers: joints.map(j => new VRMSpringBoneJointHelper(j)),
+    }),
 
     dispose: () => {
       manager = new VRMSpringBoneManager()
@@ -228,9 +237,8 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
       baseJointSizes.clear()
     },
 
-    createPhysicsHelpers: () => ({
-      colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
-      jointHelpers: joints.map(j => new VRMSpringBoneJointHelper(j)),
-    }),
+    update: (delta: number) => {
+      manager.update(delta)
+    },
   }
 }

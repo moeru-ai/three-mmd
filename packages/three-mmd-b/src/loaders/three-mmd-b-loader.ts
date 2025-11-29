@@ -5,11 +5,12 @@
  */
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import type { LoadingManager } from 'three'
-import type { ThreeMMDLoaderDeps, ThreeMMDPlugin } from './loader-deps'
 
 import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils } from 'three'
+
+import type { ThreeMMDLoaderDeps, ThreeMMDPlugin } from './loader-deps'
 
 import { extractModelExtension } from '../../../three-mmd/src/utils/_extract-model-extension'
 import { MMD } from '../utils/mmd'

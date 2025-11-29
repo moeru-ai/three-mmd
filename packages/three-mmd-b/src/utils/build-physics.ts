@@ -6,6 +6,7 @@
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import type { SkinnedMesh } from 'three'
 import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
+
 import type { Grant } from './build-grants'
 
 import { createSpringBonePhysics } from '../physics/spring-bone-physics'
@@ -16,17 +17,17 @@ export const buildPhysics = (opts: BuildPhysicsOptions): PhysicsStrategy =>
 
 export { createSpringBonePhysics }
 
-export interface PhysicsStrategy<THelpers = unknown> {
-  createPhysicsHelpers?: () => THelpers
-  name: string
-  dispose?: () => void
-  setScale?: (scale: number) => void
-  update: (delta: number) => void
-}
-
 export interface BuildPhysicsOptions {
   grants: Grant[]
   iks: IK[]
   mesh: SkinnedMesh
   pmx: PmxObject
+}
+
+export interface PhysicsStrategy<THelpers = unknown> {
+  createPhysicsHelpers?: () => THelpers
+  dispose?: () => void
+  name: string
+  setScale?: (scale: number) => void
+  update: (delta: number) => void
 }
