@@ -1,10 +1,10 @@
-import { MMDLoader } from '@moeru/three-mmd-b'
+import { threeMMDLoader } from '@moeru/three-mmd-b'
 import { useLoader } from '@react-three/fiber'
 
 import pmdUrl from '../../../../basic/src/assets/miku/miku_v2.pmd?url'
 
 const BMesh = () => {
-  const object = useLoader(MMDLoader, pmdUrl)
+  const object = useLoader(threeMMDLoader, pmdUrl)
 
   return (
     <>
@@ -14,7 +14,7 @@ const BMesh = () => {
         scale={0.1}
       />
       <skeletonHelper
-        args={[object]}
+        args={[object.mesh]}
       />
     </>
   )

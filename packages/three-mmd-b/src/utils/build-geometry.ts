@@ -13,10 +13,8 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   const skinWeights = new Float32Array(vertexCount * 4)
 
   pmx.vertices.forEach((v, i) => {
-    // Need to fix the chirality of the model
-    // Flip Z axis
-    const position = [v.position[0], v.position[1], -v.position[2]]
-    const normal = [v.normal[0], v.normal[1], -v.normal[2]]
+    const position = [v.position[0], v.position[1], v.position[2]]
+    const normal = [v.normal[0], v.normal[1], v.normal[2]]
     positions.set(position, i * 3)
     normals.set(normal, i * 3)
     uvs.set(v.uv, i * 2)
@@ -56,13 +54,7 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   geometry.setAttribute('skinIndex', new BufferAttribute(skinIndices, 4))
   geometry.setAttribute('skinWeight', new BufferAttribute(skinWeights, 4))
 
-  // Need to flip the face winding order
   const indices = Array.from(pmx.indices)
-  for (let i = 0; i < indices.length; i += 3) {
-    const tmp = indices[i + 1]
-    indices[i + 1] = indices[i + 2]
-    indices[i + 2] = tmp
-  }
   geometry.setIndex(indices)
 
   let faceIndex = 0
@@ -83,9 +75,7 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
       const index = morph.indices[i]
       attribute.array[index * 3 + 0] += morph.positions[i * 3 + 0] * ratio
       attribute.array[index * 3 + 1] += morph.positions[i * 3 + 1] * ratio
-      // Flip Z axis
-      // Lilia: this part may need to be tested when build-animation is available
-      attribute.array[index * 3 + 2] -= morph.positions[i * 3 + 2] * ratio
+      attribute.array[index * 3 + 2] += morph.positions[i * 3 + 2] * ratio
     }
   }
 

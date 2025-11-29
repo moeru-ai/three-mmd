@@ -1,4 +1,4 @@
-import { buildAnimation, SpringBoneMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
+import { buildAnimation, threeMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
@@ -7,6 +7,7 @@ import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 // import pmxUrl from '../../../../assets/安比/安比.pmx?url'
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
+import type { SpringBoneHelpers } from '../../../../../packages/three-mmd-b/src/physics/spring-bone-physics'
 
 const BAnimation = () => {
   const [editingScale, setEditingScale] = useState(false)
@@ -37,7 +38,7 @@ const BAnimation = () => {
     showSkeleton: false,
   })
 
-  const mmd = useLoader(SpringBoneMMDLoader, pmxUrl)
+  const mmd = useLoader(threeMMDLoader, pmxUrl)
 
   const vmd = useLoader(VMDLoader, vmdUrl)
 
@@ -51,8 +52,7 @@ const BAnimation = () => {
 
   // Helpers
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
-  const colliderHelpers = useMemo(() => mmd.createColliderHelpers(), [mmd])
-  const jointHelpers = useMemo(() => mmd.createJointHelpers(), [mmd])
+  const { colliderHelpers, jointHelpers } = useMemo(() => mmd.createPhysicsHelpers() as SpringBoneHelpers, [mmd])
 
   // Play the animation on mount
   useEffect(() => {

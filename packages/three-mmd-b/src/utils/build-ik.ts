@@ -34,12 +34,12 @@ export const buildIK = (pmx: PmxObject): IK[] => {
 
         // Convert Left to Right coordinate by myself because
         // MMDParser doesn't convert. It's a MMDParser's bug
-        const tmp1 = -rotationMax[0]
-        const tmp2 = -rotationMax[1]
-        rotationMax[0] = -rotationMin[0]
-        rotationMax[1] = -rotationMin[1]
-        rotationMin[0] = tmp1
-        rotationMin[1] = tmp2
+        // const tmp1 = -rotationMax[0]
+        // const tmp2 = -rotationMax[1]
+        // rotationMax[0] = -rotationMin[0]
+        // rotationMax[1] = -rotationMin[1]
+        // rotationMin[0] = tmp1
+        // rotationMin[1] = tmp2
 
         result.rotationMin = new Vector3().fromArray(rotationMin)
         result.rotationMax = new Vector3().fromArray(rotationMax)

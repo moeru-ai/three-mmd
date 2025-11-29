@@ -1,5 +1,5 @@
 import { MMDLoader as MoeruMMDLoader } from '@moeru/three-mmd'
-import { MMDLoader as MoeruBabylonMMDLoader } from '@moeru/three-mmd-b'
+import { threeMMDLoader as MoeruBabylonMMDLoader } from '@moeru/three-mmd-b'
 import { useLocalStorage } from 'foxact/use-local-storage'
 import { useControls } from 'leva'
 import { startTransition, useEffect, useMemo } from 'react'
@@ -29,7 +29,8 @@ export const useMMDLoader = () => {
     if (loader === 'moeru-mmd')
       return MoeruMMDLoader
     else if (loader === 'moeru-mmd-b')
-      return MoeruBabylonMMDLoader
+    //   return MoeruBabylonMMDLoader
+      return MoeruMMDLoader
     else
       return StdlibMMDLoader
   }, [loader])
