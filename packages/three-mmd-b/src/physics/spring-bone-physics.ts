@@ -65,14 +65,14 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
   const setupHairJoints = () => {
     const { bones } = opts.mesh.skeleton
     bones
-      .filter(bone => ['髪', 'Hair', 'Twin'].some((v) => bone.name.includes(v)))
+      .filter(bone => ['髪', 'Hair', 'Twin'].some(v => bone.name.includes(v)))
       .forEach(bone => bone.children.forEach((child) => {
-          joints.push(
-            new VRMSpringBoneJoint(bone, child, {
-              hitRadius: 0.05,
-              stiffness: 0.75,
-            })
-          )
+        joints.push(
+          new VRMSpringBoneJoint(bone, child, {
+            hitRadius: 0.05,
+            stiffness: 0.75,
+          })
+        )
       }))
   }
 
@@ -113,11 +113,11 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
     }
 
     legBones.forEach(({ bone, idx }) => {
-      const child = bone.children[0]
-      if (!child)
+      if(!bone.children || bone.children.length === 0)
         return
 
       // Compute bone length and direction
+      const child = bone.children[0]
       const childWorld = child.getWorldPosition(new Vector3())
       const boneWorld = bone.getWorldPosition(new Vector3())
       const dirSeg = child.position.clone().normalize()
@@ -183,6 +183,11 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
   return {
     name: 'spring-bone',
 
+    createPhysicsHelpers: () => ({
+      colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
+      jointHelpers: joints.map(j => new VRMSpringBoneJointHelper(j)),
+    }),
+
     setScale: (scale?: number) => {
       if (scale === undefined)
         return
@@ -218,11 +223,6 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
       opts.mesh.updateMatrixWorld(true)
       manager.setInitState()
     },
-
-    createPhysicsHelpers: () => ({
-      colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
-      jointHelpers: joints.map(j => new VRMSpringBoneJointHelper(j)),
-    }),
 
     dispose: () => {
       manager = new VRMSpringBoneManager()

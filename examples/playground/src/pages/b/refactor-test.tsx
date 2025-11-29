@@ -6,9 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { SpringBoneHelpers } from '../../../../../packages/three-mmd-b/src/physics/spring-bone-physics'
 
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
-// eslint-disable-next-line import/no-unresolved
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
-// eslint-disable-next-line import/no-unresolved
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 // import pmxUrl from '../../../../assets/安比/安比.pmx?url'
 
