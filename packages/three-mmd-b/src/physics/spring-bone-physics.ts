@@ -71,7 +71,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
           new VRMSpringBoneJoint(bone, child, {
             hitRadius: 0.05,
             stiffness: 0.75,
-          })
+          }),
         )
       }))
   }
@@ -113,7 +113,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
     }
 
     legBones.forEach(({ bone, idx }) => {
-      if(!bone.children || bone.children.length === 0)
+      if (!bone.children || bone.children.length === 0)
         return
 
       // Compute bone length and direction
@@ -181,12 +181,20 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
   cacheJointsAndColliders()
 
   return {
-    name: 'spring-bone',
-
     createPhysicsHelpers: () => ({
       colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
       jointHelpers: joints.map(j => new VRMSpringBoneJointHelper(j)),
     }),
+
+    dispose: () => {
+      manager = new VRMSpringBoneManager()
+      colliders.length = 0
+      joints.length = 0
+      baseColliderShapes.clear()
+      baseJointSizes.clear()
+    },
+
+    name: 'spring-bone',
 
     setScale: (scale?: number) => {
       if (scale === undefined)
@@ -222,14 +230,6 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
       opts.mesh.skeleton.pose()
       opts.mesh.updateMatrixWorld(true)
       manager.setInitState()
-    },
-
-    dispose: () => {
-      manager = new VRMSpringBoneManager()
-      colliders.length = 0
-      joints.length = 0
-      baseColliderShapes.clear()
-      baseJointSizes.clear()
     },
 
     update: (delta: number) => {
