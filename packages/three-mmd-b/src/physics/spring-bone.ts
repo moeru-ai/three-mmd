@@ -195,7 +195,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
 
     name: 'spring-bone',
 
-    setScale: (scale?: number) => {
+    setScalar: (scale?: number) => {
       if (scale === undefined)
         return
 

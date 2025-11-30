@@ -35,7 +35,7 @@ export class MMD {
     this.scale = scale
     this.mesh.scale.setScalar(scale)
     // Physics scaling
-    this.physics?.setScale?.(this.scale)
+    this.physics?.setScalar?.(this.scale)
   }
 
   public update(delta: number) {

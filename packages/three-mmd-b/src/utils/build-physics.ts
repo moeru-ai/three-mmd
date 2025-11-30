@@ -28,6 +28,6 @@ export interface PhysicsStrategy<THelpers = unknown> {
   createPhysicsHelpers?: () => THelpers
   dispose?: () => void
   name: string
-  setScale?: (scale: number) => void
+  setScalar?: (scale: number) => void
   update: (delta: number) => void
 }
