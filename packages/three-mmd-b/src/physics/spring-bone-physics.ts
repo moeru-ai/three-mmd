@@ -113,6 +113,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
     }
 
     legBones.forEach(({ bone, idx }) => {
+      // eslint-disable-next-line ts/strict-boolean-expressions
       if (!bone.children || bone.children.length === 0)
         return
 
