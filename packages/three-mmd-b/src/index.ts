@@ -1,7 +1,10 @@
 export { MMDLoader } from './loaders/mmd-loader'
+export { MMDMeshLoader } from './loaders/mmd-mesh-loader'
 export { VMDLoader } from './loaders/vmd-loader'
-export { buildAnimation, buildCameraAnimation } from './utils/build-animation'
 
+export { createSpringBonePhysics, type SpringBoneHelpers } from './physics/spring-bone'
+
+export { buildAnimation, buildCameraAnimation } from './utils/build-animation'
 export { buildBones } from './utils/build-bones'
 export { buildGeometry } from './utils/build-geometry'
 export { buildGrants } from './utils/build-grants'

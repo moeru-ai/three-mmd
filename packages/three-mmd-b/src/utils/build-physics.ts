@@ -9,7 +9,7 @@ import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
 import type { Grant } from './build-grants'
 
-import { createSpringBonePhysics } from '../physics/spring-bone-physics'
+import { createSpringBonePhysics } from '../physics/spring-bone'
 
 /** Default physics factory. Plugins can override to swap spring bone with other implementations. */
 export const buildPhysics = (opts: BuildPhysicsOptions): PhysicsStrategy =>

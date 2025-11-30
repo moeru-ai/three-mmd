@@ -18,13 +18,11 @@ import { Vector3 } from 'three'
 
 import type { BuildPhysicsOptions, PhysicsStrategy } from '../utils/build-physics'
 
-// Type of the spring bone helpers
-export interface SpringBoneHelpers { colliderHelpers: VRMSpringBoneColliderHelper[], jointHelpers: VRMSpringBoneJointHelper[] }
+export interface SpringBoneHelpers {
+  colliderHelpers: VRMSpringBoneColliderHelper[]
+  jointHelpers: VRMSpringBoneJointHelper[]
+}
 
-/**
- * Spring bone physics strategy built on top of @pixiv/three-vrm-springbone.
- * Functional factory returning a PhysicsStrategy object backed by closure state.
- */
 export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrategy<SpringBoneHelpers> => {
   let manager = new VRMSpringBoneManager()
   const colliders: VRMSpringBoneCollider[] = []
