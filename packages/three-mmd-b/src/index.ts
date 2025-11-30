@@ -1,10 +1,11 @@
 export { MMDLoader } from './loaders/mmd-loader'
 export { VMDLoader } from './loaders/vmd-loader'
-
 export { buildAnimation, buildCameraAnimation } from './utils/build-animation'
+
 export { buildBones } from './utils/build-bones'
 export { buildGeometry } from './utils/build-geometry'
 export { buildGrants } from './utils/build-grants'
 export { buildIK } from './utils/build-ik'
 export { buildMaterial } from './utils/build-material'
 export { buildMesh } from './utils/build-mesh'
+export { MMD } from './utils/mmd'

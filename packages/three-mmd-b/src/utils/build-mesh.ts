@@ -9,6 +9,5 @@ export const buildMesh = (
   geometry: BufferGeometry,
   materials: MMDToonMaterial[],
 ): SkinnedMesh => {
-  const mesh = new SkinnedMesh(geometry, materials)
-  return mesh
+  return new SkinnedMesh(geometry, materials)
 }

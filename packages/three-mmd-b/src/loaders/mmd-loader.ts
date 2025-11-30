@@ -116,8 +116,7 @@ export class MMDLoader extends Loader<MMD> {
     const iks = buildIK(pmx)
     const physics = buildPhysics({ grants, iks, mesh: skinnedMesh, pmx })
 
-    const mmd = new MMD(skinnedMesh, grants, iks, physics)
-    return mmd
+    return new MMD(skinnedMesh, grants, iks, physics)
   }
 
   private getResolvedDeps() {

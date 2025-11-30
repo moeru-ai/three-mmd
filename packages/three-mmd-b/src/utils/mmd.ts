@@ -40,6 +40,6 @@ export class MMD {
 
   public update(delta: number) {
     if (this.physics)
-      this.physics.update(delta)
+      return this.physics.update(delta)
   }
 }
