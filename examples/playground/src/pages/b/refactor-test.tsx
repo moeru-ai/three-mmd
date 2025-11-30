@@ -1,4 +1,4 @@
-import { buildAnimation, ThreeMMDLoader, VMDLoader } from '@moeru/three-mmd-b'
+import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd-b'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
@@ -41,7 +41,7 @@ const BAnimation = () => {
     showSkeleton: false,
   })
 
-  const mmd = useLoader(ThreeMMDLoader, pmxUrl)
+  const mmd = useLoader(MMDLoader, pmxUrl)
 
   const vmd = useLoader(VMDLoader, vmdUrl)
 

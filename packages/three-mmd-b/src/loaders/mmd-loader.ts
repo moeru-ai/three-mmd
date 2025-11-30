@@ -10,17 +10,17 @@ import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils } from 'three'
 
-import type { ThreeMMDLoaderDeps, ThreeMMDPlugin } from './loader-deps'
+import type { MMDLoaderDeps, MMDLoaderPlugin } from './loader-deps'
 
 import { extractModelExtension } from '../../../three-mmd/src/utils/_extract-model-extension'
 import { MMD } from '../utils/mmd'
 import { defaultDeps, resolveDeps } from './loader-deps'
 
 /** @experimental */
-export class ThreeMMDLoader extends Loader<MMD> {
-  private plugins: ThreeMMDPlugin[] = []
+export class MMDLoader extends Loader<MMD> {
+  private plugins: MMDLoaderPlugin[] = []
 
-  constructor(plugins: ThreeMMDPlugin[] = [], manager?: LoadingManager) {
+  constructor(plugins: MMDLoaderPlugin[] = [], manager?: LoadingManager) {
     super(manager)
     this.plugins.push(...plugins)
   }
@@ -83,7 +83,7 @@ export class ThreeMMDLoader extends Loader<MMD> {
   }
 
   // If loaded then register new plugins, it will only be effective at the next load
-  public register(plugin: ThreeMMDPlugin) {
+  public register(plugin: MMDLoaderPlugin) {
     this.plugins.push(plugin)
     return this
   }
@@ -92,7 +92,7 @@ export class ThreeMMDLoader extends Loader<MMD> {
   private assembleMMD(
     pmx: PmxObject,
     resourcePath: string,
-    deps: ThreeMMDLoaderDeps = defaultDeps,
+    deps: MMDLoaderDeps = defaultDeps,
   ): MMD {
     const {
       buildBones,

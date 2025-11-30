@@ -1,7 +1,7 @@
 /**
  * Shared dependency map for assembling MMD models.
  * Plugins can override any step (parse, post-process, geometry, materials, bones, IK, grants, mesh creation)
- * by returning Partial<ThreeMMDLoaderDeps> and letting resolveDeps merge overrides on top of defaults.
+ * by returning Partial<MMDLoaderDeps> and letting resolveDeps merge overrides on top of defaults.
  */
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import type { BufferGeometry, SkinnedMesh } from 'three'
@@ -20,7 +20,7 @@ import { buildMesh } from '../utils/build-mesh'
 import { buildPhysics } from '../utils/build-physics'
 import { postParseProcessing } from '../utils/post-parse'
 
-export interface ThreeMMDLoaderDeps {
+export interface MMDLoaderDeps {
   buildBones: (pmx: PmxObject, mesh: SkinnedMesh) => SkinnedMesh
   buildGeometry: (pmx: PmxObject) => BufferGeometry
   buildGrants: (pmx: PmxObject) => Grant[]
@@ -31,7 +31,7 @@ export interface ThreeMMDLoaderDeps {
   postParseProcessing: (pmx: PmxObject) => PmxObject
 }
 
-export const defaultDeps: Required<ThreeMMDLoaderDeps> = {
+export const defaultDeps: Required<MMDLoaderDeps> = {
   buildBones,
   buildGeometry,
   buildGrants,
@@ -43,11 +43,11 @@ export const defaultDeps: Required<ThreeMMDLoaderDeps> = {
 }
 
 // Plugin register
-export type ThreeMMDPlugin = (deps: ThreeMMDLoaderDeps) => Partial<ThreeMMDLoaderDeps>
+export type MMDLoaderPlugin = (deps: MMDLoaderDeps) => Partial<MMDLoaderDeps>
 export const resolveDeps = (
-  plugins: ThreeMMDPlugin[] = [],
-  baseDeps: ThreeMMDLoaderDeps = defaultDeps,
-): ThreeMMDLoaderDeps => {
+  plugins: MMDLoaderPlugin[] = [],
+  baseDeps: MMDLoaderDeps = defaultDeps,
+): MMDLoaderDeps => {
   let mergedDeps = { ...baseDeps }
   plugins.forEach((p) => {
     mergedDeps = { ...mergedDeps, ...p(mergedDeps) }

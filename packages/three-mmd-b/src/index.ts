@@ -1,4 +1,4 @@
-export { ThreeMMDLoader } from './loaders/three-mmd-b-loader'
+export { MMDLoader } from './loaders/mmd-loader'
 export { VMDLoader } from './loaders/vmd-loader'
 
 export { buildAnimation, buildCameraAnimation } from './utils/build-animation'

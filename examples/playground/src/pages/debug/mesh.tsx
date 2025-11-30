@@ -4,10 +4,10 @@ import { useControls } from 'leva'
 import { startTransition, useEffect, useMemo, useState } from 'react'
 
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
-import { useMMDLoader } from '../../hooks/use-mmd-loader'
+import { useMMDMeshLoader } from '../../hooks/use-mmd-loader'
 
 const Mesh = () => {
-  const MMDLoader = useMMDLoader()
+  const MMDLoader = useMMDMeshLoader()
   const loader = useMemo(() => new MMDLoader(), [MMDLoader])
 
   const [object, setObject] = useState<SkinnedMesh>()
