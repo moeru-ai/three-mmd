@@ -1,27 +1,13 @@
-import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import type { BufferGeometry } from 'three'
 
-import { Skeleton, SkinnedMesh } from 'three'
+import { SkinnedMesh } from 'three'
 
-import { buildBones } from './build-bones'
-import { buildGeometry } from './build-geometry'
-import { buildMaterial } from './build-material'
+import type { MMDToonMaterial } from '../materials/mmd-toon-material'
 
 /** @experimental */
 export const buildMesh = (
-  pmx: PmxObject,
-  resourcePath: string,
+  geometry: BufferGeometry,
+  materials: MMDToonMaterial[],
 ): SkinnedMesh => {
-  const geometry = buildGeometry(pmx)
-  const material = buildMaterial(
-    pmx,
-    geometry,
-    resourcePath,
-  )
-
-  const mesh = new SkinnedMesh(geometry, material)
-
-  const skeleton = new Skeleton(buildBones(pmx, mesh))
-  mesh.bind(skeleton)
-
-  return mesh
+  return new SkinnedMesh(geometry, materials)
 }

@@ -14,7 +14,7 @@ const BMesh = () => {
         scale={0.1}
       />
       <skeletonHelper
-        args={[object]}
+        args={[object.mesh]}
       />
     </>
   )
