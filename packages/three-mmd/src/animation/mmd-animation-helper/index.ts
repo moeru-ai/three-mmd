@@ -1,23 +1,13 @@
-/* eslint-disable ts/strict-boolean-expressions */
-/* eslint-disable ts/ban-ts-comment */
-/* eslint-disable sonarjs/different-types-comparison */
-/* eslint-disable ts/no-unsafe-assignment */
-/* eslint-disable ts/no-unsafe-member-access */
-/* eslint-disable ts/no-unsafe-call */
-/* eslint-disable ts/no-unsafe-argument */
-
-/* eslint-disable perfectionist/sort-classes */
-
-import type { PmxBoneInfo } from '@noname0310/mmd-parser'
+import type { PmdConstraintInfo, PmdRigidBodyInfo, PmxBoneInfo, PmxConstraintInfo, PmxRigidBodyInfo, Vpd } from '@noname0310/mmd-parser'
 import type {
   AnimationClip,
   Audio,
-  Bone,
   Camera,
   PerspectiveCamera,
   PropertyMixer,
   SkinnedMesh,
 } from 'three'
+import type { IK } from 'three/addons/animation/CCDIKSolver.js'
 
 import {
   AnimationMixer,
@@ -27,11 +17,12 @@ import {
 } from 'three'
 import { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js'
 
-import type { MMDPhysicsParameter } from './mmd-physics'
+import type { MMDPhysicsParameter } from '../mmd-physics'
+import type { Grant } from './grant-solver'
 
-import { AudioManager } from './mmd-animation-helper/audio-manager'
-import { GrantSolver } from './mmd-animation-helper/grant-solver'
-import { MMDPhysics } from './mmd-physics'
+import { MMDPhysics } from '../mmd-physics'
+import { AudioManager } from './audio-manager'
+import { GrantSolver } from './grant-solver'
 
 // Keep working quaternions for less GC
 const _quaternions: Quaternion[] = []
@@ -47,11 +38,11 @@ const getQuaternion = (): Quaternion => {
 
 // Save rotation whose grant and IK are already applied
 // used by grant children
-const _grantResultMap = new Map()
+const _grantResultMap = new Map<number, Quaternion>()
 
 const updateOne = (mesh: SkinnedMesh, boneIndex: number, ikSolver: CCDIKSolver | null, grantSolver: GrantSolver | null) => {
   const bones = mesh.skeleton.bones
-  const bonesData = mesh.geometry.userData.MMD.bones
+  const bonesData = (mesh.geometry.userData.MMD as { bones: PmxBoneInfo[] }).bones
   const boneData = bonesData[boneIndex]
   const bone = bones[boneIndex]
 
@@ -77,7 +68,7 @@ const updateOne = (mesh: SkinnedMesh, boneIndex: number, ikSolver: CCDIKSolver |
       updateOne(mesh, parentIndex, ikSolver, grantSolver)
     }
 
-    grantSolver.addGrantRotation(bone, _grantResultMap.get(parentIndex), ratio)
+    grantSolver.addGrantRotation(bone, _grantResultMap.get(parentIndex)!, ratio)
   }
 
   if (ikSolver && boneData.ik) {
@@ -92,13 +83,13 @@ const updateOne = (mesh: SkinnedMesh, boneIndex: number, ikSolver: CCDIKSolver |
     for (let i = 0, il = links.length; i < il; i++) {
       const link = links[i]
 
-      if (link.enabled === false)
+      if ('enabled' in link && link.enabled === false)
         continue
 
       const linkIndex = link.index
 
       if (_grantResultMap.has(linkIndex)) {
-        _grantResultMap.set(linkIndex, _grantResultMap.get(linkIndex).copy(bones[linkIndex].quaternion))
+        _grantResultMap.set(linkIndex, _grantResultMap.get(linkIndex)!.copy(bones[linkIndex].quaternion))
       }
     }
   }
@@ -157,7 +148,6 @@ export interface MMDAnimationHelperPoseParameter {
  *  - more precise grant skinning support.
  */
 export class MMDAnimationHelper {
-  meshes: SkinnedMesh[]
   audio: Audio | null
   audioManager: AudioManager | null
   camera: Camera | null
@@ -179,15 +169,17 @@ export class MMDAnimationHelper {
 
   masterPhysics: MMDPhysics | null
 
+  meshes: SkinnedMesh[]
+
   objects: WeakMap<AnimationClip | AudioManager | Camera | SkinnedMesh, MMDAnimationHelperMixer>
   onBeforePhysics: (mesh: SkinnedMesh) => void
   sharedPhysics: boolean
 
   /**
-   * @param {object} params - (optional)
-   * @param {boolean} params.sync - Whether animation durations of added objects are synched. Default is true.
-   * @param {number} params.afterglow - Default is 0.0.
-   * @param {boolean} params.resetPhysicsOnLoop - Default is true.
+   * @param params - (optional)
+   * @param params.sync - Whether animation durations of added objects are synched. Default is true.
+   * @param params.afterglow - Default is 0.0.
+   * @param params.resetPhysicsOnLoop - Default is true.
    */
   constructor(params: MMDAnimationHelperParameter = {}) {
     this.meshes = []
@@ -221,6 +213,172 @@ export class MMDAnimationHelper {
     // experimental
     this.sharedPhysics = false
     this.masterPhysics = null
+  }
+
+  /**
+   * Adds an Three.js Object to helper and setups animation.
+   * The animation durations of added objects are synched
+   * if this.configuration.sync is true.
+   *
+   * @param object
+   * @param params - (optional)
+   * @param params.animation - Only for THREE.SkinnedMesh and THREE.Camera. Default is undefined.
+   * @param params.physics - Only for THREE.SkinnedMesh. Default is true.
+   * @param params.warmup - Only for THREE.SkinnedMesh and physics is true. Default is 60.
+   * @param params.unitStep - Only for THREE.SkinnedMesh and physics is true. Default is 1 / 65.
+   * @param params.maxStepNum - Only for THREE.SkinnedMesh and physics is true. Default is 3.
+   * @param params.gravity - Only for THREE.SkinnedMesh and physics is true. Default ( 0, - 9.8 * 10, 0 ).
+   * @param params.delayTime - Only for THREE.Audio. Default is 0.0.
+   */
+  add(object: Audio | Camera | SkinnedMesh, params: MMDAnimationHelperAddParameter = {}): this {
+    if ('isSkinnedMesh' in object && object.isSkinnedMesh) {
+      this._addMesh(object, params)
+    }
+    else if ('isCamera' in object && object.isCamera) {
+      this._setupCamera(object, params)
+    }
+    else if (object.type === 'Audio') {
+      this._setupAudio(object as Audio, params)
+    }
+    else {
+      throw new Error('MMDAnimationHelper.add: '
+        + 'accepts only '
+        + 'THREE.SkinnedMesh or '
+        + 'THREE.Camera or '
+        + 'THREE.Audio instance.')
+    }
+
+    if (this.configuration.sync)
+      this._syncDuration()
+
+    return this
+  }
+
+  /** Creates an GrantSolver instance. */
+  createGrantSolver(mesh: SkinnedMesh): GrantSolver {
+    return new GrantSolver(mesh, (mesh.geometry.userData.MMD as { grants: Grant[] }).grants)
+  }
+
+  /** Enables/Disables an animation feature. */
+  enable(key: keyof typeof this.enabled, enabled: boolean): this {
+    if (this.enabled[key] == null) {
+      throw new Error('MMDAnimationHelper.enable: '
+        + `unknown key ${key}`)
+    }
+
+    this.enabled[key] = enabled
+
+    if (key === 'physics') {
+      for (let i = 0, il = this.meshes.length; i < il; i++) {
+        this._optimizeIK(this.meshes[i], enabled)
+      }
+    }
+
+    return this
+  }
+
+  /**
+   * Changes the pose of SkinnedMesh as VPD specifies.
+   *
+   * @param mesh
+   * @param vpd - VPD content parsed MMDParser
+   * @param params - (optional)
+   * @param params.resetPose - Default is true.
+   * @param params.ik - Default is true.
+   * @param params.grant - Default is true.
+   */
+  pose(mesh: SkinnedMesh, vpd: Vpd, params: MMDAnimationHelperPoseParameter = {}) {
+    if (params.resetPose !== false)
+      mesh.pose()
+
+    const bones = mesh.skeleton.bones
+    const boneParams = vpd.bones
+
+    const boneNameDictionary: Record<string, number> = {}
+
+    for (let i = 0, il = bones.length; i < il; i++) {
+      boneNameDictionary[bones[i].name] = i
+    }
+
+    const vector = new Vector3()
+    const quaternion = new Quaternion()
+
+    for (let i = 0, il = boneParams.length; i < il; i++) {
+      const boneParam = boneParams[i]
+      const boneIndex = boneNameDictionary[boneParam.name]
+
+      if (boneIndex == null)
+        continue
+
+      const bone = bones[boneIndex]
+      bone.position.add(vector.fromArray(boneParam.translation))
+      bone.quaternion.multiply(quaternion.fromArray(boneParam.quaternion))
+    }
+
+    mesh.updateMatrixWorld(true)
+
+    // PMX animation system special path
+    if (this.configuration.pmxAnimation
+      && (mesh.geometry.userData.MMD as { format?: 'pmd' | 'pmx' }).format === 'pmx') {
+      const sortedBonesData = this._sortBoneDataArray((mesh.geometry.userData.MMD as { bones: PmxBoneInfo[] }).bones.slice())
+      const ikSolver = params.ik !== false ? this._createCCDIKSolver(mesh) : null
+      const grantSolver = params.grant !== false ? this.createGrantSolver(mesh) : null
+      this._animatePMXMesh(mesh, sortedBonesData, ikSolver, grantSolver)
+    }
+    else {
+      if (params.ik !== false) {
+        this._createCCDIKSolver(mesh).update()
+      }
+
+      if (params.grant !== false) {
+        this.createGrantSolver(mesh).update()
+      }
+    }
+
+    return this
+  }
+
+  /** Removes an Three.js Object from helper. */
+  remove(object: Audio | Camera | SkinnedMesh): this {
+    if ('isSkinnedMesh' in object && object.isSkinnedMesh === true) {
+      this._removeMesh(object)
+    }
+    else if ('isCamera' in object && object.isCamera === true) {
+      this._clearCamera(object)
+    }
+    else if (object.type === 'Audio') {
+      this._clearAudio(object as Audio)
+    }
+    else {
+      throw new Error('MMDAnimationHelper.remove: '
+        + 'accepts only '
+        + 'THREE.SkinnedMesh or '
+        + 'THREE.Camera or '
+        + 'THREE.Audio instance.')
+    }
+
+    if (this.configuration.sync)
+      this._syncDuration()
+
+    return this
+  }
+
+  /** Updates the animation. */
+  update(delta: number): this {
+    if (this.audioManager !== null)
+      this.audioManager.control(delta)
+
+    for (let i = 0; i < this.meshes.length; i++) {
+      this._animateMesh(this.meshes[i], delta)
+    }
+
+    if (this.sharedPhysics)
+      this._updateSharedPhysics(delta)
+
+    if (this.camera !== null)
+      this._animateCamera(this.camera, delta)
+
+    return this
   }
 
   private _addMesh(mesh: SkinnedMesh, params: MMDAnimationHelperAddParameter) {
@@ -277,9 +435,9 @@ export class MMDAnimationHelper {
 
       // PMX animation system special path
       if (this.configuration.pmxAnimation
-        && mesh.geometry.userData.MMD && mesh.geometry.userData.MMD.format === 'pmx') {
+        && (mesh.geometry.userData.MMD as { format?: 'pmd' | 'pmx' }).format === 'pmx') {
         if (!objects.sortedBonesData)
-          objects.sortedBonesData = this._sortBoneDataArray(mesh.geometry.userData.MMD.bones.slice())
+          objects.sortedBonesData = this._sortBoneDataArray((mesh.geometry.userData.MMD as { bones: PmxBoneInfo[] }).bones.slice())
 
         this._animatePMXMesh(
           mesh,
@@ -325,8 +483,7 @@ export class MMDAnimationHelper {
     _grantResultMap.clear()
 
     for (let i = 0, il = sortedBonesData.length; i < il; i++) {
-      // @ts-expect-error
-      updateOne(mesh, sortedBonesData[i].index, ikSolver, grantSolver)
+      updateOne(mesh, (sortedBonesData[i] as unknown as { index: number }).index, ikSolver, grantSolver)
     }
 
     mesh.updateMatrixWorld(true)
@@ -361,25 +518,15 @@ export class MMDAnimationHelper {
     return this
   }
 
-  // private methods
-
   private _createCCDIKSolver(mesh: SkinnedMesh) {
-    if (CCDIKSolver === undefined) {
-      throw new Error('MMDAnimationHelper: Import CCDIKSolver.')
-    }
-
-    return new CCDIKSolver(mesh, mesh.geometry.userData.MMD.iks)
+    return new CCDIKSolver(mesh, (mesh.geometry.userData.MMD as { iks: IK[ ] }).iks)
   }
 
   private _createMMDPhysics(mesh: SkinnedMesh, params: MMDAnimationHelperAddParameter) {
-    if (MMDPhysics === undefined) {
-      throw new Error('MMDPhysics: Import MMDPhysics.')
-    }
-
     return new MMDPhysics(
       mesh,
-      mesh.geometry.userData.MMD.rigidBodies,
-      mesh.geometry.userData.MMD.constraints,
+      (mesh.geometry.userData.MMD as { rigidBodies: (PmdRigidBodyInfo | PmxRigidBodyInfo)[] }).rigidBodies,
+      (mesh.geometry.userData.MMD as { constraints: (PmdConstraintInfo | PmxConstraintInfo)[] }).constraints,
       params,
     )
   }
@@ -389,12 +536,11 @@ export class MMDAnimationHelper {
       return this.masterPhysics
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
-      // @ts-expect-error
-      const physics = this.meshes[i].physics
+      const physics = (this.meshes[i] as { physics?: MMDPhysics }).physics
 
-      if (physics !== undefined && physics !== null) {
+      if (physics != null) {
         this.masterPhysics = physics
-        return this.masterPhysics!
+        return this.masterPhysics
       }
     }
 
@@ -402,9 +548,7 @@ export class MMDAnimationHelper {
   }
 
   private _optimizeIK(mesh: SkinnedMesh, physicsEnabled: boolean) {
-    const iks = mesh.geometry.userData.MMD.iks
-    const bones = mesh.geometry.userData.MMD.bones
-
+    const { bones, iks } = mesh.geometry.userData.MMD as { bones: PmxBoneInfo[], iks: IK[] }
     for (let i = 0, il = iks.length; i < il; i++) {
       const ik = iks[i]
       const links = ik.links
@@ -415,7 +559,7 @@ export class MMDAnimationHelper {
         if (physicsEnabled === true) {
           // disable IK of the bone the corresponding rigidBody type of which is 1 or 2
           // because its rotation will be overridden by physics
-          link.enabled = bones[link.index].rigidBodyType <= 0
+          link.enabled = (bones[link.index] as unknown as { rigidBodyType: number }).rigidBodyType <= 0
         }
         else {
           link.enabled = true
@@ -513,6 +657,25 @@ export class MMDAnimationHelper {
     return this
   }
 
+  // private _updatePropertyMixersBuffer(mesh: SkinnedMesh) {
+  //   const mixer = this.objects.get(mesh)!.mixer!
+
+  //   const propertyMixers = mixer._bindings!
+  //   // @ts-expect-error
+  //   const accuIndex = mixer._accuIndex
+
+  //   for (let i = 0, il = propertyMixers.length; i < il; i++) {
+  //     const propertyMixer = propertyMixers[i]
+  //     // @ts-expect-error
+  //     const buffer = propertyMixer.buffer
+  //     const stride = propertyMixer.valueSize
+  //     const offset = (accuIndex + 1) * stride
+
+  //     // @ts-expect-error
+  //     propertyMixer.binding.getValue(buffer, offset)
+  //   }
+  // }
+
   private _setupCamera(camera: Camera, params: MMDAnimationHelperAddParameter) {
     if (this.camera === camera) {
       throw new Error('MMDAnimationHelper._setupCamera: '
@@ -549,31 +712,30 @@ export class MMDAnimationHelper {
     }
   }
 
+  // workaround
+
   private _setupMeshAnimation(mesh: SkinnedMesh, animation: AnimationClip | AnimationClip[]) {
     const objects = this.objects.get(mesh)!
 
-    if (animation !== undefined) {
-      const animations = Array.isArray(animation)
-        ? animation
-        : [animation]
+    const animations = Array.isArray(animation)
+      ? animation
+      : [animation]
 
-      objects.mixer = new AnimationMixer(mesh)
+    objects.mixer = new AnimationMixer(mesh)
 
-      for (let i = 0, il = animations.length; i < il; i++) {
-        objects.mixer.clipAction(animations[i]).play()
-      }
-
-      // TODO: find a workaround not to access ._clip looking like a private property
-      objects.mixer.addEventListener('loop', (event) => {
-        // @ts-expect-error
-        const tracks = event.action._clip.tracks
-
-        if (tracks.length > 0 && tracks[0].name.slice(0, 6) !== '.bones')
-          return
-
-        objects.looped = true
-      })
+    for (let i = 0, il = animations.length; i < il; i++) {
+      objects.mixer.clipAction(animations[i]).play()
     }
+
+    // TODO: find a workaround not to access ._clip looking like a private property
+    objects.mixer.addEventListener('loop', (event) => {
+      const tracks = ((event.action as unknown as { _clip: AnimationClip })._clip).tracks
+
+      if (tracks.length > 0 && tracks[0].name.slice(0, 6) !== '.bones')
+        return
+
+      objects.looped = true
+    })
 
     objects.ikSolver = this._createCCDIKSolver(mesh)
     objects.grantSolver = this.createGrantSolver(mesh)
@@ -590,8 +752,7 @@ export class MMDAnimationHelper {
       const masterPhysics = this._getMasterPhysics()
 
       if (masterPhysics !== null)
-        // TODO: what is this?
-        // @ts-expect-error
+        // @ts-expect-error TODO: what is this?
         // eslint-disable-next-line sonarjs/no-implicit-global
         world = masterPhysics.world
     }
@@ -617,11 +778,13 @@ export class MMDAnimationHelper {
         return a.transformationClass - b.transformationClass
       }
       else {
-        // @ts-expect-error
+        // @ts-expect-error missing index field
         return a.index - b.index
       }
     })
   }
+
+  // experimental
 
   /*
    * Detects the longest duration and then sets it to them to sync.
@@ -708,25 +871,6 @@ export class MMDAnimationHelper {
     }
   }
 
-  private _updatePropertyMixersBuffer(mesh: SkinnedMesh) {
-    const mixer = this.objects.get(mesh)!.mixer!
-
-    const propertyMixers = mixer._bindings!
-    // @ts-expect-error
-    const accuIndex = mixer._accuIndex
-
-    for (let i = 0, il = propertyMixers.length; i < il; i++) {
-      const propertyMixer = propertyMixers[i]
-      // @ts-expect-error
-      const buffer = propertyMixer.buffer
-      const stride = propertyMixer.valueSize
-      const offset = (accuIndex + 1) * stride
-
-      // @ts-expect-error
-      propertyMixer.binding.getValue(buffer, offset)
-    }
-  }
-
   private _updateSharedPhysics(delta: number) {
     if (this.meshes.length === 0 || !this.enabled.physics || !this.sharedPhysics)
       return
@@ -737,222 +881,21 @@ export class MMDAnimationHelper {
       return
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
-      // @ts-expect-error
-      const p = this.meshes[i].physics
+      const p = (this.meshes[i] as { physics?: MMDPhysics }).physics
 
-      if (p !== null && p !== undefined) {
-        p.updateRigidBodies()
+      if (p != null) {
+        p._updateRigidBodies()
       }
     }
 
-    // @ts-expect-error nonexisting method?
-    physics.stepSimulation(delta)
+    physics._stepSimulation(delta)
 
     for (let i = 0, il = this.meshes.length; i < il; i++) {
-      // @ts-expect-error
-      const p = this.meshes[i].physics
+      const p = (this.meshes[i] as { physics?: MMDPhysics }).physics
 
-      if (p !== null && p !== undefined) {
-        p.updateBones()
+      if (p != null) {
+        p._updateBones()
       }
     }
-  }
-
-  /**
-   * Adds an Three.js Object to helper and setups animation.
-   * The animation durations of added objects are synched
-   * if this.configuration.sync is true.
-   *
-   * @param {import('three').SkinnedMesh|import('three').Camera|import('three').Audio} object
-   * @param {object} params - (optional)
-   * @param {import('three').AnimationClip|Array<import('three').AnimationClip>} params.animation - Only for THREE.SkinnedMesh and THREE.Camera. Default is undefined.
-   * @param {boolean} params.physics - Only for THREE.SkinnedMesh. Default is true.
-   * @param {Integer} params.warmup - Only for THREE.SkinnedMesh and physics is true. Default is 60.
-   * @param {number} params.unitStep - Only for THREE.SkinnedMesh and physics is true. Default is 1 / 65.
-   * @param {Integer} params.maxStepNum - Only for THREE.SkinnedMesh and physics is true. Default is 3.
-   * @param {Vector3} params.gravity - Only for THREE.SkinnedMesh and physics is true. Default ( 0, - 9.8 * 10, 0 ).
-   * @param {number} params.delayTime - Only for THREE.Audio. Default is 0.0.
-   * @return {MMDAnimationHelper}
-   */
-  add(object: Audio | Camera | SkinnedMesh, params: MMDAnimationHelperAddParameter = {}): this {
-    // @ts-expect-error
-    if (object.isSkinnedMesh) {
-      this._addMesh(object as SkinnedMesh, params)
-    }
-    // @ts-expect-error
-    else if (object.isCamera) {
-      this._setupCamera(object as Camera, params)
-    }
-    else if (object.type === 'Audio') {
-      this._setupAudio(object as Audio, params)
-    }
-    else {
-      throw new Error('MMDAnimationHelper.add: '
-        + 'accepts only '
-        + 'THREE.SkinnedMesh or '
-        + 'THREE.Camera or '
-        + 'THREE.Audio instance.')
-    }
-
-    if (this.configuration.sync)
-      this._syncDuration()
-
-    return this
-  }
-
-  // workaround
-
-  /**
-   * Creates an GrantSolver instance.
-   *
-   * @param {import('three').SkinnedMesh} mesh
-   * @return {GrantSolver}
-   */
-  createGrantSolver(mesh: SkinnedMesh): GrantSolver {
-    return new GrantSolver(mesh, mesh.geometry.userData.MMD.grants)
-  }
-
-  /**
-   * Enables/Disables an animation feature.
-   *
-   * @param key
-   * @param {boolean} enabled
-   * @return {MMDAnimationHelper}
-   */
-  enable(key: keyof typeof this.enabled, enabled: boolean): this {
-    if (this.enabled[key] === undefined) {
-      throw new Error('MMDAnimationHelper.enable: '
-        + `unknown key ${key}`)
-    }
-
-    this.enabled[key] = enabled
-
-    if (key === 'physics') {
-      for (let i = 0, il = this.meshes.length; i < il; i++) {
-        this._optimizeIK(this.meshes[i], enabled)
-      }
-    }
-
-    return this
-  }
-
-  /**
-   * Changes the pose of SkinnedMesh as VPD specifies.
-   *
-   * @param {import('three').SkinnedMesh} mesh
-   * @param {object} vpd - VPD content parsed MMDParser
-   * @param {object} params - (optional)
-   * @param {boolean} params.resetPose - Default is true.
-   * @param {boolean} params.ik - Default is true.
-   * @param {boolean} params.grant - Default is true.
-   * @return {MMDAnimationHelper}
-   */
-  pose(mesh: SkinnedMesh, vpd: object, params: MMDAnimationHelperPoseParameter = {}) {
-    if (params.resetPose !== false)
-      mesh.pose()
-
-    const bones = mesh.skeleton.bones
-    // @ts-expect-error
-    const boneParams = vpd.bones as Bone[]
-
-    const boneNameDictionary: Record<string, number> = {}
-
-    for (let i = 0, il = bones.length; i < il; i++) {
-      boneNameDictionary[bones[i].name] = i
-    }
-
-    const vector = new Vector3()
-    const quaternion = new Quaternion()
-
-    for (let i = 0, il = boneParams.length; i < il; i++) {
-      const boneParam = boneParams[i]
-      const boneIndex = boneNameDictionary[boneParam.name]
-
-      if (boneIndex === undefined)
-        continue
-
-      const bone = bones[boneIndex]
-      // @ts-expect-error
-      bone.position.add(vector.fromArray(boneParam.translation))
-      // @ts-expect-error
-      bone.quaternion.multiply(quaternion.fromArray(boneParam.quaternion))
-    }
-
-    mesh.updateMatrixWorld(true)
-
-    // PMX animation system special path
-    if (this.configuration.pmxAnimation
-      && mesh.geometry.userData.MMD && mesh.geometry.userData.MMD.format === 'pmx') {
-      const sortedBonesData = this._sortBoneDataArray(mesh.geometry.userData.MMD.bones.slice())
-      const ikSolver = params.ik !== false ? this._createCCDIKSolver(mesh) : null
-      const grantSolver = params.grant !== false ? this.createGrantSolver(mesh) : null
-      this._animatePMXMesh(mesh, sortedBonesData, ikSolver, grantSolver)
-    }
-    else {
-      if (params.ik !== false) {
-        this._createCCDIKSolver(mesh).update()
-      }
-
-      if (params.grant !== false) {
-        this.createGrantSolver(mesh).update()
-      }
-    }
-
-    return this
-  }
-
-  // experimental
-
-  /**
-   * Removes an Three.js Object from helper.
-   *
-   * @param {import('three').SkinnedMesh|import('three').Camera|import('three').Audio} object
-   * @return {MMDAnimationHelper}
-   */
-  remove(object: Audio | Camera | SkinnedMesh): this {
-    if ('isSkinnedMesh' in object && object.isSkinnedMesh === true) {
-      this._removeMesh(object)
-    }
-    else if ('isCamera' in object && object.isCamera === true) {
-      this._clearCamera(object)
-    }
-    else if (object.type === 'Audio') {
-      this._clearAudio(object as Audio)
-    }
-    else {
-      throw new Error('MMDAnimationHelper.remove: '
-        + 'accepts only '
-        + 'THREE.SkinnedMesh or '
-        + 'THREE.Camera or '
-        + 'THREE.Audio instance.')
-    }
-
-    if (this.configuration.sync)
-      this._syncDuration()
-
-    return this
-  }
-
-  /**
-   * Updates the animation.
-   *
-   * @param {number} delta
-   * @return {MMDAnimationHelper}
-   */
-  update(delta: number): this {
-    if (this.audioManager !== null)
-      this.audioManager.control(delta)
-
-    for (let i = 0; i < this.meshes.length; i++) {
-      this._animateMesh(this.meshes[i], delta)
-    }
-
-    if (this.sharedPhysics)
-      this._updateSharedPhysics(delta)
-
-    if (this.camera !== null)
-      this._animateCamera(this.camera, delta)
-
-    return this
   }
 }

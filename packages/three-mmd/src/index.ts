@@ -1,7 +1,7 @@
+export { MMDAnimationHelper, type MMDAnimationHelperParameter } from './animation/mmd-animation-helper'
 export { type Grant, GrantSolver } from './animation/mmd-animation-helper/grant-solver'
 export { MMDPhysics, type MMDPhysicsParameter } from './animation/mmd-physics'
 export { MMDPhysicsHelper } from './animation/mmd-physics/mmd-physics-helper'
-export { MMDAnimationHelper, type MMDAnimationHelperParameter } from './animation/MMDAnimationHelper'
 export { MMDLoader } from './loaders/mmd-loader'
 export { PMDLoader } from './loaders/pmd-loader'
 export { PMXLoader } from './loaders/pmx-loader'
