@@ -12,7 +12,6 @@ export type Path =
   | `/debug/mesh`
   | `/debug/physics-correct`
   | `/debug/physics-incorrect`
-  | `/with-use-animations`
 
 export type Params = {
   

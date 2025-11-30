@@ -1,32 +1,25 @@
-import { MMDAnimationHelper, MMDLoader } from '@moeru/three-mmd'
-import { useMMDAnimation } from '@moeru/three-mmd-r3f'
-import { useFrame, useLoader } from '@react-three/fiber'
+import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
+import { useAnimations } from '@react-three/drei'
 import { useEffect } from 'react'
 
-import pmdUrl from '../../../basic/src/assets/miku/miku_v2.pmd?url'
-import vmdUrl from '../../../basic/src/assets/vmds/wavefile_v2.vmd?url'
+import vmdUrl from '../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
+import pmxUrl from '../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 
 const Index = () => {
-  const object = useLoader(MMDLoader, pmdUrl)
+  const object = useMMD(pmxUrl)
   const animation = useMMDAnimation(vmdUrl, object, 'dance')
+  const { actions, ref } = useAnimations([animation])
 
-  const helper = new MMDAnimationHelper({ afterglow: 2 })
-
+  // TODO: physics
   useEffect(() => {
-    helper.add(object, {
-      animation,
-      physics: true,
-    })
-
-    return () => {
-      helper.remove(object)
-    }
+    actions?.dance?.play()
   })
 
-  useFrame((_, delta) => helper.update(delta))
-
   return (
-    <primitive object={object} scale={0.1} />
+    <>
+      <primitive object={object} ref={ref} scale={0.1} />
+      <skeletonHelper args={[object]} />
+    </>
   )
 }
 

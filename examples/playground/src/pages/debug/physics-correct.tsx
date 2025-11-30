@@ -3,11 +3,11 @@ import { useMMD } from '@moeru/three-mmd-r3f'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 
-import pmdUrl from '../../../../basic/src/assets/miku/miku_v2.pmd?url'
-import vmdUrl from '../../../../basic/src/assets/vmds/wavefile_v2.vmd?url'
+import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
+import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 
 const PhysicsCorrect = () => {
-  const mesh = useMMD(pmdUrl)
+  const mesh = useMMD(pmxUrl)
 
   const vmdLoader = useMemo(() => new VMDLoader(), [])
   const helper = useMemo(() => new MMDAnimationHelper({ afterglow: 2 }), [])
