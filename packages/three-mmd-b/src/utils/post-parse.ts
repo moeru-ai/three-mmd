@@ -39,6 +39,15 @@ export const postParseProcessing = (pmx: PmxObject): PmxObject => {
   // Rigid bodies: shape offsets
   pmx.rigidBodies?.forEach((body) => {
     body.shapePosition[2] = -body.shapePosition[2]
+    body.shapeRotation[1] = -body.shapeRotation[1]
+    body.shapeRotation[2] = -body.shapeRotation[2]
+  })
+
+  // Constraints/Joints: position + rotation
+  pmx.joints?.forEach((joint) => {
+    joint.position[2] = -joint.position[2]
+    joint.rotation[1] = -joint.rotation[1]
+    joint.rotation[2] = -joint.rotation[2]
   })
 
   return pmx

@@ -27,7 +27,12 @@ export class MMDPhysics {
   unitStep: number
   world?: Ammo.btDiscreteDynamicsWorld
 
-  constructor(mesh: SkinnedMesh, rigidBodyParams: PmxObject.RigidBody[], constraintParams: PmxObject.Joint[] = [], params: MMDPhysicsParameter = {}) {
+  constructor(
+    mesh: SkinnedMesh,
+    rigidBodyParams: readonly PmxObject.RigidBody[],
+    constraintParams: readonly PmxObject.Joint[] = [],
+    params: MMDPhysicsParameter = {},
+  ) {
     if (typeof Ammo === 'undefined') {
       throw new TypeError('MMDPhysics: Import ammo.js https://github.com/kripken/ammo.js')
     }
@@ -67,7 +72,7 @@ export class MMDPhysics {
     return new Ammo.btDiscreteDynamicsWorld(dispatcher, cache, solver, config)
   }
 
-  _init(mesh: SkinnedMesh, rigidBodyParams: PmxObject.RigidBody[], constraintParams: PmxObject.Joint[]) {
+  _init(mesh: SkinnedMesh, rigidBodyParams: readonly PmxObject.RigidBody[], constraintParams: readonly PmxObject.Joint[]) {
     const manager = this.manager
 
     // rigid body/constraint parameters are for
@@ -117,7 +122,7 @@ export class MMDPhysics {
     manager.freeThreeVector3(currentScale)
   }
 
-  _initConstraints(constraints: PmxObject.Joint[]) {
+  _initConstraints(constraints: readonly PmxObject.Joint[]) {
     for (let i = 0, il = constraints.length; i < il; i++) {
       const params = constraints[i]
       const bodyA = this.bodies[params.rigidbodyIndexA]
@@ -126,7 +131,7 @@ export class MMDPhysics {
     }
   }
 
-  _initRigidBodies(rigidBodies: PmxObject.RigidBody[]) {
+  _initRigidBodies(rigidBodies: readonly PmxObject.RigidBody[]) {
     for (let i = 0, il = rigidBodies.length; i < il; i++) {
       this.bodies.push(new RigidBody(
         this.mesh,
