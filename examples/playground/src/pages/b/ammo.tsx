@@ -17,7 +17,7 @@ const BAnimation = () => {
   const {
     mmdScale,
     showIK,
-    showPhysicsHelper,
+    showPhysics,
     showSkeleton,
   } = useControls({
     mmdScale: {
@@ -36,7 +36,7 @@ const BAnimation = () => {
       value: 1,
     },
     showIK: false,
-    showPhysicsHelper: false,
+    showPhysics: false,
     showSkeleton: false,
   })
 
@@ -44,10 +44,10 @@ const BAnimation = () => {
   const buildAmmoPhysics = ({ mesh, pmx }: BuildPhysicsOptions) => {
     const physics = new AmmoMMDPhysics(
       mesh,
-      [...pmx.rigidBodies], // 去掉 readonly
-      [...pmx.joints],
+      pmx.rigidBodies,
+      pmx.joints,
     )
-    physics.warmup(60)
+    // physics.warmup(60)
 
     return {
       createPhysicsHelpers: () => physics.createHelper(),
@@ -119,7 +119,7 @@ const BAnimation = () => {
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
-      {showPhysicsHelper && (Boolean(physicsHelper)) && <primitive object={physicsHelper as MMDPhysicsHelper} />}
+      {showPhysics && (Boolean(physicsHelper)) && <primitive object={physicsHelper as MMDPhysicsHelper} />}
     </>
 
   )

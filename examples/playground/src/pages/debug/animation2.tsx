@@ -9,7 +9,7 @@ import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初�
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
 const DebugAnimation2 = () => {
-  const { showIK, showSkeleton } = useControls({ showIK: false, showSkeleton: false })
+  const { showIK, showPhysics, showSkeleton } = useControls({ showIK: false, showPhysics: false, showSkeleton: false })
 
   const object = useLoader(MMDLoader, pmxUrl)
   const vmd = useLoader(VMDLoader, vmdUrl)
@@ -31,6 +31,7 @@ const DebugAnimation2 = () => {
   ), [object])
 
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
+  const physicsHelper = useMemo(() => physics.createHelper(), [physics])
 
   useFrame((_, delta) => physics.update(delta))
 
@@ -51,6 +52,7 @@ const DebugAnimation2 = () => {
         scale={0.1}
       />
       {showIK && <primitive object={ikHelper} />}
+            {showPhysics && <primitive object={physicsHelper} />}
       {showSkeleton && <skeletonHelper args={[object]} />}
     </>
   )
