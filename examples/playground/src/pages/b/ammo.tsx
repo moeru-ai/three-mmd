@@ -1,8 +1,9 @@
+import type { MMDPhysicsHelper } from 'three-stdlib'
+
 import { MMDPhysics as AmmoMMDPhysics, buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd-b'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
-import { Vector3 } from 'three'
 
 import type { BuildPhysicsOptions } from '../../../../../packages/three-mmd-b/src/utils/build-physics'
 
@@ -20,7 +21,7 @@ const BAnimation = () => {
     showSkeleton,
   } = useControls({
     mmdScale: {
-      max: 1,
+      max: 10,
       min: 0.01,
       onEditEnd: () => {
         // console.log('end setting scale')
@@ -45,7 +46,6 @@ const BAnimation = () => {
       mesh,
       [...pmx.rigidBodies], // 去掉 readonly
       [...pmx.joints],
-      { gravity: new Vector3(0, -9.8 * 10, 0) },
     )
     physics.warmup(60)
 
@@ -56,13 +56,9 @@ const BAnimation = () => {
     }
   }
 
-  const ammoPhysicsPlugin = useMemo(() => () => ({
+  const mmd = useLoader(MMDLoader, pmxUrl, loader => loader.register(() => ({
     buildPhysics: buildAmmoPhysics,
-  }), [])
-
-  const mmd = useLoader(MMDLoader, pmxUrl, (loader) => {
-    loader.register(ammoPhysicsPlugin)
-  })
+  })))
 
   const vmd = useLoader(VMDLoader, vmdUrl)
 
@@ -123,7 +119,7 @@ const BAnimation = () => {
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
-      {showPhysicsHelper && (Boolean(physicsHelper)) && <primitive object={physicsHelper} />}
+      {showPhysicsHelper && (Boolean(physicsHelper)) && <primitive object={physicsHelper as MMDPhysicsHelper} />}
     </>
 
   )
