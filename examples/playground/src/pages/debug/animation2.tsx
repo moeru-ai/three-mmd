@@ -1,6 +1,6 @@
-import { MMDLoader } from '@moeru/three-mmd'
+import { MMDLoader, MMDPhysics } from '@moeru/three-mmd'
 import { buildAnimation, VMDLoader } from '@moeru/three-mmd-b'
-import { useLoader } from '@react-three/fiber'
+import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo } from 'react'
 
@@ -22,13 +22,23 @@ const DebugAnimation2 = () => {
 
   const { actions, ikSolver } = useMMDAnimations([animation], object)
 
+  const physics = useMemo(() => new MMDPhysics(
+    object,
+    // eslint-disable-next-line ts/no-unsafe-argument
+    (object.geometry.userData.MMD as { rigidBodies: any[] }).rigidBodies,
+    // eslint-disable-next-line ts/no-unsafe-argument
+    (object.geometry.userData.MMD as { constraints: any[] }).constraints,
+  ), [object])
+
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
 
+  useFrame((_, delta) => physics.update(delta))
+
   useEffect(() => {
-    // console.log(object.skeleton.bones)
     actions?.dance?.play()
 
     return () => {
+      actions?.dance?.stop()
       object.pose()
     }
   })
