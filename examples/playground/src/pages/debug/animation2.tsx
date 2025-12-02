@@ -52,7 +52,7 @@ const DebugAnimation2 = () => {
         scale={0.1}
       />
       {showIK && <primitive object={ikHelper} />}
-            {showPhysics && <primitive object={physicsHelper} />}
+      {showPhysics && <primitive object={physicsHelper} />}
       {showSkeleton && <skeletonHelper args={[object]} />}
     </>
   )
