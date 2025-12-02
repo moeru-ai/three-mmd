@@ -233,8 +233,8 @@ export class MMDPhysics {
       scale.copy(this.mesh.scale)
 
       mesh.scale.set(1, 1, 1)
-      mesh.updateMatrixWorld(true)
     }
+    mesh.updateMatrixWorld(true)
 
     // calculate physics and update bones
 
