@@ -58,27 +58,23 @@ export class RigidBody {
       shape.calculateLocalInertia(weight, localInertia)
     }
 
-    // 位置：mesh 空间 -> world -> bone local
+    // mesh -> world -> bone local
     const offsetLocal = bone.worldToLocal(
       new Vector3().fromArray(this.params.shapePosition).applyMatrix4(this.mesh.matrixWorld),
     )
-    // 1. 先算出 shape 的 quaternion（注意，这里用的是 post-parse 之后的 right-handed 欧拉角）
+    // Quaternion transform
     const shapeQuat = new Quaternion().setFromEuler(new Euler(
       this.params.shapeRotation[0],
       this.params.shapeRotation[1],
       this.params.shapeRotation[2],
     ))
-    // 2. 拿到 mesh 和 bone 的 world quaternion
     const meshWorldQuat = this.mesh.getWorldQuaternion(new Quaternion())
     const boneWorldQuat = bone.getWorldQuaternion(new Quaternion())
-
-    // 3. 计算 offset: Q_offset = Q_bone^-1 * Q_mesh * Q_shape
+    // Local offset rotation: Q_offset = Q_bone^-1 * Q_mesh * Q_shape
     const offsetRotation = boneWorldQuat.clone().invert().multiply(meshWorldQuat).multiply(shapeQuat)
 
     const boneOffsetForm = this.manager.allocTransform()
     this.manager.setIdentity(boneOffsetForm)
-    // this.manager.setOriginFromArray3(boneOffsetForm, this.params.shapePosition)
-    // this.manager.setBasisFromArray3(boneOffsetForm, this.params.shapeRotation)
     this.manager.setOriginFromThreeVector3(boneOffsetForm, offsetLocal)
     this.manager.setBasisFromThreeQuaternion(boneOffsetForm, offsetRotation)
 
