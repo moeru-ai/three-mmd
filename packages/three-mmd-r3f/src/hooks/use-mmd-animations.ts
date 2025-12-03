@@ -2,13 +2,11 @@ import type { Grant } from '@moeru/three-mmd'
 import type { AnimationAction, AnimationClip, SkinnedMesh } from 'three'
 import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
-import { GrantSolver } from '@moeru/three-mmd'
+import { GrantSolver, processBones } from '@moeru/three-mmd'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import { AnimationMixer } from 'three'
 import { CCDIKSolver } from 'three/examples/jsm/animation/CCDIKSolver.js'
-
-import { processBones } from '../utils/process-bones'
 
 interface Api<T extends AnimationClip> {
   actions: { [key in T['name']]: AnimationAction | null }

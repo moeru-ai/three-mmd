@@ -1,6 +1,7 @@
 import type { SpringBoneHelpers } from '@moeru/three-mmd'
 
 import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
+import { useMMDAnimations } from '@moeru/three-mmd-r3f'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
@@ -8,7 +9,6 @@ import { useEffect, useMemo, useState } from 'react'
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 // import pmxUrl from '../../../../assets/安比/安比.pmx?url'
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
-import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
 const DebugRefactorTest = () => {
   const [editingScale, setEditingScale] = useState(false)
