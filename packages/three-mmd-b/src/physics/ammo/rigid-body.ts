@@ -33,11 +33,11 @@ export class RigidBody {
       const [width, height, depth] = p.shapeSize
 
       switch (p.shapeType) {
-        case PmxObject.RigidBody.ShapeType.Box: // Box
+        case PmxObject.RigidBody.ShapeType.Box:
           return new Ammo.btBoxShape(new Ammo.btVector3(width, height, depth))
-        case PmxObject.RigidBody.ShapeType.Capsule: // Capsule
+        case PmxObject.RigidBody.ShapeType.Capsule:
           return new Ammo.btCapsuleShape(width, height)
-        case PmxObject.RigidBody.ShapeType.Sphere: // Sphere
+        case PmxObject.RigidBody.ShapeType.Sphere:
           return new Ammo.btSphereShape(width)
         // default:
         //   throw new Error(`unknown shape type ${p.shapeType}`)

@@ -44,7 +44,7 @@ const compose = (position: Ammo.btVector3, quaternion: Ammo.btQuaternion, array:
   array[index + 15] = 1
 }
 
-export const AmmoPhysics = async () => {
+export const AmmoPhysics = () => {
   const collisionConfiguration = new Ammo.btDefaultCollisionConfiguration()
   const dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration)
   const broadphase = new Ammo.btDbvtBroadphase()
