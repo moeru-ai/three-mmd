@@ -1,8 +1,8 @@
 /* eslint-disable new-cap */
 import type { SkinnedMesh } from 'three'
 
+import { PmxObject } from '@moeru/three-mmd'
 import Ammo from 'ammojs-typed'
-import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import { Bone, Euler, Quaternion, Vector3 } from 'three'
 
 import type { ResourceManager } from './resource-manager'

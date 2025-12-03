@@ -17,3 +17,4 @@ export type { BuildPhysicsOptions, PhysicsStrategy } from './utils/build-physics
 export { MMD } from './utils/mmd'
 
 export { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+export { VmdObject } from 'babylon-mmd/esm/Loader/Parser/vmdObject'

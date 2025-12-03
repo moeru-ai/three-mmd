@@ -1,5 +1,5 @@
 /* eslint-disable new-cap */
-import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import type { PmxObject } from '@moeru/three-mmd'
 import type { SkinnedMesh } from 'three'
 
 import Ammo from 'ammojs-typed'
