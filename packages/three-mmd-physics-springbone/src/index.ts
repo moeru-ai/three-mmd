@@ -1,4 +1,4 @@
-import type { BuildPhysicsOptions, MMDLoaderPlugin, PhysicsStrategy } from '@moeru/three-mmd'
+import type { PhysicsFactory } from '@moeru/three-mmd'
 /**
  * Spring bone physics strategy (functional): builds colliders/joints once from PMX + mesh,
  * powered by @pixiv/three-vrm-springbone. Exposes a PhysicsStrategy for plugging into MMD.
@@ -22,7 +22,7 @@ export interface SpringBoneHelpers {
   jointHelpers: VRMSpringBoneJointHelper[]
 }
 
-export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrategy<SpringBoneHelpers> => {
+export const MMDSpringBonePhysics: PhysicsFactory<SpringBoneHelpers> = (mmd) => {
   let manager = new VRMSpringBoneManager()
   const colliders: VRMSpringBoneCollider[] = []
   const joints: VRMSpringBoneJoint[] = []
@@ -60,8 +60,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
 
   // Initialize hair joints based on bone names
   const setupHairJoints = () => {
-    const { bones } = opts.mesh.skeleton
-    bones
+    mmd.mesh.skeleton.bones
       .filter(bone => ['髪', 'Hair', 'Twin'].some(v => bone.name.includes(v)))
       .forEach(bone => bone.children.forEach((child) => {
         joints.push(
@@ -75,7 +74,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
 
   // Initialize skirt joints based on bone names
   const setupSkirtJoints = () => {
-    opts.mesh.skeleton.bones
+    mmd.mesh.skeleton.bones
       .filter(bone => ['裙', 'スカート', 'Skirt'].some(v => bone.name.includes(v)))
       .forEach(bone => bone.children.forEach((child) => {
         const joint = new VRMSpringBoneJoint(bone, child, {
@@ -90,15 +89,15 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
   }
 
   const setupColliders = () => {
-    const bones = opts.mesh.skeleton.bones
-    opts.mesh.updateMatrixWorld(true)
+    const bones = mmd.mesh.skeleton.bones
+    mmd.mesh.updateMatrixWorld(true)
 
     const legBones = bones
       .map((bone, idx) => ({ bone, idx }))
       .filter(({ bone }) => ['センター', '上半身', '右ひざ', '右足', '右足D', '左ひざ', '左足', '左足D'].includes(bone.name))
     // Map leg bones to their rigid bodies
     const legRigidBodiesMap = new Map<number, PmxObject.RigidBody[]>()
-    opts.pmx.rigidBodies.forEach((rb) => {
+    mmd.pmx.rigidBodies.forEach((rb) => {
       const list = legRigidBodiesMap.get(rb.boneIndex) ?? []
       list.push(rb)
       legRigidBodiesMap.set(rb.boneIndex, list)
@@ -129,7 +128,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
             rb.shapePosition[0],
             rb.shapePosition[1],
             rb.shapePosition[2],
-          ]).applyMatrix4(opts.mesh.matrixWorld)
+          ]).applyMatrix4(mmd.mesh.matrixWorld)
           const offsetLocal = bone.worldToLocal(offsetWorld.clone())
           // Create collider shape sphere
           if (rb.shapeType === PmxObject.RigidBody.ShapeType.Sphere) {
@@ -174,7 +173,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
   setupHairJoints()
   setupSkirtJoints()
   joints.forEach(j => manager.addJoint(j))
-  opts.mesh.updateMatrixWorld(true)
+  mmd.mesh.updateMatrixWorld(true)
   manager.setInitState()
   cacheJointsAndColliders()
 
@@ -191,8 +190,6 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
       baseColliderShapes.clear()
       baseJointSizes.clear()
     },
-
-    name: 'spring-bone',
 
     setScalar: (scale?: number) => {
       if (scale === undefined)
@@ -224,9 +221,9 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
         }
       })
 
-      opts.mesh.updateMatrixWorld(true)
-      opts.mesh.skeleton.pose()
-      opts.mesh.updateMatrixWorld(true)
+      mmd.mesh.updateMatrixWorld(true)
+      mmd.mesh.skeleton.pose()
+      mmd.mesh.updateMatrixWorld(true)
       manager.setInitState()
     },
 
@@ -235,7 +232,3 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
     },
   }
 }
-
-export const MMDSpringBonePhysics: MMDLoaderPlugin = () => ({
-  buildPhysics: createSpringBonePhysics,
-})

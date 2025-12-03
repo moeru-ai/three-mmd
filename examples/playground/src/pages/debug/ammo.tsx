@@ -1,9 +1,5 @@
-import type { MMDPhysicsHelper } from 'three-stdlib'
-
-import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
 import { MMDAmmoPhysics } from '@moeru/three-mmd-physics-ammo'
-import { useMMDAnimations } from '@moeru/three-mmd-r3f'
-import { useFrame, useLoader } from '@react-three/fiber'
+import { useMMD, useMMDAnimation, useMMDAnimations, useMMDPhysics } from '@moeru/three-mmd-r3f'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -39,20 +35,14 @@ const DebugAmmo = () => {
     showSkeleton: false,
   })
 
-  const mmd = useLoader(MMDLoader, pmxUrl, loader => loader.register(MMDAmmoPhysics))
-  const vmd = useLoader(VMDLoader, vmdUrl)
-
-  const animation = useMemo(() => {
-    const animation = buildAnimation(vmd, mmd.mesh)
-    animation.name = 'dance'
-    return animation
-  }, [vmd, mmd])
+  const mmd = useMMD(pmxUrl)
+  const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
 
   const { actions, ikSolver } = useMMDAnimations([animation], mmd.mesh, mmd.iks, mmd.grants)
 
   // Helpers
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
-  const physicsHelper = useMemo(() => mmd.createPhysicsHelpers(), [mmd])
+  const physicsHelper = useMMDPhysics(mmd, MMDAmmoPhysics)
 
   // Play the animation on mount
   useEffect(() => {
@@ -84,13 +74,6 @@ const DebugAmmo = () => {
     }
   }, [actions, mmd, editingScale])
 
-  useFrame((_, delta) => {
-    if (editingScale)
-      return
-
-    mmd.update(delta)
-  })
-
   return (
     <>
       <primitive
@@ -99,7 +82,7 @@ const DebugAmmo = () => {
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
-      {showPhysics && (Boolean(physicsHelper)) && <primitive object={physicsHelper as MMDPhysicsHelper} />}
+      {showPhysics && (Boolean(physicsHelper)) && <primitive object={physicsHelper} />}
     </>
 
   )
