@@ -3,8 +3,6 @@ import type { BoxGeometry, BufferGeometry, IcosahedronGeometry, InstancedMesh, M
 
 import Ammo from 'ammojs-typed'
 
-// import type { AmmoPhysics } from 'three/addons/physics/AmmoPhysics.js'
-
 const compose = (position: Ammo.btVector3, quaternion: Ammo.btQuaternion, array: TypedArray, index: number) => {
   const w = quaternion.w()
   const x = quaternion.x()
@@ -238,14 +236,10 @@ export const AmmoPhysics = () => {
     }
   }
 
-  // animate
-  // setInterval(step, 1000 / frameRate)
-
   return {
     addMesh,
     addScene,
     setMeshPosition,
     update,
-    // addCompoundMesh
   }
 }
