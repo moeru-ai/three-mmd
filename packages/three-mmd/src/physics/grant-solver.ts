@@ -1,11 +1,8 @@
-import type { PmxBoneInfo } from '@noname0310/mmd-parser'
 import type { Bone, SkinnedMesh } from 'three'
 
 import { Quaternion } from 'three'
 
-export interface Grant extends NonNullable<PmxBoneInfo['grant']> {
-  index: number
-}
+import type { Grant } from '../utils/build-grants'
 
 /**
  * Solver for Grant (Fuyo in Japanese. I just google translated because

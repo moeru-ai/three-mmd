@@ -6,7 +6,7 @@ import { startTransition, useEffect, useMemo, useState } from 'react'
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 import { useMMDLoader } from '../../hooks/use-mmd-loader'
 
-const Mesh = () => {
+const DebugMesh = () => {
   const MMDLoader = useMMDLoader()
   const loader = useMemo(() => new MMDLoader(), [MMDLoader])
 
@@ -37,4 +37,4 @@ const Mesh = () => {
   )
 }
 
-export default Mesh
+export default DebugMesh

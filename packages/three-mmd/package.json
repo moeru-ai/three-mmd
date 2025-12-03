@@ -2,6 +2,7 @@
   "name": "@moeru/three-mmd",
   "type": "module",
   "version": "0.0.5",
+  "private": true,
   "description": "Use MMD on Three.js",
   "author": "Moeru AI",
   "license": "MIT",
@@ -33,18 +34,19 @@
     "types": "./dist/index.d.ts"
   },
   "scripts": {
-    "build": "pkgroll"
+    "build": "tsdown"
   },
   "peerDependencies": {
     "@types/three": "^0.180.0",
     "three": "^0.180.0"
   },
   "dependencies": {
-    "@noname0310/mmd-parser": "catalog:",
+    "@pixiv/three-vrm-springbone": "catalog:",
     "ammojs-typed": "catalog:"
   },
   "devDependencies": {
     "@types/three": "catalog:",
+    "babylon-mmd": "catalog:",
     "three": "catalog:"
   }
 }

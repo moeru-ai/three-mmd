@@ -1,7 +1,5 @@
 export { Ammo } from './components/ammo'
 export { useMMD } from './hooks/use-mmd'
 export { useMMDAnimation } from './hooks/use-mmd-animation'
-export { usePMD } from './hooks/use-pmd'
-export { usePMX } from './hooks/use-pmx'
+export { useMMDAnimations } from './hooks/use-mmd-animations'
 export { useVMD } from './hooks/use-vmd'
-export { useVPD } from './hooks/use-vpd'
