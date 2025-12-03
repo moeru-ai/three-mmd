@@ -3,6 +3,8 @@ import type { BoxGeometry, BufferGeometry, IcosahedronGeometry, InstancedMesh, M
 
 import Ammo from 'ammojs-typed'
 
+import { createWorld } from './_create-world'
+
 const compose = (position: Ammo.btVector3, quaternion: Ammo.btQuaternion, array: TypedArray, index: number) => {
   const w = quaternion.w()
   const x = quaternion.x()
@@ -43,11 +45,7 @@ const compose = (position: Ammo.btVector3, quaternion: Ammo.btQuaternion, array:
 }
 
 export const AmmoPhysics = () => {
-  const collisionConfiguration = new Ammo.btDefaultCollisionConfiguration()
-  const dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration)
-  const broadphase = new Ammo.btDbvtBroadphase()
-  const solver = new Ammo.btSequentialImpulseConstraintSolver()
-  const world = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration)
+  const world = createWorld()
   world.setGravity(new Ammo.btVector3(0, -9.8, 0))
 
   const worldTransform = new Ammo.btTransform()
