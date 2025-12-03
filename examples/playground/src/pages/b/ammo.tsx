@@ -1,11 +1,9 @@
 import type { MMDPhysicsHelper } from 'three-stdlib'
 
-import { MMDPhysics as AmmoMMDPhysics, buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd-b'
+import { buildAnimation, MMDAmmoPhysics, MMDLoader, VMDLoader } from '@moeru/three-mmd-b'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
-
-import type { BuildPhysicsOptions } from '../../../../../packages/three-mmd-b/src/utils/build-physics'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 // import pmxUrl from '../../../../assets/安比/安比.pmx?url'
@@ -40,26 +38,7 @@ const BAnimation = () => {
     showSkeleton: false,
   })
 
-  // Inject ammo physics
-  const buildAmmoPhysics = ({ mesh, pmx }: BuildPhysicsOptions) => {
-    const physics = new AmmoMMDPhysics(
-      mesh,
-      pmx.rigidBodies,
-      pmx.joints,
-    )
-    // physics.warmup(60)
-
-    return {
-      createPhysicsHelpers: () => physics.createHelper(),
-      name: 'ammo',
-      update: (delta: number) => physics.update(delta),
-    }
-  }
-
-  const mmd = useLoader(MMDLoader, pmxUrl, loader => loader.register(() => ({
-    buildPhysics: buildAmmoPhysics,
-  })))
-
+  const mmd = useLoader(MMDLoader, pmxUrl, loader => loader.register(MMDAmmoPhysics))
   const vmd = useLoader(VMDLoader, vmdUrl)
 
   const animation = useMemo(() => {

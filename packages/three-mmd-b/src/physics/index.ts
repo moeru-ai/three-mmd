@@ -1,2 +1,2 @@
-export * from './ammo-rewrite'
+export * from './ammo'
 export * from './spring-bone'

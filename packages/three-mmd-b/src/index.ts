@@ -2,7 +2,7 @@ export { MMDLoader } from './loaders/mmd-loader'
 export { MMDMeshLoader } from './loaders/mmd-mesh-loader'
 export { VMDLoader } from './loaders/vmd-loader'
 
-export { MMDPhysics } from './physics/ammo/mmd-physics'
+export { MMDAmmoPhysics } from './physics/ammo'
 export { createSpringBonePhysics, type SpringBoneHelpers } from './physics/spring-bone'
 
 export { buildAnimation, buildCameraAnimation } from './utils/build-animation'
