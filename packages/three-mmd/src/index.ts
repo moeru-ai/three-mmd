@@ -5,7 +5,6 @@ export { VMDLoader } from './loaders/vmd-loader'
 
 export { GrantSolver } from './physics/grant-solver'
 export { processBones } from './physics/process-bones'
-export { createSpringBonePhysics, type SpringBoneHelpers } from './physics/spring-bone'
 
 export { buildAnimation, buildCameraAnimation } from './utils/build-animation'
 export { buildBones } from './utils/build-bones'
@@ -14,4 +13,7 @@ export { buildGrants, type Grant } from './utils/build-grants'
 export { buildIK } from './utils/build-ik'
 export { buildMaterial } from './utils/build-material'
 export { buildMesh } from './utils/build-mesh'
+export type { BuildPhysicsOptions, PhysicsStrategy } from './utils/build-physics'
 export { MMD } from './utils/mmd'
+
+export { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'

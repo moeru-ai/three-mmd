@@ -1,6 +1,7 @@
-import type { SpringBoneHelpers } from '@moeru/three-mmd'
+import type { SpringBoneHelpers } from '@moeru/three-mmd-physics-springbone'
 
 import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
+import { MMDSpringBonePhysics } from '@moeru/three-mmd-physics-springbone'
 import { useMMDAnimations } from '@moeru/three-mmd-r3f'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
@@ -39,7 +40,7 @@ const DebugRefactorTest = () => {
     showSkeleton: false,
   })
 
-  const mmd = useLoader(MMDLoader, pmxUrl)
+  const mmd = useLoader(MMDLoader, pmxUrl, loader => loader.register(MMDSpringBonePhysics))
 
   const vmd = useLoader(VMDLoader, vmdUrl)
 

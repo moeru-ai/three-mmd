@@ -40,9 +40,6 @@
     "@types/three": "^0.180.0",
     "three": "^0.180.0"
   },
-  "dependencies": {
-    "@pixiv/three-vrm-springbone": "catalog:"
-  },
   "devDependencies": {
     "@types/three": "catalog:",
     "babylon-mmd": "catalog:",

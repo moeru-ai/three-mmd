@@ -1,5 +1,5 @@
 {
-  "name": "@moeru/three-mmd-physics-ammo",
+  "name": "@moeru/three-mmd-physics-springbone",
   "type": "module",
   "version": "0.0.5",
   "private": true,
@@ -10,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/moeru-ai/three-mmd.git",
-    "directory": "packages/three-mmd-physics-ammo"
+    "directory": "packages/three-mmd-physics-springbone"
   },
   "bugs": "https://github.com/moeru-ai/three-mmd/issues",
   "keywords": [
@@ -41,10 +41,12 @@
     "@types/three": "^0.180.0",
     "three": "^0.180.0"
   },
+  "dependencies": {
+    "@pixiv/three-vrm-springbone": "catalog:"
+  },
   "devDependencies": {
     "@moeru/three-mmd": "workspace:^",
     "@types/three": "catalog:",
-    "ammojs-typed": "catalog:",
     "three": "catalog:"
   }
 }

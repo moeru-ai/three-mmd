@@ -1,9 +1,11 @@
+import type { BuildPhysicsOptions, MMDLoaderPlugin, PhysicsStrategy } from '@moeru/three-mmd'
 /**
  * Spring bone physics strategy (functional): builds colliders/joints once from PMX + mesh,
  * powered by @pixiv/three-vrm-springbone. Exposes a PhysicsStrategy for plugging into MMD.
  */
 import type { Bone } from 'three'
 
+import { PmxObject } from '@moeru/three-mmd'
 import {
   VRMSpringBoneCollider,
   VRMSpringBoneColliderHelper,
@@ -13,10 +15,7 @@ import {
   VRMSpringBoneJointHelper,
   VRMSpringBoneManager,
 } from '@pixiv/three-vrm-springbone'
-import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import { Vector3 } from 'three'
-
-import type { BuildPhysicsOptions, PhysicsStrategy } from '../utils/build-physics'
 
 export interface SpringBoneHelpers {
   colliderHelpers: VRMSpringBoneColliderHelper[]
@@ -236,3 +235,7 @@ export const createSpringBonePhysics = (opts: BuildPhysicsOptions): PhysicsStrat
     },
   }
 }
+
+export const MMDSpringBonePhysics: MMDLoaderPlugin = () => ({
+  buildPhysics: createSpringBonePhysics,
+})

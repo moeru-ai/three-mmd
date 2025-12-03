@@ -1,3 +1,4 @@
+import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 /**
  * MMD model shell: holds parsed PMX, skinned mesh, IK/grants, and pluggable physics strategy.
  * Lifecycle methods update scale/physics, helpers expose collider/joint visualization when available.
@@ -13,9 +14,11 @@ export class MMD {
   public iks: IK[] = []
   public mesh: SkinnedMesh
   public physics: PhysicsStrategy | undefined
+  public pmx: PmxObject
   public scale: number
 
-  constructor(mesh: SkinnedMesh, grants: Grant[], iks: IK[], physics: PhysicsStrategy | undefined) {
+  constructor(pmx: PmxObject, mesh: SkinnedMesh, grants: Grant[], iks: IK[], physics: PhysicsStrategy | undefined) {
+    this.pmx = pmx
     this.grants = grants
     this.iks = iks
     this.mesh = mesh
