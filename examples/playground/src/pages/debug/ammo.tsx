@@ -1,6 +1,7 @@
 import type { MMDPhysicsHelper } from 'three-stdlib'
 
-import { buildAnimation, MMDAmmoPhysics, MMDLoader, VMDLoader } from '@moeru/three-mmd'
+import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
+import { MMDAmmoPhysics } from '@moeru/three-mmd-physics-ammo'
 import { useMMDAnimations } from '@moeru/three-mmd-r3f'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'

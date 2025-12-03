@@ -1,4 +1,4 @@
-import type { MMDLoaderPlugin } from '../../loaders/loader-deps'
+import type { MMDLoaderPlugin } from '@moeru/three-mmd'
 
 import { MMDPhysics } from './mmd-physics'
 

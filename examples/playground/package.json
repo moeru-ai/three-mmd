@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@moeru/three-mmd": "workspace:^",
+    "@moeru/three-mmd-physics-ammo": "workspace:^",
     "@moeru/three-mmd-r3f": "workspace:^",
     "@react-three/drei": "catalog:r3f",
     "@react-three/fiber": "catalog:r3f",
