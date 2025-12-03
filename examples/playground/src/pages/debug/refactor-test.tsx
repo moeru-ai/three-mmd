@@ -1,6 +1,6 @@
-import type { MMDPhysicsHelper } from 'three-stdlib'
+import type { SpringBoneHelpers } from '@moeru/three-mmd'
 
-import { buildAnimation, MMDAmmoPhysics, MMDLoader, VMDLoader } from '@moeru/three-mmd-b'
+import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
@@ -10,16 +10,17 @@ import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
-const BAnimation = () => {
+const DebugRefactorTest = () => {
   const [editingScale, setEditingScale] = useState(false)
   const {
     mmdScale,
+    showColliders,
     showIK,
-    showPhysics,
+    showJoints,
     showSkeleton,
   } = useControls({
     mmdScale: {
-      max: 10,
+      max: 1,
       min: 0.01,
       onEditEnd: () => {
         // console.log('end setting scale')
@@ -30,15 +31,16 @@ const BAnimation = () => {
         setEditingScale(true)
       },
       step: 0.01,
-      // value: 0.1,
-      value: 1,
+      value: 0.1,
     },
+    showColliders: false,
     showIK: false,
-    showPhysics: false,
+    showJoints: false,
     showSkeleton: false,
   })
 
-  const mmd = useLoader(MMDLoader, pmxUrl, loader => loader.register(MMDAmmoPhysics))
+  const mmd = useLoader(MMDLoader, pmxUrl)
+
   const vmd = useLoader(VMDLoader, vmdUrl)
 
   const animation = useMemo(() => {
@@ -51,7 +53,7 @@ const BAnimation = () => {
 
   // Helpers
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
-  const physicsHelper = useMemo(() => mmd.createPhysicsHelpers(), [mmd])
+  const { colliderHelpers, jointHelpers } = useMemo(() => mmd.createPhysicsHelpers() as SpringBoneHelpers, [mmd])
 
   // Play the animation on mount
   useEffect(() => {
@@ -98,10 +100,13 @@ const BAnimation = () => {
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
-      {showPhysics && (Boolean(physicsHelper)) && <primitive object={physicsHelper as MMDPhysicsHelper} />}
+      {/* eslint-disable-next-line react/no-array-index-key */}
+      {showColliders && colliderHelpers.map((h, i) => <primitive key={i} object={h} />)}
+      {/* eslint-disable-next-line react/no-array-index-key */}
+      {showJoints && jointHelpers.map((h, i) => <primitive key={i} object={h} />)}
     </>
 
   )
 }
 
-export default BAnimation
+export default DebugRefactorTest

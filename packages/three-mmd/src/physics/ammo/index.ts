@@ -19,3 +19,5 @@ export const MMDAmmoPhysics: MMDLoaderPlugin = () => ({
     }
   },
 })
+
+export { initAmmo } from './init'

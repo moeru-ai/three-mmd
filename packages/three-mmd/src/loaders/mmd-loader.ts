@@ -1,67 +1,54 @@
-import type { LoadingManager, SkinnedMesh } from 'three'
+/**
+ * Experimental Three.js loader for @moeru/three-mmd-b.
+ * Thin OOP shell over the functional pipeline: fetch PMD/PMX, parse via babylon-mmd,
+ * then wrap the result in MMD for bone/IK/grant/spring setup.
+ */
+import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import type { LoadingManager } from 'three'
 
-import { MMDParser } from '@noname0310/mmd-parser'
-import { FileLoader, Loader } from 'three'
+import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
+import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
+import { FileLoader, Loader, LoaderUtils } from 'three'
+
+import type { MMDLoaderDeps, MMDLoaderPlugin } from './loader-deps'
 
 import { extractModelExtension } from '../utils/_extract-model-extension'
-import { resolveResourcePath } from '../utils/_resolve-resource-path'
-import { MeshBuilder } from './mmd-loader/mesh-builder'
-
-/**
- * Dependencies
- *  - mmd-parser https://github.com/takahirox/mmd-parser
- *  - TGALoader
- *  - OutlineEffect
- *
- * MMDLoader creates Three.js Objects from MMD resources as
- * PMD, PMX, VMD, and VPD files.
- *
- * PMD/PMX is a model data format, VMD is a motion data format
- * VPD is a posing data format used in MMD(Miku Miku Dance).
- *
- * MMD official site
- *  - https://sites.google.com/view/evpvp/
- *
- * PMD, VMD format (in Japanese)
- *  - http://blog.goo.ne.jp/torisu_tetosuki/e/209ad341d3ece2b1b4df24abf619d6e4
- *
- * PMX format
- *  - https://gist.github.com/felixjones/f8a06bd48f9da9a4539f
- *
- * TODO
- *  - light motion in vmd support.
- *  - SDEF support.
- *  - uv/material/bone morphing support.
- *  - more precise grant skinning support.
- *  - shadow support.
- */
+import { MMD } from '../utils/mmd'
+import { defaultDeps, resolveDeps } from './loader-deps'
 
 /** @experimental */
-export class MMDLoader extends Loader<SkinnedMesh> {
-  meshBuilder: MeshBuilder
+export class MMDLoader extends Loader<MMD> {
+  private plugins: MMDLoaderPlugin[] = []
 
-  constructor(manager?: LoadingManager) {
+  constructor(plugins: MMDLoaderPlugin[] = [], manager?: LoadingManager) {
     super(manager)
-
-    this.meshBuilder = new MeshBuilder(this.manager)
+    this.plugins.push(...plugins)
   }
 
   public load(
     url: string,
-    onLoad: (mesh: SkinnedMesh) => void,
+    onLoad: (mesh: MMD) => void,
     onProgress?: (event: ProgressEvent) => void,
-    onError?: (event: ErrorEvent) => void,
+    onError?: (event: unknown) => void,
   ): void {
+    // Prepare resource path
+    let resourcePath: string
+    if (this.resourcePath !== '')
+      resourcePath = this.resourcePath
+    else if (this.path !== '')
+      resourcePath = LoaderUtils.resolveURL(LoaderUtils.extractUrlBase(url), this.path)
+    else
+      resourcePath = LoaderUtils.extractUrlBase(url)
+
+    // Load dependent builders
+    const buildDeps = this.getResolvedDeps()
+
+    // Loading
     const loader = new FileLoader(this.manager)
-    const builder = this.meshBuilder.setCrossOrigin(this.crossOrigin)
-    const resourcePath = resolveResourcePath(url, this.resourcePath, this.path)
-
     loader.setResponseType('arraybuffer')
-
     loader.setPath(this.path)
     loader.setRequestHeader(this.requestHeader)
     loader.setWithCredentials(this.withCredentials)
-
     loader.load(
       url,
       (buffer) => {
@@ -70,30 +57,69 @@ export class MMDLoader extends Loader<SkinnedMesh> {
 
           if (!['pmd', 'pmx'].includes(modelExtension)) {
             // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
-            onError?.(new Error(`ExperimentalMMDLoader: Unknown model file extension .${modelExtension}.`) as unknown as ErrorEvent)
-
+            onError?.(new Error(`MMDLoader: Unknown model file extension .${modelExtension}.`) as unknown as ErrorEvent)
             return
           }
-
-          const data = modelExtension === 'pmd'
-            ? MMDParser.parsePmd(buffer as ArrayBuffer, true)
-            : MMDParser.parsePmx(buffer as ArrayBuffer, true)
-
-          const mesh = builder.build(data, resourcePath, onProgress, onError)
-
-          onLoad(mesh)
+          // Parsing -> building
+          void (modelExtension === 'pmd' ? PmdReader : PmxReader)
+            .ParseAsync(buffer as ArrayBuffer)
+            .then(pmx => onLoad(this.assembleMMD(pmx, resourcePath, buildDeps)))
+            .catch(onError)
         }
         catch (e) {
-          onError?.(e as ErrorEvent)
+          onError?.(e)
         }
       },
+      onProgress,
+      onError as (error: unknown) => void,
     )
   }
 
   public async loadAsync(
     url: string,
     onProgress?: (event: ProgressEvent) => void,
-  ): Promise<SkinnedMesh> {
+  ): Promise<MMD> {
     return super.loadAsync(url, onProgress)
+  }
+
+  // If loaded then register new plugins, it will only be effective at the next load
+  public register(plugin: MMDLoaderPlugin) {
+    this.plugins.push(plugin)
+    return this
+  }
+
+  // MMD model assembly pipeline
+  private assembleMMD(
+    pmx: PmxObject,
+    resourcePath: string,
+    deps: MMDLoaderDeps = defaultDeps,
+  ): MMD {
+    const {
+      buildBones,
+      buildGeometry,
+      buildGrants,
+      buildIK,
+      buildMaterials,
+      buildMesh,
+      buildPhysics,
+      postParseProcessing,
+    } = deps
+
+    // pmx post process: Z-flip
+    pmx = postParseProcessing(pmx)
+
+    const geometry = buildGeometry(pmx)
+    const materials = buildMaterials(pmx, geometry, resourcePath)
+    const rawMesh = buildMesh(geometry, materials)
+    const skinnedMesh = buildBones(pmx, rawMesh)
+    const grants = buildGrants(pmx)
+    const iks = buildIK(pmx)
+    const physics = buildPhysics({ grants, iks, mesh: skinnedMesh, pmx })
+
+    return new MMD(skinnedMesh, grants, iks, physics)
+  }
+
+  private getResolvedDeps() {
+    return resolveDeps(this.plugins, defaultDeps)
   }
 }

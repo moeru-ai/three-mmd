@@ -1,40 +1,23 @@
-import type { SkinnedMesh } from 'three'
+import { MMDLoader } from '@moeru/three-mmd'
+import { useLoader } from '@react-three/fiber'
 
-import { useControls } from 'leva'
-import { startTransition, useEffect, useMemo, useState } from 'react'
+import pmdUrl from '../../../../basic/src/assets/miku/miku_v2.pmd?url'
 
-import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
-import { useMMDLoader } from '../../hooks/use-mmd-loader'
-
-const Mesh = () => {
-  const MMDLoader = useMMDLoader()
-  const loader = useMemo(() => new MMDLoader(), [MMDLoader])
-
-  const [object, setObject] = useState<SkinnedMesh>()
-
-  useEffect(() => startTransition(async () => setObject(await loader.loadAsync(pmxUrl))), [loader])
-
-  const { showSkeleton } = useControls({
-    showSkeleton: false,
-  })
-
-  if (object == null)
-    return
+const DebugMesh = () => {
+  const object = useLoader(MMDLoader, pmdUrl)
 
   return (
     <>
       <primitive
         object={object}
-        // rotation={[0, Math.PI, 0]}
+        rotation={[0, Math.PI, 0]}
         scale={0.1}
       />
-      {showSkeleton && (
-        <skeletonHelper
-          args={[object]}
-        />
-      )}
+      <skeletonHelper
+        args={[object.mesh]}
+      />
     </>
   )
 }
 
-export default Mesh
+export default DebugMesh
