@@ -45,8 +45,6 @@ const compose = (position: Ammo.btVector3, quaternion: Ammo.btQuaternion, array:
 }
 
 export const AmmoPhysics = async () => {
-  // const frameRate = 60
-
   const collisionConfiguration = new Ammo.btDefaultCollisionConfiguration()
   const dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration)
   const broadphase = new Ammo.btDbvtBroadphase()
@@ -55,8 +53,6 @@ export const AmmoPhysics = async () => {
   world.setGravity(new Ammo.btVector3(0, -9.8, 0))
 
   const worldTransform = new Ammo.btTransform()
-
-  //
 
   const getShape = (geometry: BufferGeometry) => {
     // TODO change type to is*
@@ -203,57 +199,43 @@ export const AmmoPhysics = async () => {
     }
   }
 
-  //
+  const update = (delta: number) => {
+    world.stepSimulation(delta, 10)
 
-  let lastTime = 0
+    for (let i = 0, l = meshes.length; i < l; i++) {
+      const mesh = meshes[i]
 
-  const step = () => {
-    const time = performance.now()
+      if ('isInstancedMesh' in mesh && mesh.isInstancedMesh === true) {
+        const array = (mesh as InstancedMesh).instanceMatrix.array
+        const bodies = meshMap.get(mesh) as Ammo.btRigidBody[]
 
-    if (lastTime > 0) {
-      const delta = (time - lastTime) / 1000
-
-      world.stepSimulation(delta, 10)
-
-      //
-
-      for (let i = 0, l = meshes.length; i < l; i++) {
-        const mesh = meshes[i]
-
-        if ('isInstancedMesh' in mesh && mesh.isInstancedMesh === true) {
-          const array = (mesh as InstancedMesh).instanceMatrix.array
-          const bodies = meshMap.get(mesh) as Ammo.btRigidBody[]
-
-          for (let j = 0; j < bodies.length; j++) {
-            const body = bodies[j]
-
-            const motionState = body.getMotionState()
-            motionState.getWorldTransform(worldTransform)
-
-            const position = worldTransform.getOrigin()
-            const quaternion = worldTransform.getRotation()
-
-            compose(position, quaternion, array, j * 16)
-          }
-
-          (mesh as InstancedMesh).instanceMatrix.needsUpdate = true
-          ;(mesh as InstancedMesh).computeBoundingSphere()
-        }
-        else if (mesh.isMesh) {
-          const body = meshMap.get(mesh) as Ammo.btRigidBody
+        for (let j = 0; j < bodies.length; j++) {
+          const body = bodies[j]
 
           const motionState = body.getMotionState()
           motionState.getWorldTransform(worldTransform)
 
           const position = worldTransform.getOrigin()
           const quaternion = worldTransform.getRotation()
-          mesh.position.set(position.x(), position.y(), position.z())
-          mesh.quaternion.set(quaternion.x(), quaternion.y(), quaternion.z(), quaternion.w())
+
+          compose(position, quaternion, array, j * 16)
         }
+
+        (mesh as InstancedMesh).instanceMatrix.needsUpdate = true
+        ; (mesh as InstancedMesh).computeBoundingSphere()
+      }
+      else if (mesh.isMesh) {
+        const body = meshMap.get(mesh) as Ammo.btRigidBody
+
+        const motionState = body.getMotionState()
+        motionState.getWorldTransform(worldTransform)
+
+        const position = worldTransform.getOrigin()
+        const quaternion = worldTransform.getRotation()
+        mesh.position.set(position.x(), position.y(), position.z())
+        mesh.quaternion.set(quaternion.x(), quaternion.y(), quaternion.z(), quaternion.w())
       }
     }
-
-    lastTime = time
   }
 
   // animate
@@ -263,7 +245,7 @@ export const AmmoPhysics = async () => {
     addMesh,
     addScene,
     setMeshPosition,
-    step,
+    update,
     // addCompoundMesh
   }
 }

@@ -33,10 +33,6 @@ export class MMDPhysics {
     constraintParams: readonly PmxObject.Joint[] = [],
     params: MMDPhysicsParameter = {},
   ) {
-    if (typeof Ammo === 'undefined') {
-      throw new TypeError('MMDPhysics: Import ammo.js https://github.com/kripken/ammo.js')
-    }
-
     this.manager = new ResourceManager()
 
     this.mesh = mesh
