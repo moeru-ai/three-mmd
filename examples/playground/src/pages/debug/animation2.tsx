@@ -1,6 +1,6 @@
-import { MMDLoader } from '@moeru/three-mmd'
+import { MMDLoader, MMDPhysics } from '@moeru/three-mmd'
 import { buildAnimation, VMDLoader } from '@moeru/three-mmd-b'
-import { useLoader } from '@react-three/fiber'
+import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo } from 'react'
 
@@ -9,7 +9,7 @@ import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初�
 import { useMMDAnimations } from '../../hooks/use-mmd-animations'
 
 const DebugAnimation2 = () => {
-  const { showIK, showSkeleton } = useControls({ showIK: false, showSkeleton: false })
+  const { showIK, showPhysics, showSkeleton } = useControls({ showIK: false, showPhysics: false, showSkeleton: false })
 
   const object = useLoader(MMDLoader, pmxUrl)
   const vmd = useLoader(VMDLoader, vmdUrl)
@@ -22,13 +22,24 @@ const DebugAnimation2 = () => {
 
   const { actions, ikSolver } = useMMDAnimations([animation], object)
 
+  const physics = useMemo(() => new MMDPhysics(
+    object,
+    // eslint-disable-next-line ts/no-unsafe-argument
+    (object.geometry.userData.MMD as { rigidBodies: any[] }).rigidBodies,
+    // eslint-disable-next-line ts/no-unsafe-argument
+    (object.geometry.userData.MMD as { constraints: any[] }).constraints,
+  ), [object])
+
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
+  const physicsHelper = useMemo(() => physics.createHelper(), [physics])
+
+  useFrame((_, delta) => physics.update(delta))
 
   useEffect(() => {
-    // console.log(object.skeleton.bones)
     actions?.dance?.play()
 
     return () => {
+      actions?.dance?.stop()
       object.pose()
     }
   })
@@ -41,6 +52,7 @@ const DebugAnimation2 = () => {
         scale={0.1}
       />
       {showIK && <primitive object={ikHelper} />}
+      {showPhysics && <primitive object={physicsHelper} />}
       {showSkeleton && <skeletonHelper args={[object]} />}
     </>
   )

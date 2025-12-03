@@ -41,7 +41,8 @@
     "three": "^0.180.0"
   },
   "dependencies": {
-    "@pixiv/three-vrm-springbone": "catalog:"
+    "@pixiv/three-vrm-springbone": "catalog:",
+    "ammojs-typed": "catalog:"
   },
   "devDependencies": {
     "@types/three": "catalog:",

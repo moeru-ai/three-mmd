@@ -5,7 +5,9 @@ export default defineConfig({
   react: true,
 }, {
   rules: {
+    'sonarjs/aws-restricted-ip-admin-access': 'off',
     'sonarjs/cognitive-complexity': 'off',
+    'sonarjs/no-commented-code': 'off',
   },
 }, {
   ignores: [
