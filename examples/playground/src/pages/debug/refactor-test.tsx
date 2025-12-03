@@ -1,7 +1,6 @@
-import type { SpringBoneHelpers } from '@moeru/three-mmd'
-
 import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
-import { useMMDAnimations } from '@moeru/three-mmd-r3f'
+import { MMDSpringBonePhysics } from '@moeru/three-mmd-physics-springbone'
+import { useMMDAnimations, useMMDPhysics } from '@moeru/three-mmd-r3f'
 import { useFrame, useLoader } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
@@ -53,7 +52,7 @@ const DebugRefactorTest = () => {
 
   // Helpers
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
-  const { colliderHelpers, jointHelpers } = useMemo(() => mmd.createPhysicsHelpers() as SpringBoneHelpers, [mmd])
+  const { colliderHelpers, jointHelpers } = useMMDPhysics(mmd, MMDSpringBonePhysics)
 
   // Play the animation on mount
   useEffect(() => {

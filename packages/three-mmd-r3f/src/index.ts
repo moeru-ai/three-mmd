@@ -1,5 +1,6 @@
-export { Ammo } from './components/ammo'
+export { SetupPhysics } from './components/setup-physics'
 export { useMMD } from './hooks/use-mmd'
 export { useMMDAnimation } from './hooks/use-mmd-animation'
 export { useMMDAnimations } from './hooks/use-mmd-animations'
+export { useMMDPhysics } from './hooks/use-mmd-physics'
 export { useVMD } from './hooks/use-vmd'

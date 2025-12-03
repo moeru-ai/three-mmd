@@ -1,5 +1,5 @@
 {
-  "name": "@moeru/three-mmd",
+  "name": "@moeru/three-mmd-physics-ammo",
   "type": "module",
   "version": "0.0.5",
   "private": true,
@@ -10,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/moeru-ai/three-mmd.git",
-    "directory": "packages/three-mmd"
+    "directory": "packages/three-mmd-physics-ammo"
   },
   "bugs": "https://github.com/moeru-ai/three-mmd/issues",
   "keywords": [
@@ -34,15 +34,17 @@
     "types": "./dist/index.d.ts"
   },
   "scripts": {
-    "build": "tsdown"
+    "build": "pkgroll"
   },
   "peerDependencies": {
+    "@moeru/three-mmd": "workspace:^",
     "@types/three": "^0.180.0",
     "three": "^0.180.0"
   },
   "devDependencies": {
+    "@moeru/three-mmd": "workspace:^",
     "@types/three": "catalog:",
-    "babylon-mmd": "catalog:",
+    "ammojs-typed": "catalog:",
     "three": "catalog:"
   }
 }

@@ -153,6 +153,12 @@ importers:
       '@moeru/three-mmd':
         specifier: workspace:^
         version: link:../../packages/three-mmd
+      '@moeru/three-mmd-physics-ammo':
+        specifier: workspace:^
+        version: link:../../packages/three-mmd-physics-ammo
+      '@moeru/three-mmd-physics-springbone':
+        specifier: workspace:^
+        version: link:../../packages/three-mmd-physics-springbone
       '@moeru/three-mmd-r3f':
         specifier: workspace:^
         version: link:../../packages/three-mmd-r3f
@@ -192,13 +198,6 @@ importers:
         version: 0.180.0
 
   packages/three-mmd:
-    dependencies:
-      '@pixiv/three-vrm-springbone':
-        specifier: 'catalog:'
-        version: 3.4.4(three@0.180.0)
-      ammojs-typed:
-        specifier: 'catalog:'
-        version: 1.0.6
     devDependencies:
       '@types/three':
         specifier: 'catalog:'
@@ -206,6 +205,37 @@ importers:
       babylon-mmd:
         specifier: 'catalog:'
         version: 1.0.0(@babylonjs/core@8.29.0)
+      three:
+        specifier: 'catalog:'
+        version: 0.180.0
+
+  packages/three-mmd-physics-ammo:
+    devDependencies:
+      '@moeru/three-mmd':
+        specifier: workspace:^
+        version: link:../three-mmd
+      '@types/three':
+        specifier: 'catalog:'
+        version: 0.180.0
+      ammojs-typed:
+        specifier: 'catalog:'
+        version: 1.0.6
+      three:
+        specifier: 'catalog:'
+        version: 0.180.0
+
+  packages/three-mmd-physics-springbone:
+    dependencies:
+      '@pixiv/three-vrm-springbone':
+        specifier: 'catalog:'
+        version: 3.4.4(three@0.180.0)
+    devDependencies:
+      '@moeru/three-mmd':
+        specifier: workspace:^
+        version: link:../three-mmd
+      '@types/three':
+        specifier: 'catalog:'
+        version: 0.180.0
       three:
         specifier: 'catalog:'
         version: 0.180.0

@@ -1,6 +1,6 @@
 import type { SkinnedMesh } from 'three'
 
-import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import { PmxObject } from '@moeru/three-mmd'
 import {
   BoxGeometry,
   CapsuleGeometry,
