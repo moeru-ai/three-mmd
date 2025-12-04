@@ -41,10 +41,12 @@
     "@types/three": "^0.180.0",
     "three": "^0.180.0"
   },
+  "dependencies": {
+    "ammojs-typed": "catalog:"
+  },
   "devDependencies": {
     "@moeru/three-mmd": "workspace:^",
     "@types/three": "catalog:",
-    "ammojs-typed": "catalog:",
     "three": "catalog:"
   }
 }

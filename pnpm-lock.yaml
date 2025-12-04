@@ -210,6 +210,10 @@ importers:
         version: 0.180.0
 
   packages/three-mmd-physics-ammo:
+    dependencies:
+      ammojs-typed:
+        specifier: 'catalog:'
+        version: 1.0.6
     devDependencies:
       '@moeru/three-mmd':
         specifier: workspace:^
@@ -217,9 +221,6 @@ importers:
       '@types/three':
         specifier: 'catalog:'
         version: 0.180.0
-      ammojs-typed:
-        specifier: 'catalog:'
-        version: 1.0.6
       three:
         specifier: 'catalog:'
         version: 0.180.0
