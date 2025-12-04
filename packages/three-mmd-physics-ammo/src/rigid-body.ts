@@ -44,23 +44,23 @@ export class RigidBody {
       }
     }
 
-    const bones = this.mesh.skeleton.bones
     const bone = (this.params.boneIndex === -1)
       ? new Bone()
-      : bones[this.params.boneIndex]
+      : this.mesh.skeleton.bones[this.params.boneIndex]
 
     const shape = generateShape(this.params)
     const weight = (this.params.physicsMode === 0) ? 0 : this.params.mass
     const localInertia = this.manager.allocVector3()
     localInertia.setValue(0, 0, 0)
 
-    if (weight !== 0) {
+    if (weight !== 0)
       shape.calculateLocalInertia(weight, localInertia)
-    }
 
     // mesh -> world -> bone local
     const offsetLocal = bone.worldToLocal(
-      new Vector3().fromArray(this.params.shapePosition).applyMatrix4(this.mesh.matrixWorld),
+      new Vector3()
+        .fromArray(this.params.shapePosition)
+        .applyMatrix4(this.mesh.matrixWorld),
     )
     // Quaternion transform
     const shapeQuat = new Quaternion().setFromEuler(new Euler(
@@ -157,10 +157,7 @@ export class RigidBody {
     this.body.getMotionState().getWorldTransform(tr)
     manager.copyOrigin(tr, form)
 
-    // TODO: check the most appropriate way to set
-    // this.body.setWorldTransform( tr );
-    this.body.setCenterOfMassTransform(tr)
-    this.body.getMotionState().setWorldTransform(tr)
+    this.body.setWorldTransform(tr)
 
     manager.freeTransform(tr)
     manager.freeTransform(form)
@@ -170,10 +167,7 @@ export class RigidBody {
     const manager = this.manager
     const form = this._getBoneTransform()
 
-    // TODO: check the most appropriate way to set
-    // this.body.setWorldTransform( form );
-    this.body.setCenterOfMassTransform(form)
-    this.body.getMotionState().setWorldTransform(form)
+    this.body.setWorldTransform(form)
 
     manager.freeTransform(form)
   }
@@ -188,9 +182,8 @@ export class RigidBody {
     const o = manager.getOrigin(tr)
     thV.set(o.x(), o.y(), o.z())
 
-    if (this.bone.parent) {
+    if (this.bone.parent)
       this.bone.parent.worldToLocal(thV)
-    }
 
     this.bone.position.copy(thV)
 
@@ -249,15 +242,13 @@ export class RigidBody {
 
     this._updateBoneRotation()
 
-    if (this.params.physicsMode === 1) {
+    if (this.params.physicsMode === 1)
       this._updateBonePosition()
-    }
 
     this.bone.updateMatrixWorld(true)
 
-    if (this.params.physicsMode === 2) {
+    if (this.params.physicsMode === 2)
       this._setPositionFromBone()
-    }
 
     return this
   }
@@ -266,9 +257,8 @@ export class RigidBody {
    * Updates rigid body's transform from the current bone.
    */
   updateFromBone() {
-    if (this.params.boneIndex !== -1 && this.params.physicsMode === 0) {
+    if (this.params.boneIndex !== -1 && this.params.physicsMode === 0)
       this._setTransformFromBone()
-    }
 
     return this
   }
