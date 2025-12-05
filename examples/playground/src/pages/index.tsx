@@ -1,4 +1,4 @@
-import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
+import { useMMDAnimation, useMMDMesh } from '@moeru/three-mmd-r3f'
 import { useAnimations } from '@react-three/drei'
 import { useEffect } from 'react'
 
@@ -6,11 +6,10 @@ import vmdUrl from '../../../assets/Telephone/モーションデータ(forMMD)/t
 import pmxUrl from '../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 
 const Index = () => {
-  const object = useMMD(pmxUrl)
+  const object = useMMDMesh(pmxUrl)
   const animation = useMMDAnimation(vmdUrl, object, 'dance')
   const { actions, ref } = useAnimations([animation])
 
-  // TODO: physics
   useEffect(() => {
     actions?.dance?.play()
   })
