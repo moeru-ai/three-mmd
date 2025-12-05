@@ -2,18 +2,6 @@
 
 Use MMD on Three.js
 
-## About
-
-`MMDLoader` having been removed in three.js r172 nearly ten months ago,
-and no code has ever appeared in the [takahirox/three-mmd-loader](https://github.com/takahirox/three-mmd-loader) repository.
-
-Considering the needs of Project AIRI or other future projects, I decided to fork and maintain it, i.e., this repo.
-
-## Roadmap
-
-- Rapier-based physics (help wanted)
-- WebGPURenderer compatibility
-
 ## Usage
 
 ```bash
@@ -41,6 +29,12 @@ loader.load(
   error => console.error(error),
 )
 ```
+
+## Roadmap
+
+- PBR-based Material
+- Rapier physics
+- WebGPURenderer compatibility
 
 ## See also
 
