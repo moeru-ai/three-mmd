@@ -63,7 +63,7 @@ export const useMMDAnimations = <T extends AnimationClip>(
     ikSolver.update(delta)
 
     grantSolver.update()
-  })
+  }, -1)
 
   useEffect(() => {
     return () => {

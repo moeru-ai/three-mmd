@@ -11,10 +11,11 @@ export const MMDAmmoPhysics: PhysicsFactory<MMDPhysicsHelper> = (mmd) => {
     mmd.pmx.joints,
   )
 
-  // physics.warmup(60)
+  physics.warmup(60)
 
   return {
     createHelper: () => physics.createHelper(),
+    reset: () => physics.reset(),
     update: (delta: number) => physics.update(delta),
   }
 }

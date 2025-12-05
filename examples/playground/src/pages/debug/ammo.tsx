@@ -42,10 +42,11 @@ const DebugAmmo = () => {
 
   // Helpers
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
-  const physicsHelper = useMMDPhysics(mmd, MMDAmmoPhysics)
+  const physicsHelper = useMMDPhysics(mmd, MMDAmmoPhysics, editingScale)
 
   // Play the animation on mount
   useEffect(() => {
+    mmd.physics?.reset()
     actions.dance?.play()
 
     return () => {
@@ -82,7 +83,7 @@ const DebugAmmo = () => {
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
-      {showPhysics && (Boolean(physicsHelper)) && <primitive object={physicsHelper} />}
+      {showPhysics && physicsHelper && <primitive object={physicsHelper} />}
     </>
 
   )
