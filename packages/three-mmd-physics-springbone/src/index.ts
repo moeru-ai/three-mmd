@@ -178,7 +178,7 @@ export const MMDSpringBonePhysics: PhysicsFactory<SpringBoneHelpers> = (mmd) => 
   cacheJointsAndColliders()
 
   return {
-    createPhysicsHelpers: () => ({
+    createHelper: () => ({
       colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
       jointHelpers: joints.map(j => new VRMSpringBoneJointHelper(j)),
     }),

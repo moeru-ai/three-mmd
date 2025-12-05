@@ -46,7 +46,7 @@ const DebugAmmo = () => {
 
   // Play the animation on mount
   useEffect(() => {
-    mmd.physics?.reset()
+    mmd.physics?.reset?.()
     actions.dance?.play()
 
     return () => {
