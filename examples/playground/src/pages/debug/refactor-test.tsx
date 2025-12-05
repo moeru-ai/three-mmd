@@ -52,7 +52,7 @@ const DebugRefactorTest = () => {
 
   // Helpers
   const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
-  const { colliderHelpers, jointHelpers } = useMMDPhysics(mmd, MMDSpringBonePhysics)
+  const helpers = useMMDPhysics(mmd, MMDSpringBonePhysics)
 
   // Play the animation on mount
   useEffect(() => {
@@ -100,9 +100,9 @@ const DebugRefactorTest = () => {
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
       {/* eslint-disable-next-line react/no-array-index-key */}
-      {showColliders && colliderHelpers.map((h, i) => <primitive key={i} object={h} />)}
+      {showColliders && helpers?.colliderHelpers.map((h, i) => <primitive key={i} object={h} />)}
       {/* eslint-disable-next-line react/no-array-index-key */}
-      {showJoints && jointHelpers.map((h, i) => <primitive key={i} object={h} />)}
+      {showJoints && helpers?.jointHelpers.map((h, i) => <primitive key={i} object={h} />)}
     </>
 
   )
