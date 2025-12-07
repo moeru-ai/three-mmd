@@ -11,7 +11,6 @@ const useMMD = (path: string, plugins?: MMDLoaderPlugin[]) => useLoader(
       p => loader.register(p),
     )
   },
-
 )
 
 // eslint-disable-next-line @masknet/no-top-level
