@@ -15,16 +15,8 @@ const useMMD = (path: string, plugins?: MMDLoaderPlugin[]) => useLoader(
 )
 
 // eslint-disable-next-line @masknet/no-top-level
-useMMD.preload = (path: string, plugins?: MMDLoaderPlugin[]) =>
-  useLoader.preload(
-    MMDLoader,
-    path,
-    (loader) => {
-      plugins?.forEach(
-        p => loader.register(p),
-      )
-    },
-  )
+useMMD.preload = (path: string) =>
+  useLoader.preload(MMDLoader, path)
 
 // eslint-disable-next-line @masknet/no-top-level
 useMMD.clear = (path: string) =>
