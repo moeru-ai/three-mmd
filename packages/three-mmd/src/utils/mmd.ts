@@ -32,7 +32,7 @@ export class MMD {
 
   public setPhysics<T>(createPhysics: PhysicsFactory<T>) {
     const physics = createPhysics(this)
-    this.physics = physics
+    this.physics = physics as PhysicsService<undefined>
   }
 
   // https://github.com/pixiv/three-vrm/blob/dev/guides/spring-bones-on-scaled-models.md
