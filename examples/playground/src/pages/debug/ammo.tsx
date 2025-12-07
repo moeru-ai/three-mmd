@@ -4,8 +4,8 @@ import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
-import pmxUrl from '../../../../assets/安比/安比.pmx?url'
-// import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
+// import pmxUrl from '../../../../assets/安比/安比.pmx?url'
+import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 
 const DebugAmmo = () => {
   const [editingScale, setEditingScale] = useState(false)
