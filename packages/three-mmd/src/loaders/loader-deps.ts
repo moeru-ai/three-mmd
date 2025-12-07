@@ -7,7 +7,7 @@ import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import type { BufferGeometry, SkinnedMesh } from 'three'
 import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
-import type { MMDToonMaterial } from '../materials/mmd-toon-material'
+import type { MMDToonMaterial } from '../material/default/mmd-toon-material'
 import type { Grant } from '../utils/build-grants'
 
 import { buildBones } from '../utils/build-bones'

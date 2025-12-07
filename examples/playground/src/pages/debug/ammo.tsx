@@ -4,19 +4,20 @@ import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
-// import pmxUrl from '../../../../assets/安比/安比.pmx?url'
-import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
+import pmxUrl from '../../../../assets/安比/安比.pmx?url'
+// import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 
 const DebugAmmo = () => {
   const [editingScale, setEditingScale] = useState(false)
   const {
     mmdScale,
+    playAnimation,
     showIK,
     showPhysics,
     showSkeleton,
   } = useControls({
     mmdScale: {
-      max: 10,
+      max: 1,
       min: 0.01,
       onEditEnd: () => {
         // console.log('end setting scale')
@@ -27,9 +28,10 @@ const DebugAmmo = () => {
         setEditingScale(true)
       },
       step: 0.01,
-      // value: 0.1,
-      value: 1,
+      value: 0.1,
+      // value: 1,
     },
+    playAnimation: { label: 'Play Animation', value: true },
     showIK: false,
     showPhysics: false,
     showSkeleton: false,
@@ -46,14 +48,25 @@ const DebugAmmo = () => {
 
   // Play the animation on mount
   useEffect(() => {
+    if (!actions?.dance)
+      return
+
+    if (playAnimation) {
+      actions.dance.reset()
+      actions.dance.play()
+    }
+    else {
+      actions.dance.stop()
+      mmd.mesh.pose()
+    }
+
     mmd.physics?.reset?.()
-    actions.dance?.play()
 
     return () => {
       actions.dance?.stop()
       mmd.mesh.pose()
     }
-  }, [actions, mmd])
+  }, [actions, mmd, playAnimation])
 
   // Scale handling
   useEffect(() => {
@@ -69,11 +82,11 @@ const DebugAmmo = () => {
       actions?.dance?.stop()
       mmd.mesh.pose()
     }
-    else {
+    else if (playAnimation) {
       actions.dance.paused = false
       actions?.dance?.play()
     }
-  }, [actions, mmd, editingScale])
+  }, [actions, mmd, editingScale, playAnimation])
 
   return (
     <>
@@ -85,7 +98,6 @@ const DebugAmmo = () => {
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
       {showPhysics && physicsHelper && <primitive object={physicsHelper} />}
     </>
-
   )
 }
 

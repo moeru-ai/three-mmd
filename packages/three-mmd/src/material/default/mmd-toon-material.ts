@@ -8,7 +8,7 @@ import {
   UniformsUtils,
 } from 'three'
 
-import { MMDToonShader } from '../shaders/mmd-toon-shader'
+import { MMDToonShader } from './mmd-toon-shader'
 
 export class MMDToonMaterial extends ShaderMaterial {
   combine: number
