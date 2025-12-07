@@ -19,7 +19,7 @@ import { TGALoader } from 'three/addons/loaders/TGALoader.js'
 
 import type { MaterialBuilderParameters, RenderStyleApplier, RenderStyleName, TextureContext } from './types'
 
-import { MMDToonMaterial } from '../../material/mmd-toon-material'
+import { MMDToonMaterial } from '../../materials/mmd-toon-material'
 import { checkImageTransparency, loadTextureResource } from './utils'
 
 export const mapPmxToParams = (
