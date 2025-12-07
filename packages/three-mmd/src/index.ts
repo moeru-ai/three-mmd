@@ -13,7 +13,6 @@ export { buildGeometry } from './utils/build-geometry'
 export { buildGrants, type Grant } from './utils/build-grants'
 export { buildIK } from './utils/build-ik'
 export { buildMaterial } from './utils/build-material'
-export { buildMaterial_refactor } from './utils/build-material-refactor'
 export { buildMesh } from './utils/build-mesh'
 export { MMD } from './utils/mmd'
 

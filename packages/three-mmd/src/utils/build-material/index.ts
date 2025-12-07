@@ -17,10 +17,10 @@ import {
 } from 'three'
 import { TGALoader } from 'three/addons/loaders/TGALoader.js'
 
-import type { MaterialBuilderParameters, RenderStyleApplier, RenderStyleName, TextureContext } from '../material/types'
+import type { MaterialBuilderParameters, RenderStyleApplier, RenderStyleName, TextureContext } from './types'
 
-import { MMDToonMaterial } from '../material/default/mmd-toon-material'
-import { checkImageTransparency, loadTextureResource } from '../material/utils'
+import { MMDToonMaterial } from '../../material/mmd-toon-material'
+import { checkImageTransparency, loadTextureResource } from './utils'
 
 export const mapPmxToParams = (
   material: PmxObject.Material,

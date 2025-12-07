@@ -9,7 +9,7 @@ import {
   RGB_S3TC_DXT1_Format,
 } from 'three'
 
-import type { MMDToonMaterial } from './default/mmd-toon-material'
+import type { MMDToonMaterial } from '../../material/mmd-toon-material'
 
 export interface LoadingTexture extends Texture {
   readyCallbacks?: Array<(texture: Texture) => void>
