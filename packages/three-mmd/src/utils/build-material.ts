@@ -105,8 +105,7 @@ export const mapPmxToParams = (
     alpha: material.edgeColor[3],
     color: material.edgeColor.slice(0, 3),
     thickness: material.edgeSize / 300,
-    // visible: (material.flag & PmxObject.Material.Flag.EnabledToonEdge) !== 0 && material.edgeSize > 0.0,
-    visible: true,
+    visible: (material.flag & PmxObject.Material.Flag.EnabledToonEdge) !== 0 && material.edgeSize > 0.0,
   }
 
   if (params.map !== undefined) {
