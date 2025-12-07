@@ -11,13 +11,12 @@ const DebugAmmo = () => {
   const [editingScale, setEditingScale] = useState(false)
   const {
     mmdScale,
-    playAnimation,
     showIK,
     showPhysics,
     showSkeleton,
   } = useControls({
     mmdScale: {
-      max: 1,
+      max: 10,
       min: 0.01,
       onEditEnd: () => {
         // console.log('end setting scale')
@@ -28,10 +27,9 @@ const DebugAmmo = () => {
         setEditingScale(true)
       },
       step: 0.01,
-      value: 0.1,
-      // value: 1,
+      // value: 0.1,
+      value: 1,
     },
-    playAnimation: { label: 'Play Animation', value: true },
     showIK: false,
     showPhysics: false,
     showSkeleton: false,
@@ -48,25 +46,14 @@ const DebugAmmo = () => {
 
   // Play the animation on mount
   useEffect(() => {
-    if (!actions?.dance)
-      return
-
-    if (playAnimation) {
-      actions.dance.reset()
-      actions.dance.play()
-    }
-    else {
-      actions.dance.stop()
-      mmd.mesh.pose()
-    }
-
     mmd.physics?.reset?.()
+    actions.dance?.play()
 
     return () => {
       actions.dance?.stop()
       mmd.mesh.pose()
     }
-  }, [actions, mmd, playAnimation])
+  }, [actions, mmd])
 
   // Scale handling
   useEffect(() => {
@@ -82,11 +69,11 @@ const DebugAmmo = () => {
       actions?.dance?.stop()
       mmd.mesh.pose()
     }
-    else if (playAnimation) {
+    else {
       actions.dance.paused = false
       actions?.dance?.play()
     }
-  }, [actions, mmd, editingScale, playAnimation])
+  }, [actions, mmd, editingScale])
 
   return (
     <>
@@ -98,6 +85,7 @@ const DebugAmmo = () => {
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
       {showPhysics && physicsHelper && <primitive object={physicsHelper} />}
     </>
+
   )
 }
 
