@@ -13,7 +13,7 @@ export class MMD {
   public grants: Grant[] = []
   public iks: IK[] = []
   public mesh: SkinnedMesh
-  public physics?: PhysicsService<any>
+  public physics?: PhysicsService
   public pmx: PmxObject
 
   public scale: number
