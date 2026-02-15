@@ -170,10 +170,10 @@ export const buildMaterial = (
   data: PmxObject,
   geometry: BufferGeometry,
   resourcePath: string,
+  customManager?: LoadingManager,
   renderStyle: RenderStyleName = 'default',
   onProgress?: (event: ProgressEvent) => void,
   onError?: (event: unknown) => void,
-  customManager?: LoadingManager,
 ) => {
   const manager: LoadingManager = customManager ?? DefaultLoadingManager
   const textureLoader = new TextureLoader(manager)
