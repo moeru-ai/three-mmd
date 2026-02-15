@@ -33,7 +33,7 @@ export const defaultDeps: Required<MMDLoaderDeps> = {
   buildGeometry,
   buildGrants,
   buildIK,
-  buildMaterials: (pmx, geo, rp, manager) => buildMaterial(pmx, geo, rp, manager),
+  buildMaterials: (pmx, geo, rp, manager) => buildMaterial(pmx, geo, rp, undefined, undefined, undefined, manager),
   buildMesh,
   postParseProcessing,
 }
