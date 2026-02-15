@@ -1,7 +1,7 @@
 import type { BufferGeometry, Texture, TextureLoader, TypedArray } from 'three'
 
 import { SharedToonTextures } from 'babylon-mmd/esm/Loader/sharedToonTextures'
-import { NearestFilter, RepeatWrapping, SRGBColorSpace } from 'three'
+import { LoaderUtils, NearestFilter, RepeatWrapping, SRGBColorSpace } from 'three'
 
 import type { LoadingTexture, MaterialBuilderParameters, TextureContext } from './types'
 
@@ -145,7 +145,7 @@ export const loadTextureResource = (
     fullPath = SharedToonTextures.Data[index]
   }
   else {
-    fullPath = ctx.resourcePath + filePath
+    fullPath = LoaderUtils.resolveURL(filePath, ctx.resourcePath)
   }
 
   if (ctx.textures[fullPath] != null)
