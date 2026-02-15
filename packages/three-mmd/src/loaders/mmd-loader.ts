@@ -108,7 +108,7 @@ export class MMDLoader extends Loader<MMD> {
     pmx = postParseProcessing(pmx)
 
     const geometry = buildGeometry(pmx)
-    const materials = buildMaterials(pmx, geometry, resourcePath)
+    const materials = buildMaterials(pmx, geometry, resourcePath, this.manager)
     const rawMesh = buildMesh(geometry, materials)
     const skinnedMesh = buildBones(pmx, rawMesh)
     const grants = buildGrants(pmx)
