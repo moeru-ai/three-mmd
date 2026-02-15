@@ -173,7 +173,7 @@ export const buildMaterial = (
   renderStyle: RenderStyleName = 'default',
   onProgress?: (event: ProgressEvent) => void,
   onError?: (event: unknown) => void,
-  customManager?: LoadingManager
+  customManager?: LoadingManager,
 ) => {
   const manager: LoadingManager = customManager ?? DefaultLoadingManager
   const textureLoader = new TextureLoader(manager)

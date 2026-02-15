@@ -4,7 +4,7 @@
  * by returning Partial<MMDLoaderDeps> and letting resolveDeps merge overrides on top of defaults.
  */
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
-import type { BufferGeometry, SkinnedMesh, LoadingManager } from 'three'
+import type { BufferGeometry, LoadingManager, SkinnedMesh } from 'three'
 import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
 import type { MMDToonMaterial } from '../materials/mmd-toon-material'
