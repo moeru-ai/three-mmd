@@ -100,7 +100,7 @@ export class MMDMeshLoader extends Loader<SkinnedMesh> {
     pmx = postParseProcessing(pmx)
 
     const geometry = buildGeometry(pmx)
-    const materials = buildMaterials(pmx, geometry, resourcePath)
+    const materials = buildMaterials(pmx, geometry, resourcePath, this.manager)
     const rawMesh = buildMesh(geometry, materials)
 
     return buildBones(pmx, rawMesh)

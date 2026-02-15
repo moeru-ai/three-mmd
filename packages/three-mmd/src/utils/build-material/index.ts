@@ -173,8 +173,9 @@ export const buildMaterial = (
   renderStyle: RenderStyleName = 'default',
   onProgress?: (event: ProgressEvent) => void,
   onError?: (event: unknown) => void,
+  customManager?: LoadingManager
 ) => {
-  const manager: LoadingManager = DefaultLoadingManager
+  const manager: LoadingManager = customManager ?? DefaultLoadingManager
   const textureLoader = new TextureLoader(manager)
   textureLoader.setCrossOrigin('anonymous')
 

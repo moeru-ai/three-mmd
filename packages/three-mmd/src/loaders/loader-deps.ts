@@ -4,7 +4,7 @@
  * by returning Partial<MMDLoaderDeps> and letting resolveDeps merge overrides on top of defaults.
  */
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
-import type { BufferGeometry, SkinnedMesh } from 'three'
+import type { BufferGeometry, SkinnedMesh, LoadingManager } from 'three'
 import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
 import type { MMDToonMaterial } from '../materials/mmd-toon-material'
@@ -23,7 +23,7 @@ export interface MMDLoaderDeps {
   buildGeometry: (pmx: PmxObject) => BufferGeometry
   buildGrants: (pmx: PmxObject) => Grant[]
   buildIK: (pmx: PmxObject) => IK[]
-  buildMaterials: (pmx: PmxObject, geo: BufferGeometry, rp: string) => MMDToonMaterial[]
+  buildMaterials: (pmx: PmxObject, geo: BufferGeometry, rp: string, manager?: LoadingManager) => MMDToonMaterial[]
   buildMesh: (geometry: BufferGeometry, materials: MMDToonMaterial[]) => SkinnedMesh
   postParseProcessing: (pmx: PmxObject) => PmxObject
 }
@@ -33,7 +33,7 @@ export const defaultDeps: Required<MMDLoaderDeps> = {
   buildGeometry,
   buildGrants,
   buildIK,
-  buildMaterials: (pmx, geo, rp) => buildMaterial(pmx, geo, rp),
+  buildMaterials: (pmx, geo, rp, manager) => buildMaterial(pmx, geo, rp, manager),
   buildMesh,
   postParseProcessing,
 }
