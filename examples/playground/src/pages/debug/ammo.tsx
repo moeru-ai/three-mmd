@@ -1,5 +1,7 @@
 import { MMDAmmoPhysics } from '@moeru/three-mmd-physics-ammo'
-import { useMMD, useMMDAnimation, useMMDAnimations, useMMDPhysics } from '@moeru/three-mmd-r3f'
+import { useMMD, useMMDAnimation, useMMDPhysics } from '@moeru/three-mmd-r3f'
+import { useAnimations } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -37,11 +39,14 @@ const DebugAmmo = () => {
 
   const mmd = useMMD(pmxUrl)
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
+  const { actions } = useAnimations([animation], mmd.mesh)
 
-  const { actions, ikSolver } = useMMDAnimations([animation], mmd.mesh, mmd.iks, mmd.grants)
+  // This must follow `useAnimations` and precede `useMMDPhysics`: at priority
+  // 0, R3F invokes them in registration order.
+  useFrame((_, delta) => mmd.update(delta))
 
   // Helpers
-  const ikHelper = useMemo(() => ikSolver.createHelper(), [ikSolver])
+  const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
   const physicsHelper = useMMDPhysics(mmd, MMDAmmoPhysics, editingScale)
 
   // Play the animation on mount

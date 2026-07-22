@@ -7,7 +7,6 @@ export type Path =
   | `/`
   | `/debug/ammo`
   | `/debug/mesh`
-  | `/debug/refactor-test`
 
 export type Params = {
   

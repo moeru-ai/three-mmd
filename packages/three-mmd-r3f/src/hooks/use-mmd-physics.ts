@@ -21,7 +21,7 @@ export const useMMDPhysics = <T>(mmd: MMD, createPhysics: PhysicsFactory<T>, pau
       return
 
     // Only update physics calculation after the scale setting was done
-    mmd.update(delta)
+    mmd.updatePhysics(delta)
   })
 
   return helper
