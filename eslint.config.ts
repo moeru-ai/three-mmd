@@ -12,5 +12,6 @@ export default defineConfig({
 }, {
   ignores: [
     'examples/playground/src/router.ts',
+    '.agents',
   ],
 })
