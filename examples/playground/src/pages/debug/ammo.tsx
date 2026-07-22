@@ -27,8 +27,8 @@ const DebugAmmo = () => {
         setEditingScale(true)
       },
       step: 0.01,
-      // value: 0.1,
-      value: 1,
+      value: 0.1,
+      // value: 1,
     },
     showIK: false,
     showPhysics: false,
