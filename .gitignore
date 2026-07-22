@@ -24,3 +24,6 @@ dist-ssr
 
 # Assets
 examples/assets
+
+# Private docs
+docs/research
