@@ -2,11 +2,13 @@ import { initAmmo } from '@moeru/three-mmd-physics-ammo'
 import { SetupPhysics } from '@moeru/three-mmd-r3f'
 import { Environment, Loader, OrbitControls, Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
+import { Leva } from 'leva'
 import { Suspense } from 'react'
 import { Outlet } from 'react-router'
 
 const App = () => (
   <>
+    <Leva />
     <Stats />
     <Loader />
     <Canvas
