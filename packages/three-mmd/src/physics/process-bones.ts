@@ -3,6 +3,10 @@ import type { SkinnedMesh } from 'three'
 export const processBones = () => {
   let backupBones: Float32Array | undefined
 
+  const clearBones = () => {
+    backupBones = undefined
+  }
+
   const restoreBones = (mesh: SkinnedMesh) => {
     if (backupBones === undefined)
       return
@@ -34,5 +38,5 @@ export const processBones = () => {
     })
   }
 
-  return { restoreBones, saveBones }
+  return { clearBones, restoreBones, saveBones }
 }

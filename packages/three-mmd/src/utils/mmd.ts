@@ -14,6 +14,12 @@ import type { Grant } from './build-grants'
 import { GrantSolver } from '../physics/grant-solver'
 import { processBones } from '../physics/process-bones'
 
+const boneProcessors = new WeakMap<MMD, ReturnType<typeof processBones>>()
+
+/** Clears the cached mixer pose before a static pose is applied. */
+export const resetMMDAnimationPose = (mmd: MMD) =>
+  boneProcessors.get(mmd)?.clearBones()
+
 export class MMD {
   public grants: Grant[] = []
   public grantSolver: GrantSolver
@@ -24,8 +30,6 @@ export class MMD {
   public pmx: PmxObject
   public scale: number
 
-  private readonly boneProcessor = processBones()
-
   constructor(pmx: PmxObject, mesh: SkinnedMesh, grants: Grant[], iks: IK[]) {
     this.pmx = pmx
     this.grants = grants
@@ -34,6 +38,7 @@ export class MMD {
     this.scale = 1
     this.ikSolver = new CCDIKSolver(mesh, iks)
     this.grantSolver = new GrantSolver(mesh, grants)
+    boneProcessors.set(this, processBones())
   }
 
   /**
@@ -42,7 +47,7 @@ export class MMD {
    * Call this immediately before the animation mixer updates the mesh.
    */
   public beforeAnimation() {
-    this.boneProcessor.restoreBones(this.mesh)
+    boneProcessors.get(this)!.restoreBones(this.mesh)
   }
 
   public createHelper<T>(): T | undefined {
@@ -73,7 +78,7 @@ export class MMD {
    * animation pose.
    */
   public update(delta: number) {
-    this.boneProcessor.saveBones(this.mesh)
+    boneProcessors.get(this)!.saveBones(this.mesh)
     this.mesh.updateMatrixWorld(true)
     this.ikSolver.update(delta)
     this.grantSolver.update()

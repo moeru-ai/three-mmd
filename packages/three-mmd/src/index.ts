@@ -2,11 +2,13 @@ export type { MMDLoaderPlugin } from './loaders/loader-deps'
 export { MMDLoader } from './loaders/mmd-loader'
 export { MMDMeshLoader } from './loaders/mmd-mesh-loader'
 export { VMDLoader } from './loaders/vmd-loader'
+export { VPDLoader } from './loaders/vpd-loader'
 
 export { GrantSolver } from './physics/grant-solver'
 export type { PhysicsFactory, PhysicsService } from './physics/physics-service'
 export { processBones } from './physics/process-bones'
 
+export { applyVPD, type ApplyVPDOptions } from './utils/apply-vpd'
 export { buildAnimation, buildCameraAnimation } from './utils/build-animation'
 export { buildBones } from './utils/build-bones'
 export { buildGeometry } from './utils/build-geometry'
@@ -18,3 +20,4 @@ export { MMD } from './utils/mmd'
 
 export { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 export { VmdObject } from 'babylon-mmd/esm/Loader/Parser/vmdObject'
+export type { VpdObject } from 'babylon-mmd/esm/Loader/Parser/vpdObject'
