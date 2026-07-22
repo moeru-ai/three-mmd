@@ -43,9 +43,7 @@ const DebugAmmo = () => {
 
   // This must follow `useAnimations` and precede `useMMDPhysics`: at priority
   // 0, R3F invokes them in registration order.
-  useFrame((_, delta) => {
-    mmd.update(delta)
-  })
+  useFrame((_, delta) => mmd.update(delta))
 
   // Helpers
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])

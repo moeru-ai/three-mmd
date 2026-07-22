@@ -16,9 +16,7 @@ const useMMD = (path: string, plugins?: MMDLoaderPlugin[]) => {
 
   // `useAnimations` runs its mixer at priority 0. Restore the MMD pose before
   // that so `mmd.update()` can safely apply IK and grants after it.
-  useFrame(() => {
-    mmd.beforeAnimation()
-  }, -1)
+  useFrame(() => mmd.beforeAnimation(), -1)
 
   return mmd
 }
