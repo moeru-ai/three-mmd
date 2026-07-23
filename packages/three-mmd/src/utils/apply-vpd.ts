@@ -4,7 +4,7 @@ import { Quaternion, Vector3 } from 'three'
 
 import type { MMD } from './mmd'
 
-import { resetMMDAnimationPose } from './mmd'
+import { cacheMMDAnimationPose, resetMMDAnimationPose } from './mmd'
 
 export interface ApplyVPDOptions {
   grant?: boolean
@@ -65,6 +65,11 @@ export const applyVPD = (
     )
     bone.quaternion.multiply(rotation)
   }
+
+  // Keep the raw VPD pose as the next frame's animation input. The pose below
+  // is immediately processed once, but MMD.update() must not process that
+  // already-derived pose a second time on the following frame.
+  cacheMMDAnimationPose(mmd)
 
   const morphTargetDictionary = mesh.morphTargetDictionary
   for (const [name, weight] of Object.entries(vpd.morphs)) {

@@ -19,6 +19,10 @@ const boneProcessors = new WeakMap<MMD, ReturnType<typeof processBones>>()
 export const resetMMDAnimationPose = (mmd: MMD) =>
   boneProcessors.get(mmd)?.clearBones()
 
+/** Caches the current unprocessed pose for the next animation update. */
+export const cacheMMDAnimationPose = (mmd: MMD) =>
+  boneProcessors.get(mmd)?.saveBones(mmd.mesh)
+
 export class MMD {
   public grantSolver: GrantSolver
   public iks: IK[] = []

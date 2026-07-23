@@ -178,9 +178,40 @@ export class MMDPhysics {
    * Resets rigid bodies transform to current bone's.
    */
   reset(): MMDPhysics {
-    for (let i = 0, il = this.bodies.length; i < il; i++) {
-      this.bodies[i].reset()
+    const manager = this.manager
+    const mesh = this.mesh
+    const position = manager.allocThreeVector3()
+    const quaternion = manager.allocThreeQuaternion()
+    const scale = manager.allocThreeVector3()
+
+    mesh.matrixWorld.decompose(position, quaternion, scale)
+
+    const isNonDefaultScale = scale.x !== 1 || scale.y !== 1 || scale.z !== 1
+    const parent = mesh.parent
+
+    // Ammo rigid bodies are created in the model's unscaled coordinate space.
+    // Apply pose resets in that same space, just like update() does before
+    // stepping the world. Otherwise changing a VPD pose at mesh.scale !== 1
+    // teleports the bodies into a different coordinate system.
+    if (isNonDefaultScale) {
+      scale.copy(mesh.scale)
+      mesh.parent = null
+      mesh.scale.set(1, 1, 1)
+      mesh.updateMatrixWorld(true)
     }
+
+    for (let i = 0, il = this.bodies.length; i < il; i++)
+      this.bodies[i].reset()
+
+    if (isNonDefaultScale) {
+      mesh.parent = parent
+      mesh.scale.copy(scale)
+      mesh.updateMatrixWorld(true)
+    }
+
+    manager.freeThreeVector3(position)
+    manager.freeThreeQuaternion(quaternion)
+    manager.freeThreeVector3(scale)
 
     return this
   }
@@ -236,6 +267,8 @@ export class MMDPhysics {
 
     this._updateRigidBodies()
     this._stepSimulation(delta)
+    for (const body of this.bodies)
+      body.finishReset()
     this._updateBones()
 
     // restore mesh if converted above

@@ -17,6 +17,7 @@ export class RigidBody {
   mesh: SkinnedMesh
   params: PmxObject.RigidBody
   world: Ammo.btDiscreteDynamicsWorld
+  private resetPending = false
 
   constructor(
     mesh: SkinnedMesh,
@@ -102,7 +103,7 @@ export class RigidBody {
        * because I'm not sure why but physics will be more like MMD's
        * if I comment out.
        */
-      // body.setActivationState(4)
+      body.setActivationState(4)
     }
 
     body.setDamping(this.params.linearDamping, this.params.angularDamping)
@@ -157,7 +158,8 @@ export class RigidBody {
     this.body.getMotionState().getWorldTransform(tr)
     manager.copyOrigin(tr, form)
 
-    this.body.setWorldTransform(tr)
+    this.body.setCenterOfMassTransform(tr)
+    this.body.getMotionState().setWorldTransform(tr)
 
     manager.freeTransform(tr)
     manager.freeTransform(form)
@@ -167,7 +169,8 @@ export class RigidBody {
     const manager = this.manager
     const form = this._getBoneTransform()
 
-    this.body.setWorldTransform(form)
+    this.body.setCenterOfMassTransform(form)
+    this.body.getMotionState().setWorldTransform(form)
 
     manager.freeTransform(form)
   }
@@ -224,11 +227,37 @@ export class RigidBody {
     manager.freeTransform(tr)
   }
 
+  finishReset() {
+    if (!this.resetPending)
+      return this
+
+    this.body.setCollisionFlags(this.body.getCollisionFlags() & ~2)
+    this.body.activate()
+    this.resetPending = false
+
+    return this
+  }
+
   /**
    * Resets rigid body transform to the current bone's.
    */
   reset() {
     this._setTransformFromBone()
+
+    const zero = this.manager.allocVector3()
+    zero.setValue(0, 0, 0)
+    this.body.setLinearVelocity(zero)
+    this.body.setAngularVelocity(zero)
+    this.body.clearForces()
+    this.body.activate()
+
+    if (this.params.physicsMode !== 0) {
+      this.body.setCollisionFlags(this.body.getCollisionFlags() | 2)
+      this.resetPending = true
+    }
+
+    this.manager.freeVector3(zero)
+
     return this
   }
 
