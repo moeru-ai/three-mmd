@@ -500,10 +500,8 @@ describe('mmdIKSolver', () => {
       const rigidBodies = [createRigidBody(2, 'bone-2')]
       new MMDIKSolver(mesh, createPmx(specs, rigidBodies)).update(0, true)
 
-      expect(
-        bones[1].quaternion.angleTo(new Quaternion())
-        + bones[2].quaternion.angleTo(new Quaternion()),
-      ).toBeGreaterThan(0.1)
+      expect(bones[1].quaternion.angleTo(new Quaternion())).toBeGreaterThan(0.1)
+      closeTo(bones[2].quaternion.angleTo(new Quaternion()), 0)
     }
   })
 

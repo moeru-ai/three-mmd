@@ -19,6 +19,7 @@ interface IKChain {
   localRotation: Quaternion
   maximumAngle: null | Vector3
   minimumAngle: null | Vector3
+  physicsControlled: boolean
   rotationOrder: EulerRotationOrder
   solveAxis: SolveAxis
 }
@@ -151,6 +152,7 @@ export class MMDIKSolver {
           localRotation: new Quaternion(),
           maximumAngle,
           minimumAngle,
+          physicsControlled: physicsBoneIndices.has(link.target),
           rotationOrder,
           solveAxis,
         }
@@ -161,7 +163,7 @@ export class MMDIKSolver {
       const entry: IKEntry = {
         boneIndex,
         canSkipForPhysics:
-          chains.length > 0 && chains.every(chain => physicsBoneIndices.has(chain.boneIndex)),
+          chains.length > 0 && chains.every(chain => chain.physicsControlled),
         chains,
         enabled: true,
         ikBone: bones[boneIndex],
@@ -234,7 +236,7 @@ export class MMDIKSolver {
       if (!entry.enabled || (physicsAffectsIK && entry.canSkipForPhysics))
         continue
 
-      this.solve(entry)
+      this.solve(entry, physicsAffectsIK)
 
       // TODO: Replace full subtree/world refreshes with targeted link-to-
       // effector path updates after profiling demonstrates a need.
@@ -294,7 +296,7 @@ export class MMDIKSolver {
     return angle
   }
 
-  private solve(entry: IKEntry) {
+  private solve(entry: IKEntry, physicsAffectsIK: boolean) {
     const chains = entry.chains
     if (chains.length === 0)
       return
@@ -313,6 +315,9 @@ export class MMDIKSolver {
     for (let iteration = 0; iteration < entry.iteration; iteration += 1) {
       for (let chainIndex = 0; chainIndex < chains.length; chainIndex += 1) {
         const chain = chains[chainIndex]
+        if (physicsAffectsIK && chain.physicsControlled)
+          continue
+
         if (chain.solveAxis !== 'fixed') {
           this.solveChain(
             entry,
