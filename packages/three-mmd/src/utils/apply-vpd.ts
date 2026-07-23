@@ -81,7 +81,7 @@ export const applyVPD = (
   mesh.updateMatrixWorld(true)
 
   if (ik)
-    mmd.ikSolver.update()
+    mmd.ikSolver.update(0, mmd.physics?.affectsIK === true)
 
   if (grant)
     mmd.grantSolver.update()

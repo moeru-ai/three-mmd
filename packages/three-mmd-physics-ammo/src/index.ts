@@ -6,19 +6,6 @@ import { name } from '../package.json'
 import { MMDPhysics } from './mmd-physics'
 
 export const MMDAmmoPhysics: PhysicsFactory = (mmd) => {
-  const physicsRigidBodyBoneIndices = new Set(
-    mmd.pmx.rigidBodies
-      .filter(body => body.physicsMode > 0 && body.boneIndex >= 0)
-      .map(body => body.boneIndex),
-  )
-  const ikLinkStates = mmd.iks
-    .flatMap(ik => ik.links)
-    .filter(link => physicsRigidBodyBoneIndices.has(link.index))
-    .map(link => ({ enabled: link.enabled, link }))
-
-  for (const { link } of ikLinkStates)
-    link.enabled = false
-
   const physics = new MMDPhysics(
     mmd.mesh,
     mmd.pmx.rigidBodies,
@@ -28,12 +15,8 @@ export const MMDAmmoPhysics: PhysicsFactory = (mmd) => {
   physics.warmup(60)
 
   return {
+    affectsIK: true,
     createHelper: <T>() => physics.createHelper() as T,
-    dispose: () => {
-      ikLinkStates.forEach(({ enabled, link }) => {
-        link.enabled = enabled
-      })
-    },
     reset: () => physics.reset(),
     update: (delta: number) => physics.update(delta),
   }

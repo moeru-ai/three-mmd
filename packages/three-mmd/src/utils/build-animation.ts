@@ -18,6 +18,9 @@ class AnimationBuilder {
    * @param mesh - tracks will be fitting to mesh
    */
   build(vmd: VmdObject, mesh: SkinnedMesh): AnimationClip {
+    // TODO: Convert VMD propertyKeyFrames into per-IK enable state updates
+    // through MMDIKSolver.setEnabled().
+
     // combine skeletal and morph animations
 
     const tracks = this.buildSkeletalAnimation(vmd, mesh).tracks
