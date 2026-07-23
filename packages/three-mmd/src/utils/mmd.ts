@@ -9,7 +9,6 @@ import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
 import { CCDIKSolver } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
 import type { PhysicsFactory, PhysicsService } from '../physics/physics-service'
-import type { Grant } from './build-grants'
 
 import { GrantSolver } from '../physics/grant-solver'
 import { processBones } from '../physics/process-bones'
@@ -21,7 +20,6 @@ export const resetMMDAnimationPose = (mmd: MMD) =>
   boneProcessors.get(mmd)?.clearBones()
 
 export class MMD {
-  public grants: Grant[] = []
   public grantSolver: GrantSolver
   public iks: IK[] = []
   public ikSolver: CCDIKSolver
@@ -30,14 +28,13 @@ export class MMD {
   public pmx: PmxObject
   public scale: number
 
-  constructor(pmx: PmxObject, mesh: SkinnedMesh, grants: Grant[], iks: IK[]) {
+  constructor(pmx: PmxObject, mesh: SkinnedMesh, iks: IK[]) {
     this.pmx = pmx
-    this.grants = grants
     this.iks = iks
     this.mesh = mesh
     this.scale = 1
     this.ikSolver = new CCDIKSolver(mesh, iks)
-    this.grantSolver = new GrantSolver(mesh, grants)
+    this.grantSolver = new GrantSolver(mesh, pmx)
     boneProcessors.set(this, processBones())
   }
 
