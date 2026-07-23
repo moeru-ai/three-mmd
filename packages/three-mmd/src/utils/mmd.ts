@@ -62,17 +62,17 @@ export class MMD {
 
     const physics = createPhysics(this)
     this.physics = physics
+    physics.setScalar?.(this.scale)
   }
 
-  // https://github.com/pixiv/three-vrm/blob/dev/guides/spring-bones-on-scaled-models.md
   public setScalar(scale: number) {
     if (this.scale === scale)
       return
 
     this.scale = scale
     this.mesh.scale.setScalar(scale)
-    // Physics scaling
-    this.physics?.setScalar?.(this.scale)
+    this.mesh.updateMatrixWorld(true)
+    this.physics?.setScalar?.(scale)
   }
 
   /**

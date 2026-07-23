@@ -9,6 +9,7 @@ catalog:
   '@moeru/eslint-config': ^0.1.0-beta.10
   '@moeru/tsconfig': ^0.1.0-beta.10
   '@pixiv/three-vrm-springbone': ^3.4.4
+  '@playwright/cli': ^0.1.17
   '@types/three': ^0.180.0
   '@vitejs/plugin-react': ^5.0.4
   ammojs-typed: ^1.0.6
@@ -19,6 +20,7 @@ catalog:
   eslint-plugin-react-refresh: ^0.4.23
   foxact: ^0.2.49
   pkgroll: ^2.18.0
+  playwright: 1.60.0
   three: ^0.180.0
   three-stdlib: ^2.36.0
   tsdown: ^0.15.6

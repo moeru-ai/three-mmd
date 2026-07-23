@@ -20,7 +20,7 @@ const DebugAmmo = () => {
     showSkeleton,
   } = useControls({
     mmdScale: {
-      max: 10,
+      max: 1,
       min: 0.01,
       onEditEnd: () => {
         // console.log('end setting scale')
@@ -86,7 +86,7 @@ const DebugAmmo = () => {
     <>
       <primitive
         object={mmd.mesh}
-        // scale={mmdScale}
+        scale={mmdScale}
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}

@@ -186,6 +186,8 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
     }) as T,
 
     dispose: () => {
+      colliders.forEach(collider => collider.parent?.remove(collider))
+      joints.forEach(joint => manager.deleteJoint(joint))
       manager = new VRMSpringBoneManager()
       colliders.length = 0
       joints.length = 0
@@ -193,19 +195,15 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
       baseJointSizes.clear()
     },
 
-    setScalar: (scale?: number) => {
-      if (scale === undefined)
-        return
-
+    // https://github.com/pixiv/three-vrm/blob/dev/guides/spring-bones-on-scaled-models.md
+    setScalar: (scale: number) => {
       joints.forEach((joint) => {
         const base = baseJointSizes.get(joint)
         if (!base)
           return
 
         joint.settings.hitRadius = base.hitRadius * scale
-        if (base.gravityPower !== undefined)
-          joint.settings.gravityPower = base.gravityPower * scale
-        // TODO need to know a better way to scale physical parameters
+        joint.settings.stiffness = base.stiffness * scale
       })
 
       colliders.forEach((collider) => {
@@ -224,14 +222,10 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
       })
 
       mmd.mesh.updateMatrixWorld(true)
-      mmd.mesh.skeleton.pose()
-      mmd.mesh.updateMatrixWorld(true)
       manager.setInitState()
     },
 
-    update: (delta: number) => {
-      manager.update(delta)
-    },
+    update: (delta: number) => manager.update(delta),
   }
 }
 
