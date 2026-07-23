@@ -15,7 +15,7 @@ export interface MMDLoaderPlugin {
   name: string
 }
 
-export type MMDLoaderPluginFactory = (parser: MMDLoaderParser,) => MMDLoaderPlugin
+export type MMDLoaderPluginFactory = (parser: MMDLoaderParser) => MMDLoaderPlugin
 
 export const createPhysicsPlugin = (name: string, createPhysics: PhysicsFactory): MMDLoaderPluginFactory => () => ({
   afterBuild: mmd => mmd.setPhysics(createPhysics),
