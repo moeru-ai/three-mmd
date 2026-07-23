@@ -46,17 +46,22 @@ export class MMD {
    *
    * Call this immediately before the animation mixer updates the mesh.
    */
-  public beforeAnimation() {
+  public beforeUpdate() {
     boneProcessors.get(this)!.restoreBones(this.mesh)
   }
 
-  public createHelper<T>(): T | undefined {
-    return (this.physics as PhysicsService<T> | undefined)?.createHelper?.()
+  public dispose() {
+    this.physics?.dispose?.()
+    this.physics = undefined
+    boneProcessors.delete(this)
   }
 
-  public setPhysics<T>(createPhysics: PhysicsFactory<T>) {
+  public setPhysics(createPhysics: PhysicsFactory) {
+    if (this.physics)
+      throw new Error('MMD: Physics has already been installed.')
+
     const physics = createPhysics(this)
-    this.physics = physics as PhysicsService<undefined>
+    this.physics = physics
   }
 
   // https://github.com/pixiv/three-vrm/blob/dev/guides/spring-bones-on-scaled-models.md
@@ -82,10 +87,6 @@ export class MMD {
     this.mesh.updateMatrixWorld(true)
     this.ikSolver.update(delta)
     this.grantSolver.update()
-  }
-
-  /** Updates physics after MMD animation constraints have been evaluated. */
-  public updatePhysics(delta: number) {
     this.physics?.update(delta)
   }
 }

@@ -10,19 +10,24 @@ import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils } from 'three'
 
-import type { MMDLoaderDeps, MMDLoaderPlugin } from './loader-deps'
+import type { MMDLoaderPlugin, MMDLoaderPluginFactory } from './loader-plugin'
 
 import { extractModelExtension } from '../utils/_extract-model-extension'
+import { buildBones } from '../utils/build-bones'
+import { buildGeometry } from '../utils/build-geometry'
+import { buildGrants } from '../utils/build-grants'
+import { buildIK } from '../utils/build-ik'
+import { buildMaterial } from '../utils/build-material'
+import { buildMesh } from '../utils/build-mesh'
 import { MMD } from '../utils/mmd'
-import { defaultDeps, resolveDeps } from './loader-deps'
+import { postParseProcessing } from '../utils/post-parse'
 
 /** @experimental */
 export class MMDLoader extends Loader<MMD> {
-  private plugins: MMDLoaderPlugin[] = []
+  private pluginCallbacks: MMDLoaderPluginFactory[] = []
 
-  constructor(plugins: MMDLoaderPlugin[] = [], manager?: LoadingManager) {
+  constructor(manager?: LoadingManager) {
     super(manager)
-    this.plugins.push(...plugins)
   }
 
   public load(
@@ -39,9 +44,6 @@ export class MMDLoader extends Loader<MMD> {
       resourcePath = LoaderUtils.resolveURL(LoaderUtils.extractUrlBase(url), this.path)
     else
       resourcePath = LoaderUtils.extractUrlBase(url)
-
-    // Load dependent builders
-    const buildDeps = this.getResolvedDeps()
 
     // Loading
     const loader = new FileLoader(this.manager)
@@ -60,10 +62,44 @@ export class MMDLoader extends Loader<MMD> {
             onError?.(new Error(`MMDLoader: Unknown model file extension .${modelExtension}.`) as unknown as ErrorEvent)
             return
           }
+
+          const parser = {
+            manager: this.manager,
+            resourcePath,
+          }
+          const plugins: Record<string, MMDLoaderPlugin> = {}
+
+          for (const callback of this.pluginCallbacks) {
+            const plugin = callback(parser)
+
+            if (!plugin.name)
+              console.error('MMDLoader: Invalid plugin found: missing name')
+
+            plugins[plugin.name] = plugin
+          }
+
           // Parsing -> building
           void (modelExtension === 'pmd' ? PmdReader : PmxReader)
             .ParseAsync(buffer as ArrayBuffer)
-            .then(pmx => onLoad(this.assembleMMD(pmx, resourcePath, buildDeps)))
+            .then(async (pmx) => {
+              pmx = postParseProcessing(pmx)
+
+              for (const plugin of Object.values(plugins)) {
+                if (!plugin.afterParse)
+                  continue
+
+                const result = await plugin.afterParse(pmx)
+                if (result !== undefined)
+                  pmx = result
+              }
+
+              const mmd = this.assembleMMD(pmx, resourcePath)
+
+              for (const plugin of Object.values(plugins))
+                await plugin.afterBuild?.(mmd)
+
+              onLoad(mmd)
+            })
             .catch(onError)
         }
         catch (e) {
@@ -82,42 +118,29 @@ export class MMDLoader extends Loader<MMD> {
     return super.loadAsync(url, onProgress)
   }
 
-  // If loaded then register new plugins, it will only be effective at the next load
-  public register(plugin: MMDLoaderPlugin) {
-    this.plugins.push(plugin)
+  public register(callback: MMDLoaderPluginFactory) {
+    if (!this.pluginCallbacks.includes(callback))
+      this.pluginCallbacks.push(callback)
+
     return this
   }
 
-  // MMD model assembly pipeline
-  private assembleMMD(
-    pmx: PmxObject,
-    resourcePath: string,
-    deps: MMDLoaderDeps = defaultDeps,
-  ): MMD {
-    const {
-      buildBones,
-      buildGeometry,
-      buildGrants,
-      buildIK,
-      buildMaterials,
-      buildMesh,
-      postParseProcessing,
-    } = deps
+  public unregister(callback: MMDLoaderPluginFactory) {
+    const index = this.pluginCallbacks.indexOf(callback)
+    if (index !== -1)
+      this.pluginCallbacks.splice(index, 1)
 
-    // pmx post process: Z-flip
-    pmx = postParseProcessing(pmx)
+    return this
+  }
 
+  private assembleMMD(pmx: PmxObject, resourcePath: string): MMD {
     const geometry = buildGeometry(pmx)
-    const materials = buildMaterials(pmx, geometry, resourcePath, this.manager)
+    const materials = buildMaterial(pmx, geometry, resourcePath, this.manager)
     const rawMesh = buildMesh(geometry, materials)
     const skinnedMesh = buildBones(pmx, rawMesh)
     const grants = buildGrants(pmx)
     const iks = buildIK(pmx)
 
     return new MMD(pmx, skinnedMesh, grants, iks)
-  }
-
-  private getResolvedDeps() {
-    return resolveDeps(this.plugins, defaultDeps)
   }
 }

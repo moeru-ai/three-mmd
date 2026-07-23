@@ -5,18 +5,17 @@ import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils } from 'three'
 
-import type { MMDLoaderDeps, MMDLoaderPlugin } from './loader-deps'
-
 import { extractModelExtension } from '../utils/_extract-model-extension'
-import { defaultDeps, resolveDeps } from './loader-deps'
+import { buildBones } from '../utils/build-bones'
+import { buildGeometry } from '../utils/build-geometry'
+import { buildMaterial } from '../utils/build-material'
+import { buildMesh } from '../utils/build-mesh'
+import { postParseProcessing } from '../utils/post-parse'
 
 /** @experimental */
 export class MMDMeshLoader extends Loader<SkinnedMesh> {
-  private plugins: MMDLoaderPlugin[] = []
-
-  constructor(plugins: MMDLoaderPlugin[] = [], manager?: LoadingManager) {
+  constructor(manager?: LoadingManager) {
     super(manager)
-    this.plugins.push(...plugins)
   }
 
   public load(
@@ -33,9 +32,6 @@ export class MMDMeshLoader extends Loader<SkinnedMesh> {
       resourcePath = LoaderUtils.resolveURL(LoaderUtils.extractUrlBase(url), this.path)
     else
       resourcePath = LoaderUtils.extractUrlBase(url)
-
-    // Load dependent builders
-    const buildDeps = this.getResolvedDeps()
 
     // Loading
     const loader = new FileLoader(this.manager)
@@ -57,7 +53,7 @@ export class MMDMeshLoader extends Loader<SkinnedMesh> {
           // Parsing -> building
           void (modelExtension === 'pmd' ? PmdReader : PmxReader)
             .ParseAsync(buffer as ArrayBuffer)
-            .then(pmx => onLoad(this.assembleMesh(pmx, resourcePath, buildDeps)))
+            .then(pmx => onLoad(this.assembleMesh(pmx, resourcePath)))
             .catch(onError)
         }
         catch (e) {
@@ -76,37 +72,14 @@ export class MMDMeshLoader extends Loader<SkinnedMesh> {
     return super.loadAsync(url, onProgress)
   }
 
-  // If loaded then register new plugins, it will only be effective at the next load
-  public register(plugin: MMDLoaderPlugin) {
-    this.plugins.push(plugin)
-    return this
-  }
-
-  // MMD model assembly pipeline
-  private assembleMesh(
-    pmx: PmxObject,
-    resourcePath: string,
-    deps: MMDLoaderDeps = defaultDeps,
-  ): SkinnedMesh {
-    const {
-      buildBones,
-      buildGeometry,
-      buildMaterials,
-      buildMesh,
-      postParseProcessing,
-    } = deps
-
+  private assembleMesh(pmx: PmxObject, resourcePath: string): SkinnedMesh {
     // pmx post process: Z-flip
     pmx = postParseProcessing(pmx)
 
     const geometry = buildGeometry(pmx)
-    const materials = buildMaterials(pmx, geometry, resourcePath, this.manager)
+    const materials = buildMaterial(pmx, geometry, resourcePath, this.manager)
     const rawMesh = buildMesh(geometry, materials)
 
     return buildBones(pmx, rawMesh)
-  }
-
-  private getResolvedDeps() {
-    return resolveDeps(this.plugins, defaultDeps)
   }
 }

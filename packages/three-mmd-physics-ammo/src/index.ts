@@ -1,10 +1,11 @@
 import type { PhysicsFactory } from '@moeru/three-mmd'
 
-import type { MMDPhysicsHelper } from './mmd-physics-helper'
+import { createPhysicsPlugin } from '@moeru/three-mmd'
 
+import { name } from '../package.json'
 import { MMDPhysics } from './mmd-physics'
 
-export const MMDAmmoPhysics: PhysicsFactory<MMDPhysicsHelper> = (mmd) => {
+export const MMDAmmoPhysics: PhysicsFactory = (mmd) => {
   const physics = new MMDPhysics(
     mmd.mesh,
     mmd.pmx.rigidBodies,
@@ -14,10 +15,16 @@ export const MMDAmmoPhysics: PhysicsFactory<MMDPhysicsHelper> = (mmd) => {
   physics.warmup(60)
 
   return {
-    createHelper: () => physics.createHelper(),
+    createHelper: <T>() => physics.createHelper() as T,
     reset: () => physics.reset(),
     update: (delta: number) => physics.update(delta),
   }
 }
 
+export const MMDAmmoPlugin = createPhysicsPlugin(
+  name,
+  MMDAmmoPhysics,
+)
+
 export { initAmmo } from './init'
+export { MMDPhysicsHelper } from './mmd-physics-helper'
