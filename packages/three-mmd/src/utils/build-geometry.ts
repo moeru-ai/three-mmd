@@ -67,10 +67,11 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   // const morphTargets: { name: string }[] = []
   const morphPositions: BufferAttribute[] = []
 
-  const updateAttributes = (attribute: BufferAttribute, morph: PmxObject.Morph, ratio: number) => {
-    if (morph.type !== PmxObject.Morph.Type.VertexMorph)
-      return
-
+  const updateAttributes = (
+    attribute: BufferAttribute,
+    morph: PmxObject.Morph.VertexMorph,
+    ratio: number,
+  ) => {
     for (let i = 0; i < morph.indices.length; i++) {
       const index = morph.indices[i]
       attribute.array[index * 3 + 0] += morph.positions[i * 3 + 0] * ratio
@@ -80,30 +81,42 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   }
 
   for (const morph of pmx.morphs) {
-    if (
-      morph.type !== PmxObject.Morph.Type.VertexMorph
-      && morph.type !== PmxObject.Morph.Type.GroupMorph
-    ) {
-      continue
-    }
-
-    // morphTargets.push({ name: morph.name })
+    // Keep every PMX morph in source order so Three.js numeric morph indices
+    // match three-stdlib, even when this loader cannot evaluate the morph yet.
     const attribute = new BufferAttribute(positions.slice(), 3)
     attribute.name = morph.name
 
     if (morph.type === PmxObject.Morph.Type.GroupMorph) {
       for (let i = 0; i < morph.indices.length; i++) {
-        const targetMorph = pmx.morphs[morph.indices[i]]
+        const targetIndex = morph.indices[i]
         const ratio = morph.ratios[i]
+
+        if (targetIndex < 0 || targetIndex >= pmx.morphs.length) {
+          console.warn(`buildGeometry: Group morph "${morph.name}" references invalid morph index ${targetIndex}; skipping.`)
+          continue
+        }
+
+        const targetMorph = pmx.morphs[targetIndex]
+
+        // PMX does not support nesting group morphs. Treat malformed nesting as
+        // recoverable model data instead of recursively applying it.
+        if (targetMorph.type === PmxObject.Morph.Type.GroupMorph) {
+          console.warn(`buildGeometry: Group morph "${morph.name}" references group morph index ${targetIndex}; skipping unsupported nesting.`)
+          continue
+        }
 
         if (targetMorph.type === PmxObject.Morph.Type.VertexMorph) {
           updateAttributes(attribute, targetMorph, ratio)
         }
       }
     }
-    else { // VertexMorph
+    else if (morph.type === PmxObject.Morph.Type.VertexMorph) {
       updateAttributes(attribute, morph, 1.0)
     }
+    // TODO: Evaluate bone/material morphs in an MMD pose controller, UV and
+    // additional-UV morphs in the material shader, and PMX 2.1 flip/impulse
+    // morphs in their respective runtime phases. Their slots intentionally
+    // remain no-op position targets until those evaluators exist.
 
     morphPositions.push(attribute)
   }
@@ -111,6 +124,8 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   if (morphPositions.length > 0) {
     geometry.morphAttributes.position = morphPositions
     // geometry.morphTargets = morphTargets
+    // TODO: Once a runtime morph controller owns non-vertex weights, remove
+    // their GPU placeholder targets and evaluate a relative/sparse layout.
     geometry.morphTargetsRelative = false
   }
 
