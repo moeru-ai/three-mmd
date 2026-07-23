@@ -22,9 +22,27 @@ export const postParseProcessing = (pmx: PmxObject): PmxObject => {
     pmx.indices[i + 2] = tmp
   }
 
-  // Bones: position
+  // Bones: position and IK angle limitations
   pmx.bones.forEach((bone) => {
     bone.position[2] = -bone.position[2]
+
+    for (const link of bone.ik?.links ?? []) {
+      const limitation = link.limitation
+      if (limitation === undefined)
+        continue
+
+      const minimum = limitation.minimumAngle
+      const maximum = limitation.maximumAngle
+      const minimumX = minimum[0]
+      const minimumY = minimum[1]
+      const maximumX = maximum[0]
+      const maximumY = maximum[1]
+
+      minimum[0] = -maximumX
+      minimum[1] = -maximumY
+      maximum[0] = -minimumX
+      maximum[1] = -minimumY
+    }
   })
 
   // Morphs: vertex morph deltas

@@ -4,13 +4,11 @@ import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
  * Lifecycle methods update scale/physics, helpers expose collider/joint visualization when available.
  */
 import type { SkinnedMesh } from 'three'
-import type { IK } from 'three/examples/jsm/animation/CCDIKSolver.js'
-
-import { CCDIKSolver } from 'three/examples/jsm/animation/CCDIKSolver.js'
 
 import type { PhysicsFactory, PhysicsService } from '../physics/physics-service'
 
 import { GrantSolver } from '../physics/grant-solver'
+import { MMDIKSolver } from '../physics/mmd-ik-solver'
 import { processBones } from '../physics/process-bones'
 
 const boneProcessors = new WeakMap<MMD, ReturnType<typeof processBones>>()
@@ -25,19 +23,17 @@ export const cacheMMDAnimationPose = (mmd: MMD) =>
 
 export class MMD {
   public grantSolver: GrantSolver
-  public iks: IK[] = []
-  public ikSolver: CCDIKSolver
+  public ikSolver: MMDIKSolver
   public mesh: SkinnedMesh
   public physics?: PhysicsService
   public pmx: PmxObject
   public scale: number
 
-  constructor(pmx: PmxObject, mesh: SkinnedMesh, iks: IK[]) {
+  constructor(pmx: PmxObject, mesh: SkinnedMesh) {
     this.pmx = pmx
-    this.iks = iks
     this.mesh = mesh
     this.scale = 1
-    this.ikSolver = new CCDIKSolver(mesh, iks)
+    this.ikSolver = new MMDIKSolver(mesh, pmx)
     this.grantSolver = new GrantSolver(mesh, pmx)
     boneProcessors.set(this, processBones())
   }
@@ -86,7 +82,7 @@ export class MMD {
   public update(delta: number) {
     boneProcessors.get(this)!.saveBones(this.mesh)
     this.mesh.updateMatrixWorld(true)
-    this.ikSolver.update(delta)
+    this.ikSolver.update(delta, this.physics?.affectsIK === true)
     this.grantSolver.update()
     this.physics?.update(delta)
   }
