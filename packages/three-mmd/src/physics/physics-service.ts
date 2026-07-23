@@ -1,9 +1,9 @@
 import type { MMD } from '../utils/mmd'
 
-export type PhysicsFactory<T> = (mmd: MMD) => PhysicsService<T>
+export type PhysicsFactory = (mmd: MMD) => PhysicsService
 
-export interface PhysicsService<T = undefined> {
-  createHelper: () => T
+export interface PhysicsService {
+  createHelper: <T>() => T
   dispose?: () => void
   reset?: () => void
   setScalar?: (scale: number) => void

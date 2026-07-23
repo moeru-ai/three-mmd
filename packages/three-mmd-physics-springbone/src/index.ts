@@ -5,7 +5,7 @@ import type { PhysicsFactory } from '@moeru/three-mmd'
  */
 import type { Bone } from 'three'
 
-import { PmxObject } from '@moeru/three-mmd'
+import { createPhysicsPlugin, PmxObject } from '@moeru/three-mmd'
 import {
   VRMSpringBoneCollider,
   VRMSpringBoneColliderHelper,
@@ -17,12 +17,14 @@ import {
 } from '@pixiv/three-vrm-springbone'
 import { Vector3 } from 'three'
 
+import { name } from '../package.json'
+
 export interface SpringBoneHelpers {
   colliderHelpers: VRMSpringBoneColliderHelper[]
   jointHelpers: VRMSpringBoneJointHelper[]
 }
 
-export const MMDSpringBonePhysics: PhysicsFactory<SpringBoneHelpers> = (mmd) => {
+export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
   let manager = new VRMSpringBoneManager()
   const colliders: VRMSpringBoneCollider[] = []
   const joints: VRMSpringBoneJoint[] = []
@@ -178,10 +180,10 @@ export const MMDSpringBonePhysics: PhysicsFactory<SpringBoneHelpers> = (mmd) => 
   cacheJointsAndColliders()
 
   return {
-    createHelper: () => ({
+    createHelper: <T>() => ({
       colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
       jointHelpers: joints.map(j => new VRMSpringBoneJointHelper(j)),
-    }),
+    }) as T,
 
     dispose: () => {
       manager = new VRMSpringBoneManager()
@@ -232,3 +234,8 @@ export const MMDSpringBonePhysics: PhysicsFactory<SpringBoneHelpers> = (mmd) => 
     },
   }
 }
+
+export const MMDSpringBonePlugin = createPhysicsPlugin(
+  name,
+  MMDSpringBonePhysics,
+)

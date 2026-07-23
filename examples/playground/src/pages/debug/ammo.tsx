@@ -1,5 +1,7 @@
-import { MMDAmmoPhysics } from '@moeru/three-mmd-physics-ammo'
-import { useMMD, useMMDAnimation, useMMDPhysics } from '@moeru/three-mmd-r3f'
+import type { MMDPhysicsHelper } from '@moeru/three-mmd-physics-ammo'
+
+import { MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
+import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
 import { useAnimations } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useControls } from 'leva'
@@ -37,17 +39,19 @@ const DebugAmmo = () => {
     showSkeleton: false,
   })
 
-  const mmd = useMMD(pmxUrl)
+  const mmd = useMMD(pmxUrl, loader => loader.register(MMDAmmoPlugin))
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
   const { actions } = useAnimations([animation], mmd.mesh)
 
-  // This must follow `useAnimations` and precede `useMMDPhysics`: at priority
-  // 0, R3F invokes them in registration order.
+  // This must follow `useAnimations`: at priority 0, R3F invokes them in registration order.
   useFrame((_, delta) => mmd.update(delta))
 
   // Helpers
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
-  const physicsHelper = useMMDPhysics(mmd, MMDAmmoPhysics, editingScale)
+  const physicsHelper = useMemo(
+    () => mmd.physics?.createHelper<MMDPhysicsHelper>(),
+    [mmd.physics],
+  )
 
   // Play the animation on mount
   useEffect(() => {
@@ -61,9 +65,7 @@ const DebugAmmo = () => {
   }, [actions, mmd])
 
   // Scale handling
-  useEffect(() => {
-    mmd.setScalar(mmdScale)
-  }, [mmd, mmdScale])
+  useEffect(() => mmd.setScalar(mmdScale), [mmd, mmdScale])
 
   useEffect(() => {
     if (!actions?.dance)
