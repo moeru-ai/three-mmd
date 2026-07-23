@@ -15,7 +15,6 @@ import type { MMDLoaderPlugin, MMDLoaderPluginFactory } from './loader-plugin'
 import { extractModelExtension } from '../utils/_extract-model-extension'
 import { buildBones } from '../utils/build-bones'
 import { buildGeometry } from '../utils/build-geometry'
-import { buildGrants } from '../utils/build-grants'
 import { buildIK } from '../utils/build-ik'
 import { buildMaterial } from '../utils/build-material'
 import { buildMesh } from '../utils/build-mesh'
@@ -138,9 +137,8 @@ export class MMDLoader extends Loader<MMD> {
     const materials = buildMaterial(pmx, geometry, resourcePath, this.manager)
     const rawMesh = buildMesh(geometry, materials)
     const skinnedMesh = buildBones(pmx, rawMesh)
-    const grants = buildGrants(pmx)
     const iks = buildIK(pmx)
 
-    return new MMD(pmx, skinnedMesh, grants, iks)
+    return new MMD(pmx, skinnedMesh, iks)
   }
 }

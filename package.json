@@ -8,7 +8,8 @@
     "bump": "bumpp",
     "dev": "pnpm -rF @moeru/three-mmd-playground dev",
     "dev:basic": "pnpm -rF @moeru/three-mmd-example-basic dev",
-    "lint": "eslint --flag unstable_native_nodejs_ts_config --cache ."
+    "lint": "eslint --flag unstable_native_nodejs_ts_config --cache .",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
@@ -27,6 +28,7 @@
     "react-router": "catalog:r3f",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }
