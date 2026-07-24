@@ -36,8 +36,8 @@
     "build": "tsdown"
   },
   "peerDependencies": {
-    "@types/three": "^0.180.0",
-    "three": "^0.180.0"
+    "@types/three": "^0.184.0",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@types/three": "catalog:",
