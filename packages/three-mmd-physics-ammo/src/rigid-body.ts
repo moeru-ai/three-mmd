@@ -64,10 +64,14 @@ export class RigidBody {
         .applyMatrix4(this.mesh.matrixWorld),
     )
     // Quaternion transform
+    // PMX rigid body rotations are yaw-pitch-roll (babylon-mmd
+    // RotationYawPitchRoll), which is three.js euler order 'YXZ' — the
+    // default 'XYZ' builds compound-rotated bodies perpendicular/mirrored
     const shapeQuat = new Quaternion().setFromEuler(new Euler(
       this.params.shapeRotation[0],
       this.params.shapeRotation[1],
       this.params.shapeRotation[2],
+      'YXZ',
     ))
     const meshWorldQuat = this.mesh.getWorldQuaternion(new Quaternion())
     const boneWorldQuat = bone.getWorldQuaternion(new Quaternion())
