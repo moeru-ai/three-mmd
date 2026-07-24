@@ -331,7 +331,8 @@ export class ResourceManager {
   setBasisFromArray3(t: Ammo.btTransform, a: number[]) {
     const thQ = this.allocThreeQuaternion()
     const thE = this.allocThreeEuler()
-    thE.set(a[0], a[1], a[2])
+    // PMX joint rotations are yaw-pitch-roll = three.js euler order 'YXZ'
+    thE.set(a[0], a[1], a[2], 'YXZ')
     this.setBasisFromThreeQuaternion(t, thQ.setFromEuler(thE))
 
     this.freeThreeEuler(thE)
