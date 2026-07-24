@@ -5,8 +5,10 @@ export default defineConfig({
   react: true,
 }, {
   rules: {
+    'sonarjs/argument-type': 'off',
     'sonarjs/aws-restricted-ip-admin-access': 'off',
     'sonarjs/cognitive-complexity': 'off',
+    'sonarjs/jsx-no-leaked-render': 'off',
     'sonarjs/no-commented-code': 'off',
   },
 }, {

@@ -1,9 +1,9 @@
 import type { BufferGeometry, Texture, TextureLoader, TypedArray } from 'three'
 
+import type { LoadingTexture, MaterialBuilderParameters, TextureContext } from './types'
+
 import { SharedToonTextures } from 'babylon-mmd/esm/Loader/sharedToonTextures'
 import { LoaderUtils, NearestFilter, RepeatWrapping, SRGBColorSpace } from 'three'
-
-import type { LoadingTexture, MaterialBuilderParameters, TextureContext } from './types'
 
 import { NON_ALPHA_CHANNEL_FORMATS } from './types'
 

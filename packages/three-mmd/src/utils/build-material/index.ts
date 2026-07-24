@@ -1,5 +1,7 @@
 import type { BufferGeometry, LoadingManager, Material } from 'three'
 
+import type { MaterialBuilderParameters, RenderStyleApplier, RenderStyleName, TextureContext } from './types'
+
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import {
   AddOperation,
@@ -16,8 +18,6 @@ import {
   TextureLoader,
 } from 'three'
 import { TGALoader } from 'three/addons/loaders/TGALoader.js'
-
-import type { MaterialBuilderParameters, RenderStyleApplier, RenderStyleName, TextureContext } from './types'
 
 import { MMDToonMaterial } from '../../materials/mmd-toon-material'
 import { checkImageTransparency, loadTextureResource } from './utils'
@@ -83,7 +83,6 @@ export const mapPmxToParams = (
 
   let isDefaultToon, toonFileName
   if (material.isSharedToonTexture || material.toonTextureIndex === -1) {
-    // eslint-disable-next-line sonarjs/no-nested-template-literals
     toonFileName = `toon${(`0${material.toonTextureIndex + 1}`).slice(-2)}.bmp`
     isDefaultToon = true
   }

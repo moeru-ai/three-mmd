@@ -2,10 +2,10 @@
 import type { PmxObject } from '@moeru/three-mmd'
 import type { SkinnedMesh } from 'three'
 
-import Ammo from 'ammojs-typed'
-
 import type { ResourceManager } from './resource-manager'
 import type { RigidBody } from './rigid-body'
+
+import Ammo from 'ammojs-typed'
 
 export class Constraint {
   bodyA: RigidBody
@@ -42,8 +42,8 @@ export class Constraint {
 
     const form = manager.allocTransform()
     manager.setIdentity(form)
-    manager.setOriginFromArray3(form, params.position as number[])
-    manager.setBasisFromArray3(form, params.rotation as number[])
+    manager.setOriginFromArray3(form, params.position)
+    manager.setBasisFromArray3(form, params.rotation)
 
     const formA = manager.allocTransform()
     const formB = manager.allocTransform()

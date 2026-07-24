@@ -1,3 +1,15 @@
+minimumReleaseAgeExclude:
+  - babylon-mmd@1.3.0
+  - tsdown@0.22.14
+  - verkit@0.3.0
+
+shellEmulator: true
+
+trustPolicy: no-downgrade
+
+trustPolicyExclude:
+  - semver@6.3.1
+
 packages:
   - docs
   - examples/*
@@ -43,11 +55,6 @@ catalogs:
     react-dom: ^19.2.8
     react-router: ^8.3.0
     suspend-react: ^0.1.3
-
-minimumReleaseAgeExclude:
-  - babylon-mmd@1.3.0
-  - tsdown@0.22.14
-  - verkit@0.3.0
 
 onlyBuiltDependencies:
   - esbuild

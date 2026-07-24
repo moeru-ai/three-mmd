@@ -18,7 +18,7 @@ import { MMD } from '../src/utils/mmd'
 import { postParseProcessing } from '../src/utils/post-parse'
 
 interface BoneSpec {
-  ik?: PmxObject['bones'][number]['ik']
+  ik?: NonNullable<PmxObject['bones'][number]['ik']>
   name?: string
   parentBoneIndex?: number
   position?: [number, number, number]

@@ -1,8 +1,8 @@
 import type { VpdObject } from 'babylon-mmd/esm/Loader/Parser/vpdObject'
 
-import { Quaternion, Vector3 } from 'three'
-
 import type { MMD } from './mmd'
+
+import { Quaternion, Vector3 } from 'three'
 
 import { cacheMMDAnimationPose, resetMMDAnimationPose } from './mmd'
 

@@ -6,11 +6,11 @@
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import type { LoadingManager } from 'three'
 
+import type { MMDLoaderPlugin, MMDLoaderPluginFactory } from './loader-plugin'
+
 import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils } from 'three'
-
-import type { MMDLoaderPlugin, MMDLoaderPluginFactory } from './loader-plugin'
 
 import { extractModelExtension } from '../utils/_extract-model-extension'
 import { buildBones } from '../utils/build-bones'
@@ -56,8 +56,7 @@ export class MMDLoader extends Loader<MMD> {
           const modelExtension = extractModelExtension(buffer as ArrayBuffer)
 
           if (!['pmd', 'pmx'].includes(modelExtension)) {
-            // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
-            onError?.(new Error(`MMDLoader: Unknown model file extension .${modelExtension}.`) as unknown as ErrorEvent)
+            onError?.(new Error(`MMDLoader: Unknown model file extension .${modelExtension}.`))
             return
           }
 
@@ -105,7 +104,7 @@ export class MMDLoader extends Loader<MMD> {
         }
       },
       onProgress,
-      onError as (error: unknown) => void,
+      onError,
     )
   }
 

@@ -1,6 +1,8 @@
 import type { AnyPixelFormat, Color, LoadingManager, MaterialParameters, Texture, TextureLoader } from 'three'
 import type { TGALoader } from 'three/addons/loaders/TGALoader.js'
 
+import type { MMDToonMaterial } from '../../materials/mmd-toon-material'
+
 import {
   RGB_ETC1_Format,
   RGB_ETC2_Format,
@@ -8,8 +10,6 @@ import {
   RGB_PVRTC_4BPPV1_Format,
   RGB_S3TC_DXT1_Format,
 } from 'three'
-
-import type { MMDToonMaterial } from '../../materials/mmd-toon-material'
 
 export interface LoadingTexture extends Texture {
   readyCallbacks?: Array<(texture: Texture) => void>

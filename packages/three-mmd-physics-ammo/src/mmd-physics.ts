@@ -3,6 +3,7 @@ import type { PmxObject } from '@moeru/three-mmd'
 import type { SkinnedMesh } from 'three'
 
 import Ammo from 'ammojs-typed'
+
 import { Vector3 } from 'three'
 
 import { Constraint } from './constraint'

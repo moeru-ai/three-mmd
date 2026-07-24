@@ -1,5 +1,7 @@
 import type { SkinnedMesh } from 'three'
 
+import type { MMDPhysics } from './mmd-physics'
+
 import { PmxObject } from '@moeru/three-mmd'
 import {
   BoxGeometry,
@@ -13,8 +15,6 @@ import {
   SphereGeometry,
   Vector3,
 } from 'three'
-
-import type { MMDPhysics } from './mmd-physics'
 
 export class MMDPhysicsHelper extends Object3D {
   materials: [MeshBasicMaterial, MeshBasicMaterial, MeshBasicMaterial]

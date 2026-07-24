@@ -1,5 +1,6 @@
 /* eslint-disable new-cap */
 import Ammo from 'ammojs-typed'
+
 import { Euler, Matrix4, Quaternion, Vector3 } from 'three'
 
 /**

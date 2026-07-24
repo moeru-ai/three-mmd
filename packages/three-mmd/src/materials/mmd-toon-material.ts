@@ -128,7 +128,6 @@ export class MMDToonMaterial extends ShaderMaterial {
       Object.defineProperty(this, propertyName, {
 
         get() {
-          // eslint-disable-next-line @masknet/type-prefer-return-type-annotation
           return (this as MMDToonMaterial).uniforms[propertyName].value as number
         },
 

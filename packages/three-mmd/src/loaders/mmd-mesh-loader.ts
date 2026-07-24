@@ -46,8 +46,7 @@ export class MMDMeshLoader extends Loader<SkinnedMesh> {
           const modelExtension = extractModelExtension(buffer as ArrayBuffer)
 
           if (!['pmd', 'pmx'].includes(modelExtension)) {
-            // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
-            onError?.(new Error(`MMDMeshLoader: Unknown model file extension .${modelExtension}.`) as unknown as ErrorEvent)
+            onError?.(new Error(`MMDMeshLoader: Unknown model file extension .${modelExtension}.`))
             return
           }
           // Parsing -> building
@@ -61,7 +60,7 @@ export class MMDMeshLoader extends Loader<SkinnedMesh> {
         }
       },
       onProgress,
-      onError as (error: unknown) => void,
+      onError,
     )
   }
 
