@@ -3,7 +3,7 @@ import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
  * MMD model shell: holds parsed PMX, skinned mesh, IK/grants, and pluggable physics strategy.
  * Lifecycle methods update scale/physics, helpers expose collider/joint visualization when available.
  */
-import type { SkinnedMesh } from 'three'
+import type { AnimationMixer, SkinnedMesh } from 'three'
 
 import type { PhysicsFactory, PhysicsService } from '../physics/physics-service'
 
@@ -85,5 +85,11 @@ export class MMD {
     this.ikSolver.update(delta, this.physics?.affectsIK === true)
     this.grantSolver.update()
     this.physics?.update(delta)
+  }
+
+  public updateWithMixer(delta: number, mixer: AnimationMixer) {
+    this.beforeUpdate()
+    mixer.update(delta)
+    this.update(delta)
   }
 }
