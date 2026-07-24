@@ -46,6 +46,7 @@ words:
   - tsdown
   - vite
   - vitejs
+  - vitest
   - Vocaloid
   - vpds
 ignoreWords: []
