@@ -66,8 +66,7 @@ export class MMDLoader extends Loader<MMD> {
             manager: this.manager,
             resourcePath,
           }
-          const plugins: MMDLoaderPlugin[] = []
-          const materialPlugins: MMDLoaderPlugin[] = []
+          const pluginsByName = new Map<string, MMDLoaderPlugin>()
 
           for (const callback of this.pluginCallbacks) {
             const plugin = callback(parser)
@@ -75,10 +74,11 @@ export class MMDLoader extends Loader<MMD> {
             if (!plugin.name)
               console.error('MMDLoader: Invalid plugin found: missing name')
 
-            plugins.push(plugin)
-            if (plugin.materialType !== undefined)
-              materialPlugins.push(plugin)
+            pluginsByName.set(plugin.name, plugin)
           }
+
+          const plugins = [...pluginsByName.values()]
+          const materialPlugins = plugins.filter(plugin => plugin.materialType !== undefined)
 
           if (materialPlugins.length > 1) {
             onError?.(new Error('MMDLoader: only one MMDMaterialPlugin may be registered.'))

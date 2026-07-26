@@ -21,9 +21,10 @@ const replaceShaderSeam = (source: string, expected: string, replacement: string
   return source.replace(expected, replacement)
 }
 
-const installOutlineOffset = (material: MeshBasicMaterial, width: number): ((nextWidth: number) => void) => {
+const installOutlineOffset = (material: MeshBasicMaterial, width: number, hasSdefVertices: boolean): ((nextWidth: number) => void) => {
   const outlineWidth = { value: width }
-  installSdefPatch(material)
+  if (hasSdefVertices)
+    installSdefPatch(material)
   const previous = material.onBeforeCompile
   material.onBeforeCompile = (shader: Shader, renderer) => {
     previous?.(shader, renderer)
@@ -51,6 +52,18 @@ const installShadowSdef = (material: Material): void => {
   installSdefPatch(material)
 }
 
+const hasSdefVertices = (mesh: SkinnedMesh): boolean => {
+  if (!mesh.geometry.hasAttribute('mmdSdefMask'))
+    return false
+
+  const mask = mesh.geometry.getAttribute('mmdSdefMask')
+  for (const value of mask.array) {
+    if (value !== 0)
+      return true
+  }
+  return false
+}
+
 /**
  * Attaches MMD-only render passes to the loaded mesh.
  */
@@ -60,37 +73,48 @@ export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
     return
 
   const toonMaterials = surfaceMaterials
+  const meshHasSdefVertices = hasSdefVertices(mesh)
+  let updateOutlineMeshVisibility = (): void => {}
   const outlineMaterials = toonMaterials.map((surface) => {
     const { outline } = surface.descriptor
+    const outlineEnabled = outline.visible
     const material = new MeshBasicMaterial({
       color: outline.color,
       depthWrite: false,
       opacity: outline.alpha,
       side: BackSide,
       transparent: outline.alpha < 1,
-      visible: outline.visible,
+      visible: outlineEnabled && outline.width > 0,
     })
     material.name = `${surface.name}:outline`
     material.skinning = true
-    const setOutlineWidth = installOutlineOffset(material, outline.width)
+    const setOutlineWidth = installOutlineOffset(material, outline.width, meshHasSdefVertices)
     surface.setOutlineStateListener((state) => {
       material.color.copy(state.edgeColor)
       material.opacity = state.edgeAlpha
-      material.visible = state.edgeWidth > 0
+      material.visible = outlineEnabled && state.edgeWidth > 0
       material.transparent = state.edgeAlpha < 1
       setOutlineWidth(state.edgeWidth)
+      updateOutlineMeshVisibility()
     })
     return material
   })
 
-  if (outlineMaterials.some(material => material.visible)) {
+  if (toonMaterials.some(material => material.descriptor.outline.visible)) {
     const outlineMesh = new SkinnedMesh(mesh.geometry, outlineMaterials)
     outlineMesh.name = `${mesh.name}:mmd-outline`
     outlineMesh.bind(mesh.skeleton, mesh.bindMatrix)
     outlineMesh.castShadow = false
     outlineMesh.frustumCulled = mesh.frustumCulled
+    updateOutlineMeshVisibility = () => {
+      outlineMesh.visible = outlineMaterials.some(material => material.visible)
+    }
+    updateOutlineMeshVisibility()
     mesh.add(outlineMesh)
   }
+
+  if (!meshHasSdefVertices)
+    return
 
   const depthMaterial = new MeshDepthMaterial({ depthPacking: RGBADepthPacking })
   const distanceMaterial = new MeshDistanceMaterial()

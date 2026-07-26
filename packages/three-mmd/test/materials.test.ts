@@ -2,22 +2,23 @@ import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 
 import type { MMDMaterialDescriptor } from '../src/materials/types'
 
-import { Color, ShaderLib, Texture } from 'three'
+import { Bone, BufferGeometry, Color, Float32BufferAttribute, ShaderLib, Skeleton, SkinnedMesh, Texture } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MMDMaterialPlugin } from '../src/loaders/loader-plugin'
 import { applyMMDMaterialMorph, createMMDMaterialEvaluatedState } from '../src/materials/morph'
+import { installMMDMaterialBindings } from '../src/materials/toon/bindings'
 import { MMDToonMaterial } from '../src/materials/toon/mmd-toon-material'
 import { buildGeometry } from '../src/utils/build-geometry'
 
-const descriptor = (): MMDMaterialDescriptor => ({
+const descriptor = (outline = { alpha: 1, color: new Color(0.1, 0.1, 0.1), visible: true, width: 0.01 }): MMDMaterialDescriptor => ({
   ambient: new Color(0.1, 0.2, 0.3),
   diffuse: new Color(0.4, 0.5, 0.6),
   fog: true,
   isDefaultToonTexture: true,
   name: 'test material',
   opacity: 1,
-  outline: { alpha: 1, color: new Color(0.1, 0.1, 0.1), visible: true, width: 0.01 },
+  outline,
   shininess: 16,
   specular: new Color(0.2, 0.3, 0.4),
   sphereBlendMode: 'multiply',
@@ -27,7 +28,15 @@ const descriptor = (): MMDMaterialDescriptor => ({
   transparent: false,
 })
 
-describe('mMD material backends', () => {
+const skinnedMesh = (materials: MMDToonMaterial[]): SkinnedMesh => {
+  const mesh = new SkinnedMesh(new BufferGeometry(), materials)
+  const bone = new Bone()
+  mesh.add(bone)
+  mesh.bind(new Skeleton([bone]))
+  return mesh
+}
+
+describe('mmd material backends', () => {
   it('exposes the current material capabilities', () => {
     const toon = new MMDToonMaterial(descriptor())
 
@@ -42,6 +51,18 @@ describe('mMD material backends', () => {
     expect(material).toBeInstanceOf(MMDToonMaterial)
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
+  })
+
+  it('clones with its descriptor and keeps copy metadata synchronized', () => {
+    const source = new MMDToonMaterial(descriptor())
+    const target = new MMDToonMaterial(descriptor({ alpha: 1, color: new Color(), visible: false, width: 0 }))
+
+    const clone = source.clone()
+    target.copy(source)
+
+    expect(clone).not.toBe(source)
+    expect(clone.descriptor).toBe(source.descriptor)
+    expect(target.descriptor).toBe(source.descriptor)
   })
 
   it('selects a material class through MMDMaterialPlugin', () => {
@@ -102,7 +123,57 @@ describe('mMD material backends', () => {
   })
 })
 
-describe('sDEF geometry layout', () => {
+describe('mmd toon bindings', () => {
+  it('does not enable an edge-disabled outline after a material morph', () => {
+    const disabled = new MMDToonMaterial(descriptor({ alpha: 1, color: new Color(), visible: false, width: 1 }))
+    const enabled = new MMDToonMaterial(descriptor({ alpha: 1, color: new Color(), visible: true, width: 0 }))
+    const mesh = skinnedMesh([disabled, enabled])
+    installMMDMaterialBindings(mesh)
+    const outline = mesh.children.find(child => child.name.endsWith(':mmd-outline')) as SkinnedMesh
+    const outlineMaterials = Array.isArray(outline.material) ? outline.material : [outline.material]
+    const state = createMMDMaterialEvaluatedState(disabled.descriptor)
+    state.edgeWidth = 1
+
+    disabled.applyMMDMaterialState(state)
+
+    expect(outlineMaterials[0].visible).toBe(false)
+    expect(outline.visible).toBe(false)
+  })
+
+  it('creates an initially hidden enabled outline that a material morph can reveal', () => {
+    const material = new MMDToonMaterial(descriptor({ alpha: 1, color: new Color(), visible: true, width: 0 }))
+    const mesh = skinnedMesh([material])
+    installMMDMaterialBindings(mesh)
+    const outline = mesh.children.find(child => child.name.endsWith(':mmd-outline')) as SkinnedMesh
+    const state = createMMDMaterialEvaluatedState(material.descriptor)
+    state.edgeWidth = 1
+
+    expect(outline.visible).toBe(false)
+    material.applyMMDMaterialState(state)
+
+    expect(outline.visible).toBe(true)
+  })
+
+  it('installs custom SDEF shadows only when the mesh has SDEF vertices', () => {
+    const material = new MMDToonMaterial(descriptor())
+    const mesh = skinnedMesh([material])
+    mesh.geometry.setAttribute('mmdSdefMask', new Float32BufferAttribute([0], 1))
+
+    installMMDMaterialBindings(mesh)
+
+    expect(mesh.customDepthMaterial).toBeUndefined()
+    expect(mesh.customDistanceMaterial).toBeUndefined()
+
+    const sdefMesh = skinnedMesh([new MMDToonMaterial(descriptor())])
+    sdefMesh.geometry.setAttribute('mmdSdefMask', new Float32BufferAttribute([1], 1))
+    installMMDMaterialBindings(sdefMesh)
+
+    expect(sdefMesh.customDepthMaterial).toBeDefined()
+    expect(sdefMesh.customDistanceMaterial).toBeDefined()
+  })
+})
+
+describe('sdef geometry layout', () => {
   it('retains PMX SDEF C/R0/R1 in loader-owned geometry attributes', () => {
     // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
     const pmx = {

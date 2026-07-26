@@ -139,7 +139,7 @@ const createPhongParameters = (descriptor: MMDMaterialDescriptor): MeshPhongMate
  */
 export class MMDToonMaterial extends MeshPhongMaterial {
   public ambient: Color
-  public readonly descriptor: MMDMaterialDescriptor
+  public descriptor: MMDMaterialDescriptor
   public readonly isMMDMaterial = true as const
   public readonly isMMDToonMaterial = true
 
@@ -216,8 +216,14 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     this.outlineStateListener?.(state)
   }
 
+  public override clone(): this {
+    const Constructor = this.constructor as new (descriptor: MMDMaterialDescriptor) => this
+    return new Constructor(this.descriptor).copy(this)
+  }
+
   public override copy(source: this): this {
     super.copy(source)
+    this.descriptor = source.descriptor
     this.ambient.copy(source.ambient)
     this.sphereBlendMode = source.sphereBlendMode
     this.sphereMap = source.sphereMap
