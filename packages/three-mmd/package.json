@@ -17,7 +17,11 @@
     "three",
     "mmd"
   ],
-  "exports": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./materials": "./src/materials/index.ts",
+    "./materials/toon": "./src/materials/toon/index.ts"
+  },
   "files": [
     "dist"
   ],
@@ -26,6 +30,14 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./materials": {
+        "types": "./dist/materials/index.d.ts",
+        "default": "./dist/materials/index.js"
+      },
+      "./materials/toon": {
+        "types": "./dist/materials/toon.d.ts",
+        "default": "./dist/materials/toon.js"
       },
       "./package.json": "./package.json"
     },
@@ -36,8 +48,8 @@
     "build": "tsdown"
   },
   "peerDependencies": {
-    "@types/three": "^0.184.0",
-    "three": "^0.184.0"
+    "@types/three": ">=0.184.0",
+    "three": ">=0.184.0"
   },
   "devDependencies": {
     "@types/three": "catalog:",

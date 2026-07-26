@@ -3,6 +3,8 @@ export {
   type MMDLoaderParser,
   type MMDLoaderPlugin,
   type MMDLoaderPluginFactory,
+  MMDMaterialPlugin,
+  type MMDMaterialPluginOptions,
 } from './loaders/loader-plugin'
 export { MMDLoader } from './loaders/mmd-loader'
 export { MMDMeshLoader } from './loaders/mmd-mesh-loader'

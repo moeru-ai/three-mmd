@@ -1,13 +1,11 @@
-import type { BufferGeometry } from 'three'
-
-import type { MMDToonMaterial } from '../materials/mmd-toon-material'
+import type { BufferGeometry, Material } from 'three'
 
 import { SkinnedMesh } from 'three'
 
 /** @experimental */
 export const buildMesh = (
   geometry: BufferGeometry,
-  materials: MMDToonMaterial[],
+  materials: Material[],
 ): SkinnedMesh => {
   return new SkinnedMesh(geometry, materials)
 }

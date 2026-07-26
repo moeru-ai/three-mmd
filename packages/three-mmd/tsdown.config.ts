@@ -5,5 +5,9 @@ export default defineConfig({
     build: true,
     resolve: [/^babylon-mmd\//],
   },
-  entry: ['./src/index.ts'],
+  entry: {
+    'index': './src/index.ts',
+    'materials/index': './src/materials/index.ts',
+    'materials/toon': './src/materials/toon/index.ts',
+  },
 })

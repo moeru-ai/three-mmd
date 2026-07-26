@@ -6,12 +6,14 @@
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import type { LoadingManager } from 'three'
 
+import type { MMDMaterialConstructor } from '../materials/types'
 import type { MMDLoaderPlugin, MMDLoaderPluginFactory } from './loader-plugin'
 
 import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils } from 'three'
 
+import { installMMDMaterialBindings } from '../materials/toon/bindings'
 import { extractModelExtension } from '../utils/_extract-model-extension'
 import { buildBones } from '../utils/build-bones'
 import { buildGeometry } from '../utils/build-geometry'
@@ -64,7 +66,7 @@ export class MMDLoader extends Loader<MMD> {
             manager: this.manager,
             resourcePath,
           }
-          const plugins: Record<string, MMDLoaderPlugin> = {}
+          const pluginsByName = new Map<string, MMDLoaderPlugin>()
 
           for (const callback of this.pluginCallbacks) {
             const plugin = callback(parser)
@@ -72,8 +74,17 @@ export class MMDLoader extends Loader<MMD> {
             if (!plugin.name)
               console.error('MMDLoader: Invalid plugin found: missing name')
 
-            plugins[plugin.name] = plugin
+            pluginsByName.set(plugin.name, plugin)
           }
+
+          const plugins = [...pluginsByName.values()]
+          const materialPlugins = plugins.filter(plugin => plugin.materialType !== undefined)
+
+          if (materialPlugins.length > 1) {
+            onError?.(new Error('MMDLoader: only one MMDMaterialPlugin may be registered.'))
+            return
+          }
+          const materialType = materialPlugins[0]?.materialType
 
           // Parsing -> building
           void (modelExtension === 'pmd' ? PmdReader : PmxReader)
@@ -81,7 +92,7 @@ export class MMDLoader extends Loader<MMD> {
             .then(async (pmx) => {
               pmx = postParseProcessing(pmx)
 
-              for (const plugin of Object.values(plugins)) {
+              for (const plugin of plugins) {
                 if (!plugin.afterParse)
                   continue
 
@@ -90,9 +101,9 @@ export class MMDLoader extends Loader<MMD> {
                   pmx = result
               }
 
-              const mmd = this.assembleMMD(pmx, resourcePath)
+              const mmd = this.assembleMMD(pmx, resourcePath, materialType)
 
-              for (const plugin of Object.values(plugins))
+              for (const plugin of plugins)
                 await plugin.afterBuild?.(mmd)
 
               onLoad(mmd)
@@ -130,11 +141,12 @@ export class MMDLoader extends Loader<MMD> {
     return this
   }
 
-  private assembleMMD(pmx: PmxObject, resourcePath: string): MMD {
+  private assembleMMD(pmx: PmxObject, resourcePath: string, materialType?: MMDMaterialConstructor): MMD {
     const geometry = buildGeometry(pmx)
-    const materials = buildMaterial(pmx, geometry, resourcePath, this.manager)
+    const materials = buildMaterial(pmx, geometry, resourcePath, this.manager, materialType)
     const rawMesh = buildMesh(geometry, materials)
     const skinnedMesh = buildBones(pmx, rawMesh)
+    installMMDMaterialBindings(skinnedMesh)
 
     return new MMD(pmx, skinnedMesh)
   }
