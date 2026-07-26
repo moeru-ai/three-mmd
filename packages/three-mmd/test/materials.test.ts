@@ -1,4 +1,5 @@
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import type { MeshDepthMaterial, MeshDistanceMaterial } from 'three'
 
 import type { MMDMaterialDescriptor } from '../src/materials/types'
 
@@ -170,6 +171,31 @@ describe('mmd toon bindings', () => {
 
     expect(sdefMesh.customDepthMaterial).toBeDefined()
     expect(sdefMesh.customDistanceMaterial).toBeDefined()
+  })
+
+  it('selects a distinct shadow program variant for each material group', () => {
+    const first = new MMDToonMaterial({ ...descriptor(), alphaTest: 0.3, map: new Texture() })
+    const second = new MMDToonMaterial({ ...descriptor(), alphaTest: 0.8, map: new Texture() })
+    const mesh = skinnedMesh([first, second])
+    mesh.geometry.setAttribute('mmdSdefMask', new Float32BufferAttribute([1], 1))
+    installMMDMaterialBindings(mesh)
+
+    const depth = mesh.customDepthMaterial as MeshDepthMaterial
+    const distance = mesh.customDistanceMaterial as MeshDistanceMaterial
+    const initialDepthVersion = depth.version
+    const initialDistanceVersion = distance.version
+
+    mesh.onBeforeShadow({} as never, {} as never, {} as never, {} as never, mesh.geometry, depth, { materialIndex: 0 } as never)
+    expect(depth.customProgramCacheKey()).toContain(first.uuid)
+    expect(depth.version).toBe(initialDepthVersion + 1)
+
+    mesh.onBeforeShadow({} as never, {} as never, {} as never, {} as never, mesh.geometry, depth, { materialIndex: 1 } as never)
+    expect(depth.customProgramCacheKey()).toContain(second.uuid)
+    expect(depth.version).toBe(initialDepthVersion + 2)
+
+    mesh.onBeforeShadow({} as never, {} as never, {} as never, {} as never, mesh.geometry, distance, { materialIndex: 1 } as never)
+    expect(distance.customProgramCacheKey()).toContain(second.uuid)
+    expect(distance.version).toBe(initialDistanceVersion + 1)
   })
 })
 
