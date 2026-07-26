@@ -1,6 +1,6 @@
 import type { BufferGeometry, Texture, TextureLoader, TypedArray } from 'three'
 
-import type { LoadingTexture, MaterialBuilderParameters, TextureContext } from './types'
+import type { LoadingTexture, TextureContext, TextureLoadOptions } from './types'
 
 import { SharedToonTextures } from 'babylon-mmd/esm/Loader/sharedToonTextures'
 import { LoaderUtils, NearestFilter, RepeatWrapping, SRGBColorSpace } from 'three'
@@ -129,7 +129,7 @@ export const getRotatedImage = (image: HTMLImageElement) => {
 export const loadTextureResource = (
   filePath: string,
   ctx: TextureContext,
-  params: Partial<MaterialBuilderParameters> = {},
+  params: TextureLoadOptions = {},
 ): LoadingTexture => {
   let fullPath
 

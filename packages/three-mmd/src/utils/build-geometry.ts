@@ -11,6 +11,10 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
 
   const skinIndices = new Uint16Array(vertexCount * 4)
   const skinWeights = new Float32Array(vertexCount * 4)
+  const sdefMask = new Float32Array(vertexCount)
+  const sdefC = new Float32Array(vertexCount * 3)
+  const sdefR0 = new Float32Array(vertexCount * 3)
+  const sdefR1 = new Float32Array(vertexCount * 3)
 
   pmx.vertices.forEach((v, i) => {
     const position = [v.position[0], v.position[1], v.position[2]]
@@ -44,6 +48,11 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
         skinIndices.set([bw.boneIndices[0], bw.boneIndices[1], 0, 0], i * 4)
         const sdefWeights = bw.boneWeights
         skinWeights.set([sdefWeights.boneWeight0, 1 - sdefWeights.boneWeight0, 0, 0], i * 4)
+        sdefMask[i] = 1
+        sdefC.set(sdefWeights.c, i * 3)
+        sdefR0.set(sdefWeights.r0, i * 3)
+        sdefR1.set(sdefWeights.r1, i * 3)
+        break
       }
     }
   })
@@ -53,6 +62,12 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   geometry.setAttribute('uv', new BufferAttribute(uvs, 2))
   geometry.setAttribute('skinIndex', new BufferAttribute(skinIndices, 4))
   geometry.setAttribute('skinWeight', new BufferAttribute(skinWeights, 4))
+  // These loader-owned attributes are consumed by the MMD SDEF shader patch.
+  // They are present for every mesh so material variants can share one layout.
+  geometry.setAttribute('mmdSdefMask', new BufferAttribute(sdefMask, 1))
+  geometry.setAttribute('mmdSdefC', new BufferAttribute(sdefC, 3))
+  geometry.setAttribute('mmdSdefR0', new BufferAttribute(sdefR0, 3))
+  geometry.setAttribute('mmdSdefR1', new BufferAttribute(sdefR1, 3))
 
   const indices = Array.from(pmx.indices)
   geometry.setIndex(indices)

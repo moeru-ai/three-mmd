@@ -5,6 +5,7 @@ import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils } from 'three'
 
+import { installMMDMaterialBindings } from '../materials/toon/bindings'
 import { extractModelExtension } from '../utils/_extract-model-extension'
 import { buildBones } from '../utils/build-bones'
 import { buildGeometry } from '../utils/build-geometry'
@@ -79,6 +80,8 @@ export class MMDMeshLoader extends Loader<SkinnedMesh> {
     const materials = buildMaterial(pmx, geometry, resourcePath, this.manager)
     const rawMesh = buildMesh(geometry, materials)
 
-    return buildBones(pmx, rawMesh)
+    const mesh = buildBones(pmx, rawMesh)
+    installMMDMaterialBindings(mesh)
+    return mesh
   }
 }
