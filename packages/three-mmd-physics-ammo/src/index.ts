@@ -18,6 +18,7 @@ export const MMDAmmoPhysics: PhysicsFactory = (mmd) => {
     affectsIK: true,
     createHelper: <T>() => physics.createHelper() as T,
     reset: () => physics.reset(),
+    setGravity: gravity => physics.setGravity(gravity),
     update: (delta: number) => physics.update(delta),
   }
 }

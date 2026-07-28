@@ -1,3 +1,5 @@
+import type { Vector3 } from 'three'
+
 import type { MMD } from '../utils/mmd'
 
 export type PhysicsFactory = (mmd: MMD) => PhysicsService
@@ -8,6 +10,7 @@ export interface PhysicsService {
   createHelper: <T>() => T
   dispose?: () => void
   reset?: () => void
+  setGravity?: (gravity: Vector3) => void
   setScalar?: (scale: number) => void
   update: (delta: number) => void
 }
