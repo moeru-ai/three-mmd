@@ -6,6 +6,7 @@ import { useAnimations } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
+import { Vector3 } from 'three'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 // import pmxUrl from '../../../../assets/安比/安比.pmx?url'
@@ -14,11 +15,16 @@ import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初�
 const DebugAmmo = () => {
   const [editingScale, setEditingScale] = useState(false)
   const {
+    gravity,
     mmdScale,
     showIK,
     showPhysics,
     showSkeleton,
   } = useControls({
+    gravity: {
+      step: 0.1,
+      value: { x: 0, y: -98, z: 0 },
+    },
     mmdScale: {
       max: 1,
       min: 0.01,
@@ -66,6 +72,10 @@ const DebugAmmo = () => {
 
   // Scale handling
   useEffect(() => mmd.setScalar(mmdScale), [mmd, mmdScale])
+
+  useEffect(() => {
+    mmd.physics?.setGravity?.(new Vector3(gravity.x, gravity.y, gravity.z))
+  }, [gravity.x, gravity.y, gravity.z, mmd.physics])
 
   useEffect(() => {
     if (!actions?.dance)
