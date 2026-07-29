@@ -43,6 +43,7 @@ describe('mmd material backends', () => {
 
     expect(toon.isMeshPhongMaterial).toBe(true)
     expect(toon.mmdCapabilities.sdef).toBe('full')
+    expect(toon.mmdCapabilities.outline).toBe(false)
   })
 
   it('does not pass undefined parameters to Three material constructors', () => {
@@ -133,36 +134,12 @@ describe('mmd material backends', () => {
 })
 
 describe('mmd toon bindings', () => {
-  it('does not enable an edge-disabled outline after a material morph', () => {
-    const disabled = new MMDToonMaterial(descriptor({ alpha: 1, color: new Color(), visible: false, width: 1 }))
-    const enabled = new MMDToonMaterial(descriptor({ alpha: 1, color: new Color(), visible: true, width: 0 }))
-    const mesh = skinnedMesh([disabled, enabled])
-    installMMDMaterialBindings(mesh)
-    const outline = mesh.children.find(child => child.name.endsWith(':mmd-outline')) as SkinnedMesh
-    const outlineMaterials = Array.isArray(outline.material) ? outline.material : [outline.material]
-    const state = createMMDMaterialEvaluatedState(disabled.descriptor)
-    state.edgeWidth = 1
-
-    disabled.applyMMDMaterialState(state)
-
-    expect(outlineMaterials[0].visible).toBe(false)
-    expect(outline.visible).toBe(false)
-  })
-
-  it('creates an initially hidden enabled outline that a material morph can reveal', () => {
+  it('does not create a material outline mesh', () => {
     const material = new MMDToonMaterial(descriptor({ alpha: 1, color: new Color(), visible: true, width: 0 }))
     const mesh = skinnedMesh([material])
     installMMDMaterialBindings(mesh)
-    const outline = mesh.children.find(child => child.name.endsWith(':mmd-outline')) as SkinnedMesh
-    const state = createMMDMaterialEvaluatedState(material.descriptor)
-    state.edgeWidth = 1
-    const outlineMaterials = Array.isArray(outline.material) ? outline.material : [outline.material]
 
-    expect(outline.visible).toBe(false)
-    expect(outlineMaterials[0].userData.outlineParameters).toEqual({ visible: false })
-    material.applyMMDMaterialState(state)
-
-    expect(outline.visible).toBe(true)
+    expect(mesh.children.some(child => child.name.endsWith(':mmd-outline'))).toBe(false)
   })
 
   it('installs custom SDEF shadows only when the mesh has SDEF vertices', () => {

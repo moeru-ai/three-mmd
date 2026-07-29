@@ -11,7 +11,7 @@ export interface MMDMaterial extends Material {
 
 export interface MMDMaterialCapabilities {
   readonly materialMorph: 'binding'
-  readonly outline: true
+  readonly outline: boolean
   readonly renderer: readonly ('webgl-renderer')[]
   readonly sdef: 'full'
   readonly sphereTexture: readonly MMDSphereBlendMode[]

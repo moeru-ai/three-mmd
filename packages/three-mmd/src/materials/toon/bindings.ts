@@ -1,49 +1,15 @@
 /* eslint-disable ts/unbound-method */
 
+import type { SkinnedMesh } from 'three'
+
 import {
-  BackSide,
-  MeshBasicMaterial,
   MeshDepthMaterial,
   MeshDistanceMaterial,
   RGBADepthPacking,
-  SkinnedMesh,
 } from 'three'
 
 import { MMDToonMaterial } from './mmd-toon-material'
 import { installSdefPatch } from './sdef'
-
-const replaceShaderSeam = (source: string, expected: string, replacement: string, label: string): string => {
-  if (!source.includes(expected))
-    throw new Error(`MMD outline shader patch failed: missing ${label}.`)
-
-  return source.replace(expected, replacement)
-}
-
-const installOutlineOffset = (material: MeshBasicMaterial, width: number, hasSdefVertices: boolean): ((nextWidth: number) => void) => {
-  const outlineWidth = { value: width }
-  if (hasSdefVertices)
-    installSdefPatch(material)
-  const previous = material.onBeforeCompile
-  material.onBeforeCompile = (shader, renderer) => {
-    previous?.(shader, renderer)
-    shader.uniforms.mmdOutlineWidth = outlineWidth
-    shader.vertexShader = replaceShaderSeam(
-      shader.vertexShader,
-      '#include <common>',
-      '#include <common>\nuniform float mmdOutlineWidth;',
-      'common',
-    )
-    shader.vertexShader = replaceShaderSeam(
-      shader.vertexShader,
-      '#include <begin_vertex>',
-      '#include <begin_vertex>\ntransformed += normalize( objectNormal ) * mmdOutlineWidth;',
-      'begin_vertex',
-    )
-  }
-  return (nextWidth) => {
-    outlineWidth.value = nextWidth
-  }
-}
 
 /**
  * Makes one object-level custom shadow material safe for meshes with multiple
@@ -89,47 +55,6 @@ export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
   const meshHasSdefVertices = hasSdefVertices(mesh)
   for (const material of toonMaterials)
     material.setSdefEnabled(meshHasSdefVertices)
-
-  let updateOutlineMeshVisibility = (): void => {}
-  const outlineMaterials = toonMaterials.map((surface) => {
-    const { outline } = surface.descriptor
-    const outlineEnabled = outline.visible
-    const material = new MeshBasicMaterial({
-      color: outline.color,
-      depthWrite: false,
-      opacity: outline.alpha,
-      side: BackSide,
-      transparent: outline.alpha < 1,
-      visible: outlineEnabled && outline.width > 0,
-    })
-    material.name = `${surface.name}:outline`
-    // The native OutlineEffect traverses this child as well. Keep the MMD
-    // outline in the normal pass, but do not outline the outline mesh again.
-    material.userData.outlineParameters = { visible: false }
-    const setOutlineWidth = installOutlineOffset(material, outline.width, meshHasSdefVertices)
-    surface.setOutlineStateListener((state) => {
-      material.color.copy(state.edgeColor)
-      material.opacity = state.edgeAlpha
-      material.visible = outlineEnabled && state.edgeWidth > 0
-      material.transparent = state.edgeAlpha < 1
-      setOutlineWidth(state.edgeWidth)
-      updateOutlineMeshVisibility()
-    })
-    return material
-  })
-
-  if (toonMaterials.some(material => material.descriptor.outline.visible)) {
-    const outlineMesh = new SkinnedMesh(mesh.geometry, outlineMaterials)
-    outlineMesh.name = `${mesh.name}:mmd-outline`
-    outlineMesh.bind(mesh.skeleton, mesh.bindMatrix)
-    outlineMesh.castShadow = false
-    outlineMesh.frustumCulled = mesh.frustumCulled
-    updateOutlineMeshVisibility = () => {
-      outlineMesh.visible = outlineMaterials.some(material => material.visible)
-    }
-    updateOutlineMeshVisibility()
-    mesh.add(outlineMesh)
-  }
 
   if (!meshHasSdefVertices)
     return

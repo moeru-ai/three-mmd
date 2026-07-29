@@ -19,7 +19,7 @@ import { installSdefPatch } from './sdef'
 
 const capabilities: MMDMaterialCapabilities = {
   materialMorph: 'binding',
-  outline: true,
+  outline: false,
   renderer: ['webgl-renderer'],
   sdef: 'full',
   sphereTexture: ['multiply', 'add'],
@@ -160,7 +160,6 @@ export class MMDToonMaterial extends MeshPhongMaterial {
   public readonly toonTextureMultiplicativeColor = new Vector4(1, 1, 1, 1)
 
   private readonly mmdUniforms: Record<string, IUniform>
-  private outlineStateListener?: (state: MMDMaterialEvaluatedState) => void
 
   public constructor(descriptor: MMDMaterialDescriptor) {
     super(createPhongParameters(descriptor))
@@ -222,7 +221,6 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     this.toonTextureMultiplicativeColor.copy(state.toonTextureMultiplicativeColor)
     this.toonTextureAdditiveColor.copy(state.toonTextureAdditiveColor)
     this.transparent = this.transparent || this.opacity < 1
-    this.outlineStateListener?.(state)
   }
 
   public override clone(): this {
@@ -252,11 +250,6 @@ export class MMDToonMaterial extends MeshPhongMaterial {
 
   public override customProgramCacheKey(): string {
     return `${super.customProgramCacheKey()}|mmd-toon|${this.sphereBlendMode ?? 'none'}|${this.sphereMap === undefined ? 'no-sphere' : 'sphere'}|sdef:${String(this.defines?.MMD_USE_SDEF ?? 1)}`
-  }
-
-  /** @internal */
-  public setOutlineStateListener(listener: (state: MMDMaterialEvaluatedState) => void): void {
-    this.outlineStateListener = listener
   }
 
   /** @internal */
