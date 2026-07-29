@@ -1,4 +1,4 @@
-import type { Line } from 'three'
+import type { AnimationMixer, Line } from 'three'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import {
@@ -520,6 +520,76 @@ describe('mmdIKSolver', () => {
 
     closeTo(bones[1].quaternion.angleTo(new Quaternion()), 0)
     expect(updatePhysics).toHaveBeenCalledWith(1 / 60)
+  })
+
+  it('runs all update stages by default', () => {
+    const specs = createSingleLinkSpecs()
+    const { mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+    const updatePhysics = vi.fn()
+    mmd.setPhysics(() => ({
+      affectsIK: true,
+      createHelper: <T>() => ({}) as T,
+      update: updatePhysics,
+    }))
+    const updateIK = vi.spyOn(mmd.ikSolver, 'update')
+    const updateGrant = vi.spyOn(mmd.grantSolver, 'update')
+
+    mmd.update(1 / 60)
+
+    expect(updateIK).toHaveBeenCalledWith(1 / 60, true)
+    expect(updateGrant).toHaveBeenCalledOnce()
+    expect(updatePhysics).toHaveBeenCalledWith(1 / 60)
+  })
+
+  it('allows IK, grant, and physics to be disabled independently', () => {
+    const specs = createSingleLinkSpecs()
+    const { mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+    const updatePhysics = vi.fn()
+    mmd.setPhysics(() => ({
+      affectsIK: true,
+      createHelper: <T>() => ({}) as T,
+      update: updatePhysics,
+    }))
+    const updateIK = vi.spyOn(mmd.ikSolver, 'update')
+    const updateGrant = vi.spyOn(mmd.grantSolver, 'update')
+
+    mmd.update(1 / 60, { ik: false })
+    expect(updateIK).not.toHaveBeenCalled()
+    expect(updateGrant).toHaveBeenCalledOnce()
+    expect(updatePhysics).toHaveBeenCalledOnce()
+
+    vi.clearAllMocks()
+    mmd.update(1 / 60, { grant: false })
+    expect(updateIK).toHaveBeenCalledWith(1 / 60, true)
+    expect(updateGrant).not.toHaveBeenCalled()
+    expect(updatePhysics).toHaveBeenCalledOnce()
+
+    vi.clearAllMocks()
+    mmd.update(1 / 60, { physics: false })
+    expect(updateIK).toHaveBeenCalledWith(1 / 60, false)
+    expect(updateGrant).toHaveBeenCalledOnce()
+    expect(updatePhysics).not.toHaveBeenCalled()
+  })
+
+  it('forwards update options and preserves updateWithMixer order', () => {
+    const specs = createSingleLinkSpecs()
+    const { mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+    const calls: string[] = []
+    const mixer = {
+      update: vi.fn(() => calls.push('mixer')),
+    } as unknown as AnimationMixer
+    const options = { ik: false, grant: true, physics: false }
+
+    vi.spyOn(mmd, 'beforeUpdate').mockImplementation(() => calls.push('beforeUpdate'))
+    vi.spyOn(mmd, 'update').mockImplementation(() => calls.push('update'))
+
+    mmd.updateWithMixer(1 / 60, mixer, options)
+
+    expect(calls).toEqual(['beforeUpdate', 'mixer', 'update'])
+    expect(mmd.update).toHaveBeenCalledWith(1 / 60, options)
   })
 
   it('resolves a physics bone by rigid body name when its index is invalid', () => {

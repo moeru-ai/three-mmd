@@ -13,6 +13,12 @@ import { processBones } from '../physics/process-bones'
 
 const boneProcessors = new WeakMap<MMD, ReturnType<typeof processBones>>()
 
+export interface MMDUpdateOptions {
+  grant?: boolean
+  ik?: boolean
+  physics?: boolean
+}
+
 /** Clears the cached mixer pose before a static pose is applied. */
 export const resetMMDAnimationPose = (mmd: MMD) =>
   boneProcessors.get(mmd)?.clearBones()
@@ -79,17 +85,27 @@ export class MMD {
    * transforms mutate the bones, so the next frame can start from an unmodified
    * animation pose.
    */
-  public update(delta: number) {
+  public update(delta: number, options: MMDUpdateOptions = {}) {
     boneProcessors.get(this)!.saveBones(this.mesh)
     this.mesh.updateMatrixWorld(true)
-    this.ikSolver.update(delta, this.physics?.affectsIK === true)
-    this.grantSolver.update()
-    this.physics?.update(delta)
+
+    if (options?.ik !== false)
+      this.ikSolver.update(delta, options?.physics !== false && this.physics?.affectsIK === true)
+
+    if (options?.grant !== false)
+      this.grantSolver.update()
+
+    if (options?.physics !== false)
+      this.physics?.update(delta)
   }
 
-  public updateWithMixer(delta: number, mixer: AnimationMixer) {
+  public updateWithMixer(
+    delta: number,
+    mixer: AnimationMixer,
+    options: MMDUpdateOptions = {},
+  ) {
     this.beforeUpdate()
     mixer.update(delta)
-    this.update(delta)
+    this.update(delta, options)
   }
 }
