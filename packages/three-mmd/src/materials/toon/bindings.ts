@@ -103,6 +103,9 @@ export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
       visible: outlineEnabled && outline.width > 0,
     })
     material.name = `${surface.name}:outline`
+    // The native OutlineEffect traverses this child as well. Keep the MMD
+    // outline in the normal pass, but do not outline the outline mesh again.
+    material.userData.outlineParameters = { visible: false }
     const setOutlineWidth = installOutlineOffset(material, outline.width, meshHasSdefVertices)
     surface.setOutlineStateListener((state) => {
       material.color.copy(state.edgeColor)

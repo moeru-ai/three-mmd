@@ -156,8 +156,10 @@ describe('mmd toon bindings', () => {
     const outline = mesh.children.find(child => child.name.endsWith(':mmd-outline')) as SkinnedMesh
     const state = createMMDMaterialEvaluatedState(material.descriptor)
     state.edgeWidth = 1
+    const outlineMaterials = Array.isArray(outline.material) ? outline.material : [outline.material]
 
     expect(outline.visible).toBe(false)
+    expect(outlineMaterials[0].userData.outlineParameters).toEqual({ visible: false })
     material.applyMMDMaterialState(state)
 
     expect(outline.visible).toBe(true)
