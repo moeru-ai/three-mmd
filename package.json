@@ -5,10 +5,13 @@
   "packageManager": "pnpm@11.17.0",
   "scripts": {
     "build": "pnpm -rF \"./packages/*\" build",
+    "build:vanilla": "pnpm -F @moeru/three-mmd-example-vanilla build",
     "bump": "bumpp",
-    "dev": "pnpm -rF @moeru/three-mmd-playground dev",
-    "dev:vanilla": "pnpm -rF @moeru/three-mmd-example-vanilla dev",
+    "dev": "pnpm -F @moeru/three-mmd-playground dev",
+    "dev:vanilla": "pnpm -F @moeru/three-mmd-example-vanilla dev",
     "lint": "eslint --flag unstable_native_nodejs_ts_config --cache .",
+    "preview": "pnpm -F @moeru/three-mmd-playground preview",
+    "preview:vanilla": "pnpm -F @moeru/three-mmd-example-vanilla preview",
     "test": "vitest run"
   },
   "devDependencies": {
