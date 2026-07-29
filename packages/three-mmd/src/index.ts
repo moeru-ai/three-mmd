@@ -23,7 +23,7 @@ export { buildBones } from './utils/build-bones'
 export { buildGeometry } from './utils/build-geometry'
 export { buildMaterial } from './utils/build-material'
 export { buildMesh } from './utils/build-mesh'
-export { MMD } from './utils/mmd'
+export { MMD, type MMDUpdateOptions } from './utils/mmd'
 
 export { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 export { VmdObject } from 'babylon-mmd/esm/Loader/Parser/vmdObject'
