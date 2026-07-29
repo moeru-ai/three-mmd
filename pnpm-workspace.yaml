@@ -25,6 +25,7 @@ catalog:
   '@moeru/tsconfig': ^0.1.0-beta.20
   '@pixiv/three-vrm-springbone': ^3.5.5
   '@playwright/cli': ^0.1.17
+  '@types/node': ^26.1.2
   '@types/three': ^0.185.1
   '@vitejs/plugin-react': ^6.0.4
   ammojs-typed: ^1.0.6

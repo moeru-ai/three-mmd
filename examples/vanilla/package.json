@@ -1,0 +1,20 @@
+{
+  "name": "@moeru/three-mmd-example-vanilla",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@moeru/three-mmd": "workspace:^",
+    "@moeru/three-mmd-physics-ammo": "workspace:^",
+    "ammojs-typed": "catalog:",
+    "three": "catalog:",
+    "three-stdlib": "catalog:"
+  },
+  "devDependencies": {
+    "@types/three": "catalog:"
+  }
+}

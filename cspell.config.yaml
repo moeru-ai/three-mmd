@@ -48,6 +48,7 @@ words:
   - vite
   - vitejs
   - vitest
+  - vmds
   - Vocaloid
   - vpds
 ignoreWords: []

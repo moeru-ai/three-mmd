@@ -7,7 +7,7 @@
     "build": "pnpm -rF \"./packages/*\" build",
     "bump": "bumpp",
     "dev": "pnpm -rF @moeru/three-mmd-playground dev",
-    "dev:basic": "pnpm -rF @moeru/three-mmd-example-basic dev",
+    "dev:vanilla": "pnpm -rF @moeru/three-mmd-example-vanilla dev",
     "lint": "eslint --flag unstable_native_nodejs_ts_config --cache .",
     "test": "vitest run"
   },
@@ -18,6 +18,7 @@
     "@moeru/eslint-config": "catalog:",
     "@moeru/tsconfig": "catalog:",
     "@playwright/cli": "catalog:",
+    "@types/node": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "bumpp": "catalog:",
     "eslint": "catalog:",
