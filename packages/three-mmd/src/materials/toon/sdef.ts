@@ -5,6 +5,7 @@ import type { Material } from 'three'
 import { REVISION } from 'three'
 
 const sdefDeclaration = /* glsl */`
+#if MMD_USE_SDEF
 #ifdef USE_SKINNING
 attribute float mmdSdefMask;
 attribute vec3 mmdSdefC;
@@ -45,6 +46,7 @@ vec4 mmdSlerp( vec4 q0, vec4 q1, float t ) {
   float sinTheta = sin( theta );
   return q0 * sin( ( 1.0 - t ) * theta ) / sinTheta + q1 * sin( t * theta ) / sinTheta;
 }
+#endif
 #endif
 `
 
@@ -95,12 +97,13 @@ const assertAndReplace = (source: string, expected: string, replacement: string,
 
 /** Applies toon-local SDEF hooks without mutating Three's global shader chunks. */
 export const installSdefPatch = (material: Material): void => {
+  material.defines = { ...material.defines, MMD_USE_SDEF: 1 }
   const previous = material.onBeforeCompile
   material.onBeforeCompile = (shader, renderer) => {
     previous?.(shader, renderer)
     shader.vertexShader = assertAndReplace(shader.vertexShader, '#include <skinning_pars_vertex>', `#include <skinning_pars_vertex>\n${sdefDeclaration}`, 'skinning_pars_vertex')
     if (shader.vertexShader.includes('#include <skinnormal_vertex>'))
-      shader.vertexShader = assertAndReplace(shader.vertexShader, '#include <skinnormal_vertex>', skinNormalVertex, 'skinnormal_vertex')
-    shader.vertexShader = assertAndReplace(shader.vertexShader, '#include <skinning_vertex>', skinningVertex, 'skinning_vertex')
+      shader.vertexShader = assertAndReplace(shader.vertexShader, '#include <skinnormal_vertex>', `#if MMD_USE_SDEF\n${skinNormalVertex}\n#else\n#include <skinnormal_vertex>\n#endif`, 'skinnormal_vertex')
+    shader.vertexShader = assertAndReplace(shader.vertexShader, '#include <skinning_vertex>', `#if MMD_USE_SDEF\n${skinningVertex}\n#else\n#include <skinning_vertex>\n#endif`, 'skinning_vertex')
   }
 }

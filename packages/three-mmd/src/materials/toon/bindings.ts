@@ -1,6 +1,4 @@
-/* eslint-disable ts/no-unsafe-argument, ts/no-unsafe-member-access, ts/unbound-method */
-
-import type { Material, Shader } from 'three'
+/* eslint-disable ts/unbound-method */
 
 import {
   BackSide,
@@ -26,7 +24,7 @@ const installOutlineOffset = (material: MeshBasicMaterial, width: number, hasSde
   if (hasSdefVertices)
     installSdefPatch(material)
   const previous = material.onBeforeCompile
-  material.onBeforeCompile = (shader: Shader, renderer) => {
+  material.onBeforeCompile = (shader, renderer) => {
     previous?.(shader, renderer)
     shader.uniforms.mmdOutlineWidth = outlineWidth
     shader.vertexShader = replaceShaderSeam(
@@ -45,11 +43,6 @@ const installOutlineOffset = (material: MeshBasicMaterial, width: number, hasSde
   return (nextWidth) => {
     outlineWidth.value = nextWidth
   }
-}
-
-const installShadowSdef = (material: Material): void => {
-  material.skinning = true
-  installSdefPatch(material)
 }
 
 /**
@@ -94,6 +87,9 @@ export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
 
   const toonMaterials = surfaceMaterials
   const meshHasSdefVertices = hasSdefVertices(mesh)
+  for (const material of toonMaterials)
+    material.setSdefEnabled(meshHasSdefVertices)
+
   let updateOutlineMeshVisibility = (): void => {}
   const outlineMaterials = toonMaterials.map((surface) => {
     const { outline } = surface.descriptor
@@ -107,7 +103,6 @@ export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
       visible: outlineEnabled && outline.width > 0,
     })
     material.name = `${surface.name}:outline`
-    material.skinning = true
     const setOutlineWidth = installOutlineOffset(material, outline.width, meshHasSdefVertices)
     surface.setOutlineStateListener((state) => {
       material.color.copy(state.edgeColor)
@@ -138,8 +133,8 @@ export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
 
   const depthMaterial = new MeshDepthMaterial({ depthPacking: RGBADepthPacking })
   const distanceMaterial = new MeshDistanceMaterial()
-  installShadowSdef(depthMaterial)
-  installShadowSdef(distanceMaterial)
+  installSdefPatch(depthMaterial)
+  installSdefPatch(distanceMaterial)
   const setDepthSurface = installShadowMaterialVariants(depthMaterial)
   const setDistanceSurface = installShadowMaterialVariants(distanceMaterial)
   mesh.customDepthMaterial = depthMaterial

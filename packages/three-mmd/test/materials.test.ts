@@ -88,6 +88,14 @@ describe('mmd material backends', () => {
     expect(shader.fragmentShader).not.toContain('#include <envmap_fragment>')
   })
 
+  it('compiles sphere blending as a static shader variant', () => {
+    const withSphere = new MMDToonMaterial(descriptor())
+    const withoutSphere = new MMDToonMaterial({ ...descriptor(), sphereBlendMode: undefined, sphereMap: undefined })
+
+    expect(withSphere.defines?.MMD_SPHERE_BLEND_MODE).toBe(1)
+    expect(withoutSphere.defines?.MMD_SPHERE_BLEND_MODE).toBe(0)
+  })
+
   it('evaluates multiply and additive material morph values without mutating the descriptor', () => {
     const state = createMMDMaterialEvaluatedState(descriptor())
     const multiply = {
@@ -171,6 +179,15 @@ describe('mmd toon bindings', () => {
 
     expect(sdefMesh.customDepthMaterial).toBeDefined()
     expect(sdefMesh.customDistanceMaterial).toBeDefined()
+  })
+
+  it('disables the SDEF shader variant for meshes without SDEF vertices', () => {
+    const material = new MMDToonMaterial(descriptor())
+    const mesh = skinnedMesh([material])
+
+    installMMDMaterialBindings(mesh)
+
+    expect(material.defines?.MMD_USE_SDEF).toBe(0)
   })
 
   it('selects a distinct shadow program variant for each material group', () => {

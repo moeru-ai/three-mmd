@@ -104,13 +104,17 @@ vec3 totalEmissiveRadiance = emissive + mmdAmbient * 0.2;
 const outgoingLight = /* glsl */`
 vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
+#if MMD_SPHERE_BLEND_MODE > 0
 vec2 mmdSphereUv = normal.xy * 0.5 + 0.5;
 vec3 mmdSphere = texture2D( mmdSphereMap, mmdSphereUv ).rgb;
 mmdSphere = mmdApplyTextureColor( mmdSphere, mmdSphereTextureMultiplicativeColor, mmdSphereTextureAdditiveColor );
-if ( mmdSphereBlendMode > 0.5 ) {
-  mmdSphere *= reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
-  outgoingLight = mmdSphereBlendMode > 1.5 ? outgoingLight + mmdSphere : outgoingLight * mmdSphere;
-}
+mmdSphere *= reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
+#if MMD_SPHERE_BLEND_MODE > 1
+outgoingLight += mmdSphere;
+#else
+outgoingLight *= mmdSphere;
+#endif
+#endif
 `
 
 const uniform = <T>(value: T): IUniform<T> => ({ value })
@@ -168,6 +172,11 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     this.sphereMap = descriptor.sphereMap
     this.toonMap = descriptor.toonMap
     this.emissive.setRGB(0, 0, 0)
+    this.defines = {
+      ...this.defines,
+      MMD_SPHERE_BLEND_MODE: this.getSphereBlendModeValue(),
+      MMD_USE_SDEF: 1,
+    }
 
     this.mmdUniforms = {
       mmdAmbient: uniform(this.ambient),
@@ -223,6 +232,7 @@ export class MMDToonMaterial extends MeshPhongMaterial {
 
   public override copy(source: this): this {
     super.copy(source)
+    this.defines = { ...source.defines }
     this.descriptor = source.descriptor
     this.ambient.copy(source.ambient)
     this.sphereBlendMode = source.sphereBlendMode
@@ -241,12 +251,22 @@ export class MMDToonMaterial extends MeshPhongMaterial {
   }
 
   public override customProgramCacheKey(): string {
-    return `${super.customProgramCacheKey()}|mmd-toon|${this.sphereBlendMode ?? 'none'}|${this.sphereMap === undefined ? 'no-sphere' : 'sphere'}`
+    return `${super.customProgramCacheKey()}|mmd-toon|${this.sphereBlendMode ?? 'none'}|${this.sphereMap === undefined ? 'no-sphere' : 'sphere'}|sdef:${String(this.defines?.MMD_USE_SDEF ?? 1)}`
   }
 
   /** @internal */
   public setOutlineStateListener(listener: (state: MMDMaterialEvaluatedState) => void): void {
     this.outlineStateListener = listener
+  }
+
+  /** @internal */
+  public setSdefEnabled(enabled: boolean): void {
+    const value = enabled ? 1 : 0
+    if (this.defines?.MMD_USE_SDEF === value)
+      return
+
+    this.defines = { ...this.defines, MMD_USE_SDEF: value }
+    this.needsUpdate = true
   }
 
   private getSphereBlendModeValue(): number {
