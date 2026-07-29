@@ -1,13 +1,12 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  dts: {
-    build: true,
-    resolve: [/^babylon-mmd\//],
-  },
+  deps: { dts: { alwaysBundle: [/^babylon-mmd\//] } },
+  dts: { build: true },
   entry: {
     'index': './src/index.ts',
     'materials/index': './src/materials/index.ts',
     'materials/toon': './src/materials/toon/index.ts',
   },
+  fixedExtension: false,
 })
