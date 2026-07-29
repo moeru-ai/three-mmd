@@ -585,12 +585,12 @@ describe('mmdIKSolver', () => {
     const options = { grant: true, ik: false, physics: false }
 
     vi.spyOn(mmd, 'beforeUpdate').mockImplementation(() => calls.push('beforeUpdate'))
-    vi.spyOn(mmd, 'update').mockImplementation(() => calls.push('update'))
+    const update = vi.spyOn(mmd, 'update').mockImplementation(() => calls.push('update'))
 
     mmd.updateWithMixer(1 / 60, mixer, options)
 
     expect(calls).toEqual(['beforeUpdate', 'mixer', 'update'])
-    expect(mmd.update).toHaveBeenCalledWith(1 / 60, options)
+    expect(update).toHaveBeenCalledWith(1 / 60, options)
   })
 
   it('resolves a physics bone by rigid body name when its index is invalid', () => {
