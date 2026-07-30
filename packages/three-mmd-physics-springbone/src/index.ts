@@ -3,7 +3,7 @@ import type { PhysicsFactory } from '@moeru/three-mmd'
  * Spring bone physics strategy (functional): builds colliders/joints once from PMX + mesh,
  * powered by @pixiv/three-vrm-springbone. Exposes a PhysicsStrategy for plugging into MMD.
  */
-import type { Bone } from 'three'
+import type { Bone, Object3D } from 'three'
 
 import { createPhysicsPlugin, PmxObject } from '@moeru/three-mmd'
 import {
@@ -28,6 +28,14 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
   let manager = new VRMSpringBoneManager()
   const colliders: VRMSpringBoneCollider[] = []
   const joints: VRMSpringBoneJoint[] = []
+  const gravity = new Vector3(0, -98, 0)
+  let modelScale = mmd.scale
+  let accumulator = 0
+
+  // MMD models commonly use extra "weight" bones as rigid-body anchors. They
+  // are children of the visible spring chain, but must not be used as tails.
+  const isAuxiliaryBone = (bone: Object3D) => /(?:錘|weight|_physics)$/i.test(bone.name)
+  const getSpringChild = (bone: Bone) => bone.children.find(child => !isAuxiliaryBone(child))
 
   const baseColliderShapes = new Map<VRMSpringBoneCollider, { radius: number, tail?: Vector3 }>()
   const baseJointSizes = new Map<
@@ -64,30 +72,41 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
   const setupHairJoints = () => {
     mmd.mesh.skeleton.bones
       .filter(bone => ['髪', 'Hair', 'Twin'].some(v => bone.name.includes(v)))
-      .forEach(bone => bone.children.forEach((child) => {
-        joints.push(
-          new VRMSpringBoneJoint(bone, child, {
-            hitRadius: 0.05,
-            stiffness: 0.75,
-          }),
-        )
-      }))
+      .forEach((bone) => {
+        const child = getSpringChild(bone)
+        if (!child)
+          return
+
+        joints.push(new VRMSpringBoneJoint(bone, child, {
+          dragForce: 0.4,
+          gravityPower: 0.05,
+          hitRadius: 0.05,
+          stiffness: 0.75,
+        }))
+      })
   }
 
   // Initialize skirt joints based on bone names
   const setupSkirtJoints = () => {
     mmd.mesh.skeleton.bones
       .filter(bone => ['裙', 'スカート', 'Skirt'].some(v => bone.name.includes(v)))
-      .forEach(bone => bone.children.forEach((child) => {
+      .forEach((bone) => {
+        const child = getSpringChild(bone)
+        if (!child)
+          return
+
         const joint = new VRMSpringBoneJoint(bone, child, {
-          dragForce: 0.1,
-          gravityPower: 1,
-          hitRadius: 0.15,
+          // Keep the radial rest pose of the skirt while damping the long
+          // chains enough to avoid feeding frame-time spikes back into the
+          // Verlet velocity.
+          dragForce: 0.7,
+          gravityPower: 0.02,
+          hitRadius: 0.12,
           stiffness: 5,
         })
         joint.colliderGroups = [{ colliders }]
         joints.push(joint)
-      }))
+      })
   }
 
   const setupColliders = () => {
@@ -96,7 +115,7 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
 
     const legBones = bones
       .map((bone, idx) => ({ bone, idx }))
-      .filter(({ bone }) => ['センター', '上半身', '右ひざ', '右足', '右足D', '左ひざ', '左足', '左足D'].includes(bone.name))
+      .filter(({ bone }) => ['センター', '上半身', '上半身2', '下半身', '右ひざ', '右足', '右足D', '左ひざ', '左足', '左足D'].includes(bone.name))
     // Map leg bones to their rigid bodies
     const legRigidBodiesMap = new Map<number, PmxObject.RigidBody[]>()
     mmd.pmx.rigidBodies.forEach((rb) => {
@@ -116,7 +135,9 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
         return
 
       // Compute bone length and direction
-      const child = bone.children[0]
+      const child = getSpringChild(bone)
+      if (!child)
+        return
       const childWorld = child.getWorldPosition(new Vector3())
       const boneWorld = bone.getWorldPosition(new Vector3())
       const dirSeg = child.position.clone().normalize()
@@ -145,7 +166,7 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
               offset: offsetLocal,
               // Capsule shapeSize [radius, height, ignore]
               radius: rb.shapeSize[0] * 1.1,
-              tail: dirSeg.clone().multiplyScalar(Math.min(rb.shapeSize[1], boneLen)),
+              tail: offsetLocal.clone().add(dirSeg.clone().multiplyScalar(Math.min(rb.shapeSize[1], boneLen))),
             })))
           }
           else {
@@ -154,7 +175,7 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
               offset: offsetLocal,
               // Box shapeSize [width, height, depth]
               radius: Math.max(rb.shapeSize[0], rb.shapeSize[2]) * 1.1,
-              tail: dirSeg.clone().multiplyScalar(Math.min(rb.shapeSize[1], boneLen)),
+              tail: offsetLocal.clone().add(dirSeg.clone().multiplyScalar(Math.min(rb.shapeSize[1], boneLen))),
             })))
           }
         })
@@ -179,6 +200,19 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
   manager.setInitState()
   cacheJointsAndColliders()
 
+  const applyGravity = () => {
+    const magnitude = gravity.length() * modelScale
+    const direction = magnitude > 0 ? gravity.clone().normalize() : new Vector3(0, -1, 0)
+
+    joints.forEach((joint) => {
+      const base = baseJointSizes.get(joint)
+      joint.settings.gravityDir.copy(direction)
+      joint.settings.gravityPower = magnitude * (base?.gravityPower ?? 0)
+    })
+  }
+
+  applyGravity()
+
   return {
     createHelper: <T>() => ({
       colliderHelpers: colliders.map(c => new VRMSpringBoneColliderHelper(c)),
@@ -193,17 +227,31 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
       joints.length = 0
       baseColliderShapes.clear()
       baseJointSizes.clear()
+      accumulator = 0
+    },
+
+    reset: () => {
+      accumulator = 0
+      manager.reset()
+    },
+
+    setGravity: (value: Vector3) => {
+      gravity.copy(value)
+      applyGravity()
     },
 
     // https://github.com/pixiv/three-vrm/blob/dev/guides/spring-bones-on-scaled-models.md
     setScalar: (scale: number) => {
+      modelScale = scale
       joints.forEach((joint) => {
         const base = baseJointSizes.get(joint)
         if (!base)
           return
 
         joint.settings.hitRadius = base.hitRadius * scale
-        joint.settings.stiffness = base.stiffness * scale
+        // Stiffness acts on a unit direction and is not a spatial length.
+        // Scaling it with the mesh makes MMD skirts lose their radial shape.
+        joint.settings.stiffness = base.stiffness
       })
 
       colliders.forEach((collider) => {
@@ -217,15 +265,32 @@ export const MMDSpringBonePhysics: PhysicsFactory = (mmd) => {
         }
         else if (shape instanceof VRMSpringBoneColliderShapeCapsule) {
           shape.radius = base.radius * scale
-          shape.tail = base.tail!.clone().multiplyScalar(scale)
+          // tail is transformed by colliderMatrix, which already contains
+          // the mesh scale. Scaling it here would shrink the capsule twice.
+          shape.tail = base.tail!.clone()
         }
       })
 
       mmd.mesh.updateMatrixWorld(true)
+      applyGravity()
+      accumulator = 0
       manager.setInitState()
     },
 
-    update: (delta: number) => manager.update(delta),
+    update: (delta: number) => {
+      if (!Number.isFinite(delta) || delta <= 0)
+        return
+
+      // Keep the Verlet integration stable when the render loop stalls. The
+      // manager itself is stepped at a fixed rate like MMD's rigid-body
+      // implementation.
+      accumulator += Math.min(delta, 0.1)
+      const step = 1 / 60
+      while (accumulator >= step) {
+        manager.update(step)
+        accumulator -= step
+      }
+    },
   }
 }
 
