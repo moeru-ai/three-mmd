@@ -4,7 +4,7 @@ import type { AnimationAction, Object3D } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 
 import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
-import { initAmmo, MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
+import { MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
 import { AmbientLight, AnimationMixer, Color, DirectionalLight, PerspectiveCamera, PolarGridHelper, Scene, Timer, WebGLRenderer } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
@@ -178,7 +178,6 @@ const main = async () => {
     animationAction.paused = !animationEnabled
   }
 
-  await initAmmo()
   await init()
 }
 

@@ -1,26 +1,25 @@
-import type { MMDPhysicsHelper } from '@moeru/three-mmd-physics-ammo'
+import type { Object3D } from 'three'
 
 import { MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
 import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
 import { useAnimations } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useControls } from 'leva'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Vector3 } from 'three'
 
 import vmdUrl from '../../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
-// import pmxUrl from '../../../../assets/安比/安比.pmx?url'
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 
 const DebugAmmo = () => {
-  const [editingScale, setEditingScale] = useState(false)
   const {
     gravity,
     mmdScale,
+    paused,
     showIK,
     showPhysics,
     showSkeleton,
-  } = useControls({
+  } = useControls('Ammo', {
     gravity: {
       step: 0.1,
       value: { x: 0, y: -98, z: 0 },
@@ -28,18 +27,10 @@ const DebugAmmo = () => {
     mmdScale: {
       max: 1,
       min: 0.01,
-      onEditEnd: () => {
-        // console.log('end setting scale')
-        setEditingScale(false)
-      },
-      onEditStart: () => {
-        // console.log('start setting scale')
-        setEditingScale(true)
-      },
       step: 0.01,
       value: 0.1,
-      // value: 1,
     },
+    paused: false,
     showIK: false,
     showPhysics: false,
     showSkeleton: false,
@@ -49,17 +40,19 @@ const DebugAmmo = () => {
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
   const { actions } = useAnimations([animation], mmd.mesh)
 
-  // This must follow `useAnimations`: at priority 0, R3F invokes them in registration order.
-  useFrame((_, delta) => mmd.update(delta))
+  useFrame((_, delta) => {
+    if (paused)
+      return
 
-  // Helpers
+    mmd.update(delta)
+  })
+
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
   const physicsHelper = useMemo(
-    () => mmd.physics?.createHelper<MMDPhysicsHelper>(),
+    () => mmd.physics?.createHelper<Object3D>(),
     [mmd.physics],
   )
 
-  // Play the animation on mount
   useEffect(() => {
     mmd.physics?.reset?.()
     actions.dance?.play()
@@ -67,42 +60,31 @@ const DebugAmmo = () => {
     return () => {
       actions.dance?.stop()
       mmd.mesh.pose()
+      if (physicsHelper && 'dispose' in physicsHelper)
+        (physicsHelper as Object3D & { dispose: () => void }).dispose()
     }
-  }, [actions, mmd])
+  }, [actions, mmd, physicsHelper])
 
-  // Scale handling
+  useEffect(() => {
+    if (!actions.dance)
+      return
+
+    actions.dance.paused = paused
+  }, [actions, paused])
+
   useEffect(() => mmd.setScalar(mmdScale), [mmd, mmdScale])
 
   useEffect(() => {
     mmd.physics?.setGravity?.(new Vector3(gravity.x, gravity.y, gravity.z))
   }, [gravity.x, gravity.y, gravity.z, mmd.physics])
 
-  useEffect(() => {
-    if (!actions?.dance)
-      return
-
-    if (editingScale) {
-      actions.dance.paused = true
-      actions?.dance?.stop()
-      mmd.mesh.pose()
-    }
-    else {
-      actions.dance.paused = false
-      actions?.dance?.play()
-    }
-  }, [actions, mmd, editingScale])
-
   return (
     <>
-      <primitive
-        object={mmd.mesh}
-        scale={mmdScale}
-      />
+      <primitive object={mmd.mesh} />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
       {showPhysics && physicsHelper && <primitive object={physicsHelper} />}
     </>
-
   )
 }
 

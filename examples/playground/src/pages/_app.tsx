@@ -1,5 +1,3 @@
-import { initAmmo } from '@moeru/three-mmd-physics-ammo'
-import { SetupPhysics } from '@moeru/three-mmd-r3f'
 import { Environment, Loader, OrbitControls, Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Leva } from 'leva'
@@ -16,12 +14,10 @@ const App = () => (
       style={{ height: '100dvh', touchAction: 'none', width: '100dvw' }}
     >
       <Suspense fallback={null}>
-        <SetupPhysics setup={initAmmo}>
-          <Outlet />
-          <OrbitControls />
-          <directionalLight intensity={1.64} position={[2.1, 0, 24]} rotation={[0, 2 * Math.PI, 0]} />
-          <Environment background files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/belfast_sunset_puresky_2k.hdr" />
-        </SetupPhysics>
+        <Outlet />
+        <OrbitControls />
+        <directionalLight intensity={1.64} position={[2.1, 0, 24]} rotation={[0, 2 * Math.PI, 0]} />
+        <Environment background files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/belfast_sunset_puresky_2k.hdr" />
       </Suspense>
     </Canvas>
   </>

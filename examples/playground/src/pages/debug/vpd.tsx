@@ -1,4 +1,4 @@
-import type { MMDPhysicsHelper } from '@moeru/three-mmd-physics-ammo'
+import type { Object3D } from 'three'
 
 import { applyVPD } from '@moeru/three-mmd'
 import { MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
@@ -40,7 +40,7 @@ const DebugVPD = () => {
   useFrame((_, delta) => mmd.update(delta))
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
   const physicsHelper = useMemo(
-    () => mmd.physics?.createHelper<MMDPhysicsHelper>(),
+    () => mmd.physics?.createHelper<Object3D>(),
     [mmd.physics],
   )
 

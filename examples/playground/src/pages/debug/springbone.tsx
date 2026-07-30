@@ -1,4 +1,4 @@
-import type { MMDPhysicsHelper } from '@moeru/three-mmd-physics-ammo'
+import type { SpringBoneHelpers } from '@moeru/three-mmd-physics-springbone'
 
 import { MMDSpringBonePlugin } from '@moeru/three-mmd-physics-springbone'
 import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
@@ -55,7 +55,7 @@ const DebugAmmo = () => {
   // Helpers
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
   const physicsHelper = useMemo(
-    () => mmd.physics?.createHelper<MMDPhysicsHelper>(),
+    () => mmd.physics?.createHelper<SpringBoneHelpers>(),
     [mmd.physics],
   )
 
@@ -100,7 +100,12 @@ const DebugAmmo = () => {
       />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
-      {showPhysics && physicsHelper && <primitive object={physicsHelper} />}
+      {showPhysics && physicsHelper?.colliderHelpers.map(helper => (
+        <primitive key={helper.uuid} object={helper} />
+      ))}
+      {showPhysics && physicsHelper?.jointHelpers.map(helper => (
+        <primitive key={helper.uuid} object={helper} />
+      ))}
     </>
 
   )
