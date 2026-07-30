@@ -62,11 +62,18 @@ describe('ammo physics package', () => {
     mocks.setPhysics.mockClear()
   })
 
-  it('only exports the physics factory and loader plugin', () => {
+  it('exports the supported public interface', () => {
     expect(Object.keys(packageExports).sort((a, b) => a.localeCompare(b))).toEqual([
+      'initAmmo',
       'MMDAmmoPhysics',
       'MMDAmmoPlugin',
     ])
+  })
+
+  it('supports explicit initialization before using the factory directly', async () => {
+    await packageExports.initAmmo()
+
+    expect(mocks.ensureAmmo).toHaveBeenCalledOnce()
   })
 
   it('forwards the physics lifecycle and rebuilds when model scale changes', () => {

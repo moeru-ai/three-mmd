@@ -2,9 +2,12 @@ import type { MMDLoaderPluginFactory, PhysicsFactory } from '@moeru/three-mmd'
 
 import { Vector3 } from 'three'
 
-import { ensureAmmo, getAmmo } from './ammo-runtime'
+import { getAmmo } from './ammo-runtime'
+import { initAmmo } from './init-ammo'
 import { MmdAmmoPhysicsHelper } from './mmd-ammo-physics-helper'
 import { MmdAmmoPhysicsModel } from './mmd-ammo-physics-model'
+
+export { initAmmo } from './init-ammo'
 
 export const MMDAmmoPhysics: PhysicsFactory = (mmd) => {
   const ammo = getAmmo()
@@ -41,7 +44,7 @@ export const MMDAmmoPhysics: PhysicsFactory = (mmd) => {
 
 export const MMDAmmoPlugin: MMDLoaderPluginFactory = () => ({
   afterBuild: async (mmd) => {
-    await ensureAmmo()
+    await initAmmo()
     mmd.setPhysics(MMDAmmoPhysics)
   },
   name: '@moeru/three-mmd-physics-ammo',

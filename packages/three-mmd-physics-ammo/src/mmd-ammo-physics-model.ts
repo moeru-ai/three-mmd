@@ -73,7 +73,9 @@ export class MmdAmmoPhysicsModel {
     this.mmd = mmd
     this.world = new AmmoWorld(ammo)
     this.scalingFactor = this.readRootTransform(true)
-    this.bodies = Array.from({ length: mmd.pmx.rigidBodies.length }).fill(null)
+    this.bodies = []
+    this.bodies.length = mmd.pmx.rigidBodies.length
+    this.bodies.fill(null)
     this.initialBodyTransforms = Array.from(
       { length: mmd.pmx.rigidBodies.length },
       () => new Matrix4(),
