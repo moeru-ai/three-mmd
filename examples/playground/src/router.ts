@@ -8,6 +8,7 @@ export type Path =
   | `/debug/ammo`
   | `/debug/material`
   | `/debug/mesh`
+  | `/debug/springbone`
   | `/debug/vpd`
 
 export type Params = {
