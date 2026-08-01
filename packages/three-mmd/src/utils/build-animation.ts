@@ -13,6 +13,11 @@ import {
 } from 'three'
 
 class AnimationBuilder {
+  private static readonly _tempCenter = new Vector3()
+  private static readonly _tempEuler = new Euler()
+  private static readonly _tempPosition = new Vector3()
+  private static readonly _tempQuaternion = new Quaternion()
+
   /**
    * @param vmd - parsed VMD data
    * @param mesh - tracks will be fitting to mesh
@@ -48,7 +53,7 @@ class AnimationBuilder {
       array.push(q.w)
     }
 
-    const pushInterpolation = (array: number[], interpolation: number[], index: number) => {
+    const pushInterpolation = (array: number[], interpolation: ArrayLike<number>, index: number) => {
       array.push(interpolation[index * 4 + 0] / 127) // x1
       array.push(interpolation[index * 4 + 1] / 127) // x2
       array.push(interpolation[index * 4 + 2] / 127) // y1
@@ -72,10 +77,10 @@ class AnimationBuilder {
     const pInterpolations: number[] = []
     const fInterpolations: number[] = []
 
-    const quaternion = new Quaternion()
-    const euler = new Euler()
-    const position = new Vector3()
-    const center = new Vector3()
+    const quaternion = AnimationBuilder._tempQuaternion
+    const euler = AnimationBuilder._tempEuler
+    const position = AnimationBuilder._tempPosition
+    const center = AnimationBuilder._tempCenter
 
     for (let i = 0, il = cameras.length; i < il; i++) {
       const motion = cameras[i]
@@ -85,7 +90,7 @@ class AnimationBuilder {
       const rot = motion.rotation
       const distance = motion.distance
       const fov = motion.fov
-      const interpolation = Array.from(motion.interpolation)
+      const interpolation = motion.interpolation
 
       times.push(time)
 
@@ -228,7 +233,7 @@ class AnimationBuilder {
    * @param mesh - tracks will be fitting to mesh
    */
   private buildSkeletalAnimation(vmd: VmdObject, mesh: SkinnedMesh): AnimationClip {
-    const pushInterpolation = (array: number[], interpolation: number[], index: number) => {
+    const pushInterpolation = (array: number[], interpolation: ArrayLike<number>, index: number) => {
       array.push(interpolation[index + 0] / 127) // x1
       array.push(interpolation[index + 8] / 127) // x2
       array.push(interpolation[index + 4] / 127) // y1
@@ -271,7 +276,7 @@ class AnimationBuilder {
         const time = array[i].frameNumber / 30
         const position = array[i].position
         const rotation = array[i].rotation
-        const interpolation = Array.from(array[i].interpolation)
+        const interpolation = array[i].interpolation
 
         times.push(time)
 
