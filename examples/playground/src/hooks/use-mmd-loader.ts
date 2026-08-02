@@ -1,4 +1,4 @@
-import { MMDMeshLoader as MoeruMMDLoader } from '@moeru/three-mmd'
+import { MMDLoader as MoeruMMDLoader } from '@moeru/three-mmd'
 import { useLocalStorage } from 'foxact/use-local-storage'
 import { useControls } from 'leva'
 import { startTransition, useEffect, useMemo } from 'react'

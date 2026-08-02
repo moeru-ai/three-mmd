@@ -13,7 +13,10 @@ const DebugMesh = () => {
 
   const [object, setObject] = useState<SkinnedMesh>()
 
-  useEffect(() => startTransition(async () => setObject(await loader.loadAsync(pmxUrl))), [loader])
+  useEffect(() => startTransition(async () => {
+    const loaded = await loader.loadAsync(pmxUrl)
+    setObject('mesh' in loaded ? loaded.mesh : loaded)
+  }), [loader])
 
   const { showSkeleton } = useControls({
     showSkeleton: false,

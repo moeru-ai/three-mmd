@@ -1,6 +1,5 @@
 export { SetupPhysics } from './components/setup-physics'
 export { useMMD } from './hooks/use-mmd'
 export { useMMDAnimation } from './hooks/use-mmd-animation'
-export { useMMDMesh } from './hooks/use-mmd-mesh'
 export { useVMD } from './hooks/use-vmd'
 export { useVPD } from './hooks/use-vpd'
