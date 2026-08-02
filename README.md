@@ -2,39 +2,58 @@
 
 Use MMD on Three.js
 
-## Usage
+## Packages
+
+- [`@moeru/three-mmd`](packages/three-mmd/README.md) — core runtime and WebGL toon material
+- [`@moeru/three-mmd-physics-ammo`](packages/three-mmd-physics-ammo/README.md) — Ammo.js physics
+- [`@moeru/three-mmd-physics-springbone`](packages/three-mmd-physics-springbone/README.md) — spring bone physics
+
+## Install
 
 ```bash
-npm i three @moeru/three-mmd
-npm i -D @types/three
+pnpm add three @moeru/three-mmd
+pnpm add -D @types/three
 ```
 
-> There may be significant changes in future versions, so this is unstable.
+## Basic usage
+
+```ts
+import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
+import { AnimationMixer, Clock } from 'three'
+
+const mmd = await new MMDLoader().loadAsync('/models/miku_v2.pmd')
+const vmd = await new VMDLoader().loadAsync('/motions/wavefile_v2.vmd')
+const mixer = new AnimationMixer(mmd.mesh)
+const clock = new Clock()
+
+mixer.clipAction(buildAnimation(vmd, mmd.mesh)).play()
+
+// Call this once per render frame.
+const update = () => {
+  mmd.updateWithMixer(clock.getDelta(), mixer)
+}
+```
+
+`updateWithMixer()` restores the previous animation pose, advances the mixer,
+then applies MMD IK, grants, and the optional physics service. Use `update()`
+directly when the mixer is managed elsewhere; do not call both methods for the
+same frame.
+
+## Physics
+
+Physics is provided by separate packages. Register one plugin before loading
+the model:
 
 ```ts
 import { MMDLoader } from '@moeru/three-mmd'
-import { Scene } from 'three'
+import { MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
 
-const scene = new Scene()
-const loader = new MMDLoader()
-
-loader.load(
-  // URL of the model you want to load
-  '/models/miku_v2.pmd',
-  // called when the resource is loaded
-  mmd => scene.add(mmd.mesh),
-  // called while loading is progressing
-  progress => console.log('Loading model...', 100.0 * (progress.loaded / progress.total), '%'),
-  // called when loading has errors
-  error => console.error(error),
-)
+const mmd = await new MMDLoader()
+  .register(MMDAmmoPlugin)
+  .loadAsync('/models/miku_v2.pmd')
 ```
 
-## Roadmap
-
-- PBR-based Material
-- Rapier physics
-- WebGPURenderer compatibility
+The default material backend is the WebGL `MMDToonMaterial`.
 
 ## See also
 
