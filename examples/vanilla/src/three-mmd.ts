@@ -164,8 +164,7 @@ const main = async () => {
 
     ikHelper = mmd.ikSolver.createHelper()
     ikHelper.visible = false
-    // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
-    scene.add(ikHelper as unknown as Object3D)
+    scene.add(ikHelper)
 
     physicsHelper = mmd.physics?.createHelper<Object3D>()
     if (physicsHelper !== undefined) {

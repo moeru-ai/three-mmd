@@ -1,5 +1,5 @@
 import type { VmdObject } from 'babylon-mmd/esm/Loader/Parser/vmdObject'
-import type { SkinnedMesh } from 'three'
+import type { SkinnedMesh, TypedArray } from 'three'
 
 import {
   AnimationClip,
@@ -181,8 +181,8 @@ class AnimationBuilder {
     const track = new TypedKeyframeTrack(node, times, values)
 
     // @ts-expect-error monkey patch
-    track.createInterpolant = function InterpolantFactoryMethodCubicBezier(result: number[]) {
-      return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result, new Float32Array(interpolations))
+    track.createInterpolant = function InterpolantFactoryMethodCubicBezier(result: null | TypedArray) {
+      return new CubicBezierInterpolation(this.times, this.values, this.getValueSize(), result ?? undefined, new Float32Array(interpolations))
     }
 
     return track
@@ -306,10 +306,10 @@ class AnimationBuilder {
 
 class CubicBezierInterpolation extends Interpolant {
   readonly interpolationParams: ArrayLike<number>
-  declare parameterPositions: ArrayLike<number>
-  declare resultBuffer: number[]
+  declare parameterPositions: TypedArray
+  declare resultBuffer: TypedArray
   declare sampleSize: number
-  declare sampleValues: ArrayLike<number>
+  declare sampleValues: TypedArray
 
   private _lastResult = 0
   private _lastX = -1
@@ -319,10 +319,10 @@ class CubicBezierInterpolation extends Interpolant {
   private _lastY2 = -1
 
   constructor(
-    parameterPositions: ArrayLike<number>,
-    sampleValues: ArrayLike<number>,
+    parameterPositions: TypedArray,
+    sampleValues: TypedArray,
     sampleSize: number,
-    resultBuffer: number[],
+    resultBuffer: TypedArray | undefined,
     params: ArrayLike<number>,
   ) {
     super(parameterPositions, sampleValues, sampleSize, resultBuffer)
@@ -435,9 +435,9 @@ class CubicBezierInterpolation extends Interpolant {
     return res
   }
 
-  interpolate_(i1: number, t0: number, t: number, t1: number): number[] {
+  interpolate_(i1: number, t0: number, t: number, t1: number): TypedArray {
     const result = this.resultBuffer
-    const values = this.sampleValues as number[]
+    const values = this.sampleValues
     const stride = this.valueSize
     const params = this.interpolationParams
 
@@ -457,7 +457,15 @@ class CubicBezierInterpolation extends Interpolant {
 
       const ratio = this._calculate(x1, x2, y1, y2, weight1)
 
-      Quaternion.slerpFlat(result, 0, values, offset0, values, offset1, ratio)
+      Quaternion.slerpFlat(
+        result as unknown as number[],
+        0,
+        values as unknown as number[],
+        offset0,
+        values as unknown as number[],
+        offset1,
+        ratio,
+      )
     }
     else if (stride === 3) { // Vector3
       for (let i = 0; i < stride; ++i) {

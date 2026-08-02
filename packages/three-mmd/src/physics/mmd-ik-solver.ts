@@ -208,8 +208,9 @@ export class MMDIKSolver {
    * @param delta Elapsed time in seconds.
    * @param physicsAffectsIK Whether PMX rigid-body-controlled chains may be skipped.
    */
-  // eslint-disable-next-line unused-imports/no-unused-vars -- Reserved for the frame lifecycle API.
   public update(delta = 0, physicsAffectsIK = false) {
+    void delta
+
     const bones = this.mesh.skeleton.bones
 
     // Applying IK writes its result into Three.js bones. Restore an unchanged

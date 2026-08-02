@@ -16,6 +16,7 @@ describe('cubicBezierInterpolation optimization tests', () => {
       rotation: [0, 0, 0, 1],
     }
 
+    // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
     const vmd = {
       boneKeyFrames: {
         get: () => mockFrame,
@@ -24,15 +25,16 @@ describe('cubicBezierInterpolation optimization tests', () => {
       cameraKeyFrames: { get: () => mockFrame, length: 0 },
       morphKeyFrames: { get: () => mockFrame, length: 0 },
       propertyKeyFrames: { get: () => mockFrame, length: 0 },
-    } as VmdObject
+    } as unknown as VmdObject
 
+    // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
     const mesh = {
       morphTargetDictionary: {},
       skeleton: {
         bones: [{ name: 'root', position: { toArray: () => [0, 0, 0] } }],
         getBoneByName: () => ({ position: { toArray: () => [0, 0, 0] } }),
       },
-    } as SkinnedMesh
+    } as unknown as SkinnedMesh
 
     const clip = buildAnimation(vmd, mesh)
     expect(clip).toBeDefined()

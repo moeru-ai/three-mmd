@@ -91,9 +91,10 @@ export const checkImageTransparency = (map: LoadingTexture, geometry: BufferGeom
       return
     }
 
-    const imageData: ImageData = ('data' in texture.image && (texture.image as { data: unknown }).data != null)
-      ? texture.image as ImageData
-      : createImageData(texture.image as HTMLImageElement)
+    const image = texture.image as HTMLImageElement | ImageData
+    const imageData: ImageData = ('data' in image)
+      ? image
+      : createImageData(image)
 
     const group = geometry.groups[groupIndex]
 

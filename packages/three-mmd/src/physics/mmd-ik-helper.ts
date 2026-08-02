@@ -40,8 +40,8 @@ export class MMDIKHelper extends Object3D {
   public readonly sphereGeometry: SphereGeometry
   public readonly targetSphereMaterial: MeshBasicMaterial
 
+  private readonly bonePosition = new Vector3()
   private readonly matrixWorldInverse = new Matrix4()
-  private readonly position = new Vector3()
   private readonly visuals: IKVisual[] = []
 
   constructor(mesh: SkinnedMesh, pmx: PmxObject, sphereSize = 0.25) {
@@ -190,9 +190,9 @@ export class MMDIKHelper extends Object3D {
   }
 
   private writeBonePosition(attribute: BufferAttribute, index: number, bone: Object3D) {
-    this.position
+    this.bonePosition
       .setFromMatrixPosition(bone.matrixWorld)
       .applyMatrix4(this.matrixWorldInverse)
-    attribute.setXYZ(index, this.position.x, this.position.y, this.position.z)
+    attribute.setXYZ(index, this.bonePosition.x, this.bonePosition.y, this.bonePosition.z)
   }
 }
