@@ -37,8 +37,8 @@
   },
   "peerDependencies": {
     "@moeru/three-mmd": "workspace:^",
-    "@types/three": "^0.184.0",
-    "three": "^0.184.0"
+    "@types/three": ">=0.184.0",
+    "three": ">=0.184.0"
   },
   "dependencies": {
     "@pixiv/three-vrm-springbone": "catalog:"
