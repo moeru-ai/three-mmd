@@ -14,7 +14,6 @@ const CF_KINEMATIC_OBJECT = 2
 const CF_NO_CONTACT_RESPONSE = 4
 const DISABLE_DEACTIVATION = 4
 const BT_CONSTRAINT_STOP_ERP = 2
-const UNIFORM_SCALE_EPSILON = 0.0001
 
 interface RigidBodyResource {
   body: Ammo.btRigidBody
@@ -45,13 +44,15 @@ export class MmdAmmoPhysicsModel {
   public readonly scalingFactor: number
 
   private readonly ammo: AmmoModule
+  private readonly bodyModelTransforms: Matrix4[]
   private readonly bodyStates: Uint8Array
   private readonly constraints: Ammo.btGeneric6DofSpringConstraint[] = []
   private disposed = false
   private gravity = new Vector3(0, -98, 0)
-  private readonly initialBodyTransforms: Matrix4[]
+  private readonly inversePhysicsRootMatrix = new Matrix4()
   private readonly inverseRootMatrix = new Matrix4()
   private readonly mmd: MMD
+  private readonly physicsRootMatrix = new Matrix4()
   private readonly rootQuaternion = new Quaternion()
   private readonly temporaryAmmoQuaternion: Ammo.btQuaternion
   private readonly temporaryAmmoTransform: Ammo.btTransform
@@ -72,11 +73,12 @@ export class MmdAmmoPhysicsModel {
     this.ammo = ammo
     this.mmd = mmd
     this.world = new AmmoWorld(ammo)
-    this.scalingFactor = this.readRootTransform(true)
+    this.readRootTransform()
+    this.scalingFactor = 1
     this.bodies = []
     this.bodies.length = mmd.pmx.rigidBodies.length
     this.bodies.fill(null)
-    this.initialBodyTransforms = Array.from(
+    this.bodyModelTransforms = Array.from(
       { length: mmd.pmx.rigidBodies.length },
       () => new Matrix4(),
     )
@@ -136,6 +138,15 @@ export class MmdAmmoPhysicsModel {
     this.world.dispose()
   }
 
+  /** Maps a body's unscaled simulation transform into the rendered root space. */
+  public getBodyRenderMatrix(resource: RigidBodyResource, target: Matrix4) {
+    this.readRootTransform()
+    this.readBodyTransform(resource.body, target)
+    return target
+      .premultiply(this.inversePhysicsRootMatrix)
+      .premultiply(this.mmd.mesh.matrixWorld)
+  }
+
   public initialize() {
     this.readRootTransform()
     this.mmd.mesh.updateMatrixWorld(true)
@@ -147,7 +158,9 @@ export class MmdAmmoPhysicsModel {
 
       const transform = resource.bone
         ? this.getBodyWorldMatrixFromBone(resource, this.temporaryMatrixA)
-        : this.initialBodyTransforms[i]
+        : this.temporaryMatrixA
+            .copy(this.physicsRootMatrix)
+            .multiply(this.bodyModelTransforms[i])
 
       this.writeBodyTransform(resource, transform)
       this.zeroBodyVelocity(resource)
@@ -325,8 +338,10 @@ export class MmdAmmoPhysicsModel {
           constraint.setStiffness(axis, stiffness)
       }
       for (let axis = 0; axis < 3; axis++) {
-        constraint.setStiffness(axis + 3, joint.springRotation[axis])
-        constraint.enableSpring(axis + 3, true)
+        const stiffness = joint.springRotation[axis]
+        constraint.enableSpring(axis + 3, stiffness !== 0)
+        if (stiffness !== 0)
+          constraint.setStiffness(axis + 3, stiffness)
       }
 
       this.setConstraintLimits(constraint, joint)
@@ -344,15 +359,18 @@ export class MmdAmmoPhysicsModel {
 
   private buildRigidBodies() {
     const bones = this.mmd.mesh.skeleton.bones
-    const boneByName = new Map(bones.map(bone => [bone.name, bone]))
+    const boneIndexByName = new Map(
+      bones.map((bone, index) => [bone.name, index]),
+    )
 
     for (let i = 0; i < this.mmd.pmx.rigidBodies.length; i++) {
       const params = this.mmd.pmx.rigidBodies[i]
-      const bone = (
+      const boneIndex = (
         params.boneIndex >= 0 && params.boneIndex < bones.length
-          ? bones[params.boneIndex]
-          : boneByName.get(params.name)
-      ) ?? null
+          ? params.boneIndex
+          : boneIndexByName.get(params.name) ?? -1
+      )
+      const bone: Bone | null = boneIndex >= 0 ? bones[boneIndex] : null
 
       if (!bone)
         console.warn(`MMDAmmoPhysics: created unmapped rigid body "${params.name}".`)
@@ -368,16 +386,15 @@ export class MmdAmmoPhysicsModel {
         this.temporaryMatrixA,
       )
       const bodyOffset = bone
-        ? this.temporaryMatrixB
-            .copy(this.inverseRootMatrix)
-            .multiply(bone.matrixWorld)
-            .invert()
-            .multiply(shapeModelTransform)
-            .clone()
+        ? this.getBodyOffsetFromBindPose(
+            boneIndex,
+            shapeModelTransform,
+            this.temporaryMatrixB,
+          ).clone()
         : shapeModelTransform.clone()
 
       const worldTransform = this.temporaryMatrixB
-        .copy(this.mmd.mesh.matrixWorld)
+        .copy(this.physicsRootMatrix)
         .multiply(shapeModelTransform)
       const ammoTransform = this.createAmmoTransform(worldTransform)
       const motionState = new this.ammo.btDefaultMotionState(ammoTransform)
@@ -426,7 +443,7 @@ export class MmdAmmoPhysicsModel {
         shape: shapeResult.shape,
         temporalKinematic: false,
       }
-      this.initialBodyTransforms[i].copy(worldTransform)
+      this.bodyModelTransforms[i].copy(shapeModelTransform)
 
       this.ammo.destroy(localInertia)
       this.ammo.destroy(ammoTransform)
@@ -441,7 +458,7 @@ export class MmdAmmoPhysicsModel {
   ): Matrix4 {
     this.temporaryPosition.fromArray(position).multiplyScalar(positionScale)
     this.temporaryQuaternion.setFromEuler(
-      new Euler(rotation[0], rotation[1], rotation[2], 'YXZ'),
+      new Euler(rotation[0], rotation[1], rotation[2], 'XYZ'),
     )
     return target.compose(
       this.temporaryPosition,
@@ -510,6 +527,17 @@ export class MmdAmmoPhysicsModel {
     }
   }
 
+  private getBodyOffsetFromBindPose(
+    boneIndex: number,
+    shapeModelTransform: Matrix4,
+    target: Matrix4,
+  ) {
+    return target
+      .copy(this.mmd.mesh.skeleton.boneInverses[boneIndex])
+      .multiply(this.mmd.mesh.bindMatrix)
+      .multiply(shapeModelTransform)
+  }
+
   private getBodyWorldMatrixFromBone(
     resource: RigidBodyResource,
     target: Matrix4,
@@ -519,7 +547,7 @@ export class MmdAmmoPhysicsModel {
       .multiply(resource.bone!.matrixWorld)
     target.copy(boneModelMatrix).multiply(resource.bodyOffset)
     return this.temporaryMatrixC
-      .copy(this.mmd.mesh.matrixWorld)
+      .copy(this.physicsRootMatrix)
       .multiply(target)
   }
 
@@ -554,7 +582,7 @@ export class MmdAmmoPhysicsModel {
     )
   }
 
-  private readRootTransform(warn = false): number {
+  private readRootTransform() {
     const mesh = this.mmd.mesh
     mesh.updateMatrixWorld(true)
     mesh.matrixWorld.decompose(
@@ -563,26 +591,12 @@ export class MmdAmmoPhysicsModel {
       this.temporaryScale,
     )
     this.inverseRootMatrix.copy(mesh.matrixWorld).invert()
-
-    const { x, y, z } = this.temporaryScale
-    if (
-      Math.abs(x - y) >= UNIFORM_SCALE_EPSILON
-      || Math.abs(y - z) >= UNIFORM_SCALE_EPSILON
-    ) {
-      if (warn) {
-        console.warn(
-          'MMDAmmoPhysics: root scaling is not uniform; using the largest axis for physics shapes.',
-        )
-      }
-      return Math.max(Math.abs(x), Math.abs(y), Math.abs(z))
-    }
-
-    if (warn && Math.abs(x - 1) >= UNIFORM_SCALE_EPSILON) {
-      console.warn(
-        'MMDAmmoPhysics: root scaling is not 1; simulation may differ from the original.',
-      )
-    }
-    return Math.abs(x)
+    this.physicsRootMatrix.compose(
+      this.temporaryPosition,
+      this.rootQuaternion,
+      this.temporaryScale.set(1, 1, 1),
+    )
+    this.inversePhysicsRootMatrix.copy(this.physicsRootMatrix).invert()
   }
 
   private restoreDynamic(resource: RigidBodyResource) {
@@ -652,7 +666,7 @@ export class MmdAmmoPhysicsModel {
   }
 
   private worldToModelTransform(worldTransform: Matrix4, target: Matrix4) {
-    target.copy(this.inverseRootMatrix).multiply(worldTransform)
+    target.copy(this.inversePhysicsRootMatrix).multiply(worldTransform)
     target.decompose(
       this.temporaryPosition,
       this.temporaryQuaternion,

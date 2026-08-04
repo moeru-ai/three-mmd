@@ -76,7 +76,7 @@ describe('ammo physics package', () => {
     expect(mocks.ensureAmmo).toHaveBeenCalledOnce()
   })
 
-  it('forwards the physics lifecycle and rebuilds when model scale changes', () => {
+  it('forwards the physics lifecycle without rebuilding for render scale changes', () => {
     const mmd = createMMD()
     const physics = packageExports.MMDAmmoPhysics(mmd)
     const firstModel = mocks.instances[0]
@@ -90,17 +90,12 @@ describe('ammo physics package', () => {
     expect(firstModel.setGravity).toHaveBeenCalledWith(gravity)
     expect(firstModel.update).toHaveBeenCalledWith(1 / 60)
 
-    physics.setScalar?.(1)
+    mmd.scale = 0.1
+    expect(physics.setScalar).toBeUndefined()
     expect(mocks.instances).toHaveLength(1)
 
-    mmd.scale = 0.1
-    physics.setScalar?.(0.1)
-    expect(firstModel.dispose).toHaveBeenCalledOnce()
-    expect(mocks.instances).toHaveLength(2)
-    expect(mocks.instances[1].setGravity).toHaveBeenCalledWith(gravity)
-
     physics.dispose?.()
-    expect(mocks.instances[1].dispose).toHaveBeenCalledOnce()
+    expect(firstModel.dispose).toHaveBeenCalledOnce()
   })
 
   it('waits for Ammo before installing physics through the loader plugin', async () => {

@@ -12,18 +12,7 @@ export { initAmmo } from './init-ammo'
 export const MMDAmmoPhysics: PhysicsFactory = (mmd) => {
   const ammo = getAmmo()
   const gravity = new Vector3(0, -98, 0)
-  let model = new MmdAmmoPhysicsModel(ammo, mmd)
-  let scalar = mmd.scale
-
-  const rebuild = (nextScalar: number) => {
-    if (Math.abs(scalar - nextScalar) < 0.0001)
-      return
-
-    scalar = nextScalar
-    model.dispose()
-    model = new MmdAmmoPhysicsModel(ammo, mmd)
-    model.setGravity(gravity)
-  }
+  const model = new MmdAmmoPhysicsModel(ammo, mmd)
 
   return {
     affectsIK: true,
@@ -37,7 +26,6 @@ export const MMDAmmoPhysics: PhysicsFactory = (mmd) => {
       gravity.copy(nextGravity)
       model.setGravity(gravity)
     },
-    setScalar: rebuild,
     update: delta => model.update(delta),
   }
 }

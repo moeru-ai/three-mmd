@@ -153,6 +153,8 @@ const main = async () => {
 
     mixer = new AnimationMixer(mmd.mesh)
     animationAction = mixer.clipAction(buildAnimation(vmd, mmd.mesh)).play()
+    mmd.updateWithMixer(0, mixer, { physics: false })
+    mmd.physics?.reset?.()
 
     ikHelper = mmd.ikSolver.createHelper()
     ikHelper.visible = false
