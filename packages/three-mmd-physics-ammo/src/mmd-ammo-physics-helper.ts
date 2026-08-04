@@ -10,6 +10,7 @@ import {
   BoxGeometry,
   CapsuleGeometry,
   Color,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   Object3D,
@@ -45,6 +46,8 @@ export class MmdAmmoPhysicsHelper extends Object3D {
     }),
   ] as const
 
+  private readonly matrix = new Matrix4()
+
   public constructor(
     rigidBodies: readonly PmxObject.RigidBody[],
     getModel: () => MmdAmmoPhysicsModel,
@@ -76,7 +79,7 @@ export class MmdAmmoPhysicsHelper extends Object3D {
         const resource = model.bodies[i]
         if (!resource)
           continue
-        this.updateChild(this.children[i], resource, model.scalingFactor)
+        this.updateChild(this.children[i], resource, model)
       }
     }
 
@@ -100,13 +103,12 @@ export class MmdAmmoPhysicsHelper extends Object3D {
   private updateChild(
     child: Object3D,
     resource: RigidBodyResource,
-    scale: number,
+    model: MmdAmmoPhysicsModel,
   ) {
-    const transform = resource.body.getWorldTransform()
-    const origin = transform.getOrigin()
-    const rotation = transform.getRotation()
-    child.position.set(origin.x(), origin.y(), origin.z())
-    child.quaternion.set(rotation.x(), rotation.y(), rotation.z(), rotation.w())
-    child.scale.setScalar(scale)
+    model.getBodyRenderMatrix(resource, this.matrix).decompose(
+      child.position,
+      child.quaternion,
+      child.scale,
+    )
   }
 }
