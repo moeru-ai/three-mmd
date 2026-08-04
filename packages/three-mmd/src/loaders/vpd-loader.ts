@@ -4,7 +4,6 @@ import type { LoadingManager } from 'three'
 import { VpdReader } from 'babylon-mmd/esm/Loader/Parser/vpdReader'
 import { FileLoader, Loader } from 'three'
 
-/** @experimental */
 export class VPDLoader extends Loader<VpdObject> {
   constructor(manager?: LoadingManager) {
     super(manager)

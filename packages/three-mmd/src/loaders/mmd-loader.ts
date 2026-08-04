@@ -11,18 +11,16 @@ import type { MMDLoaderPlugin, MMDLoaderPluginFactory } from './loader-plugin'
 
 import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
-import { FileLoader, Loader, LoaderUtils } from 'three'
+import { FileLoader, Loader, LoaderUtils, SkinnedMesh } from 'three'
 
 import { installMMDMaterialBindings } from '../materials/toon/bindings'
 import { extractModelExtension } from '../utils/_extract-model-extension'
 import { buildBones } from '../utils/build-bones'
 import { buildGeometry } from '../utils/build-geometry'
 import { buildMaterial } from '../utils/build-material'
-import { buildMesh } from '../utils/build-mesh'
 import { MMD } from '../utils/mmd'
 import { postParseProcessing } from '../utils/post-parse'
 
-/** @experimental */
 export class MMDLoader extends Loader<MMD> {
   private pluginCallbacks: MMDLoaderPluginFactory[] = []
 
@@ -144,7 +142,7 @@ export class MMDLoader extends Loader<MMD> {
   private assembleMMD(pmx: PmxObject, resourcePath: string, materialType?: MMDMaterialConstructor): MMD {
     const geometry = buildGeometry(pmx)
     const materials = buildMaterial(pmx, geometry, resourcePath, this.manager, materialType)
-    const rawMesh = buildMesh(geometry, materials)
+    const rawMesh = new SkinnedMesh(geometry, materials)
     const skinnedMesh = buildBones(pmx, rawMesh)
     installMMDMaterialBindings(skinnedMesh)
 
