@@ -10,8 +10,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 
-import modelFile from './assets/miku/miku_v2.pmd?url'
-import vmdFile from './assets/vmds/wavefile_v2.vmd?url'
+import modelFile from '../assets/miku/miku_v2.pmd?url'
+import vmdFile from '../assets/vmds/wavefile_v2.vmd?url'
 
 const main = async () => {
   let stats!: Stats
