@@ -97,15 +97,6 @@ const main = async () => {
 
     window.addEventListener('resize', onWindowResize)
 
-    // model
-    const onProgress = (xhr: ProgressEvent) => {
-      if (!xhr.lengthComputable)
-        return
-      const percentComplete = xhr.loaded / xhr.total * 100
-      // eslint-disable-next-line no-console
-      console.log(`${Math.round(percentComplete)}% downloaded`)
-    }
-
     const initGui = () => {
       const api = {
         'animation': animationEnabled,
@@ -147,11 +138,12 @@ const main = async () => {
       })
     }
 
+    // model
     const loader = new MMDLoader().register(MMDAmmoPlugin)
     const vmdLoader = new VMDLoader()
 
     const [loadedMMD, vmd] = await Promise.all([
-      loader.loadAsync(modelFile, onProgress),
+      loader.loadAsync(modelFile),
       vmdLoader.loadAsync(vmdFile),
     ])
 

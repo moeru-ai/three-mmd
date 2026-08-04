@@ -12,7 +12,9 @@ export default defineConfig({
       input: {
         'main': page('index'),
         'three-mmd': page('three-mmd'),
+        'three-mmd_audio': page('three-mmd_audio'),
         'three-stdlib': page('three-stdlib'),
+        'three-stdlib_audio': page('three-stdlib_audio'),
       },
     },
   },

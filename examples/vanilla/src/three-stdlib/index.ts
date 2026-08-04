@@ -79,14 +79,6 @@ const main = async () => {
     container.appendChild(stats.dom)
 
     // model
-    const onProgress = (xhr: ProgressEvent) => {
-      if (!xhr.lengthComputable)
-        return
-      const percentComplete = xhr.loaded / xhr.total * 100
-      // eslint-disable-next-line no-console
-      console.log(`${Math.round(percentComplete)}% downloaded`)
-    }
-
     helper = new MMDAnimationHelper({
       afterglow: 2.0,
     })
@@ -153,7 +145,7 @@ const main = async () => {
       scene.add(physicsHelper)
 
       initGui()
-    }, onProgress)
+    })
 
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.minDistance = 10
