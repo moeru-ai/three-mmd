@@ -18,6 +18,7 @@ export type { PhysicsFactory, PhysicsService } from './physics/physics-service'
 export { applyVPD, type ApplyVPDOptions } from './utils/apply-vpd'
 export { buildAnimation, buildCameraAnimation } from './utils/build-animation'
 export { MMD, type MMDUpdateOptions } from './utils/mmd'
+export { GeometricGroundingSolver, OneEuroFilter } from './utils/vmd-correction'
 
 export { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 export { VmdObject } from 'babylon-mmd/esm/Loader/Parser/vmdObject'

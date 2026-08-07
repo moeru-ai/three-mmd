@@ -3,6 +3,7 @@
   "compilerOptions": {
     // "allowJs": true,
     // "checkJs": true
+    "types": ["node"]
   },
   "include": [
     "examples/**/src",
