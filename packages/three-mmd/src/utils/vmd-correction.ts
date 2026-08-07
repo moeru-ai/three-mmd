@@ -1,5 +1,10 @@
 import type { Vector3 } from 'three'
 
+export interface GroundingOptions {
+  maxAccel?: number
+  maxVel?: number
+}
+
 /**
  * Geometric Leg Solver computing vertical height, hypotenuse, acceleration, and jerk to detect ground contact vs jump.
  *
@@ -44,11 +49,18 @@ export class GeometricGroundingSolver {
    *
    * @param heightHistory - Array of vertical heights over time
    * @param dt - Time step delta (e.g., 1/30s for VMD)
+   * @param options - Custom threshold options for classification flexibility
    * @returns True if the frame is classified as grounded, False if airborne/jumping.
    */
-  static isGrounded(heightHistory: number[], dt: number): boolean {
-    if (heightHistory.length < 3)
+  static isGrounded(
+    heightHistory: number[],
+    dt: number,
+    options: GroundingOptions = {},
+  ): boolean {
+    if (dt <= 0 || heightHistory.length < 3)
       return true
+
+    const { maxAccel = 4.5, maxVel = 1.2 } = options
 
     const len = heightHistory.length
     const hCurrent = heightHistory[len - 1]
@@ -60,7 +72,7 @@ export class GeometricGroundingSolver {
     const acceleration = (velocity - prevVelocity) / dt
 
     // Low acceleration near floor indicates grounded stance phase; high upward acceleration indicates liftoff.
-    return Math.abs(acceleration) < 4.5 && Math.abs(velocity) < 1.2
+    return Math.abs(acceleration) < maxAccel && Math.abs(velocity) < maxVel
   }
 }
 
