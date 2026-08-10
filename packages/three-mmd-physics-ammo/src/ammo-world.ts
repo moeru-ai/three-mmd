@@ -4,7 +4,9 @@ import type { Vector3 } from 'three'
 
 import type { AmmoModule } from './ammo-runtime'
 
-const FIXED_TIME_STEP = 1 / 60
+// The slightly shorter step used by three.js' MMD physics avoids unstable
+// spring chains that can oscillate at exactly 1 / 60.
+const FIXED_TIME_STEP = 1 / 65
 const MAX_STEPS = 5
 
 export class AmmoWorld {

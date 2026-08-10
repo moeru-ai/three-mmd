@@ -38,13 +38,15 @@ const DebugAmmo = () => {
 
   const mmd = useMMD(pmxUrl, loader => loader.register(MMDAmmoPlugin))
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
-  const { actions } = useAnimations([animation], mmd.mesh)
+  const animations = useMemo(() => [animation], [animation])
+  const { actions } = useAnimations(animations, mmd.mesh)
+  const action = actions.dance
 
   useFrame((_, delta) => {
-    if (paused)
-      return
-
-    mmd.update(delta)
+    // Keep IK, grants, and the cached animation pose evaluated while the
+    // animation is paused. Skipping this stage leaves the raw mixer pose on
+    // the skeleton after useMMD() restores it at the start of each frame.
+    mmd.update(paused ? 0 : delta)
   })
 
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
@@ -55,22 +57,22 @@ const DebugAmmo = () => {
 
   useEffect(() => {
     mmd.physics?.reset?.()
-    actions.dance?.play()
+    action?.play()
 
     return () => {
-      actions.dance?.stop()
+      action?.stop()
       mmd.mesh.pose()
       if (physicsHelper && 'dispose' in physicsHelper)
         (physicsHelper as Object3D & { dispose: () => void }).dispose()
     }
-  }, [actions, mmd, physicsHelper])
+  }, [action, mmd, physicsHelper])
 
   useEffect(() => {
-    if (!actions.dance)
+    if (!action)
       return
 
-    actions.dance.paused = paused
-  }, [actions, paused])
+    action.paused = paused
+  }, [action, paused])
 
   useEffect(() => mmd.setScalar(mmdScale), [mmd, mmdScale])
 
