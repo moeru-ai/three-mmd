@@ -458,7 +458,7 @@ export class MmdAmmoPhysicsModel {
   ): Matrix4 {
     this.temporaryPosition.fromArray(position).multiplyScalar(positionScale)
     this.temporaryQuaternion.setFromEuler(
-      new Euler(rotation[0], rotation[1], rotation[2], 'XYZ'),
+      new Euler(rotation[0], rotation[1], rotation[2], 'YXZ'),
     )
     return target.compose(
       this.temporaryPosition,

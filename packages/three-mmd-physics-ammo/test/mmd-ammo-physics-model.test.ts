@@ -1,5 +1,5 @@
 import { PmxObject } from '@moeru/three-mmd'
-import { Euler, Matrix4, Quaternion, SkinnedMesh, Vector3 } from 'three'
+import { Matrix4, Quaternion, SkinnedMesh, Vector3 } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MmdAmmoPhysicsModel } from '../src/mmd-ammo-physics-model'
@@ -79,7 +79,7 @@ describe('mmdAmmoPhysicsModel', () => {
       .toEqual([3, 3, 3])
   })
 
-  it('uses Three.js XYZ Euler order for rigid body transforms', () => {
+  it('uses Babylon-compatible YXZ Euler order for rigid body transforms', () => {
     const model = Object.create(
       MmdAmmoPhysicsModel.prototype,
     ) as MmdAmmoPhysicsModel
@@ -102,8 +102,12 @@ describe('mmdAmmoPhysicsModel', () => {
       new Matrix4(),
     )
     const actual = new Quaternion().setFromRotationMatrix(result)
-    const expected = new Quaternion().setFromEuler(
-      new Euler(...rotation, 'XYZ'),
+    // Babylon-MMD's Quaternion.FromEulerAngles uses Y-X-Z (yaw-pitch-roll).
+    const expected = new Quaternion(
+      0.05519693585589681,
+      0.9795295494770963,
+      -0.05057727902760362,
+      0.18686117525981902,
     )
 
     expect(actual.angleTo(expected)).toBeLessThan(1e-7)
