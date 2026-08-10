@@ -13,8 +13,8 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   const skinWeights = new Float32Array(vertexCount * 4)
   const sdefMask = new Float32Array(vertexCount)
   const sdefC = new Float32Array(vertexCount * 3)
-  const sdefR0 = new Float32Array(vertexCount * 3)
-  const sdefR1 = new Float32Array(vertexCount * 3)
+  const sdefRW0 = new Float32Array(vertexCount * 3)
+  const sdefRW1 = new Float32Array(vertexCount * 3)
 
   pmx.vertices.forEach((v, i) => {
     const position = [v.position[0], v.position[1], v.position[2]]
@@ -47,11 +47,21 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
         const bw = v.boneWeight as PmxObject.Vertex.BoneWeight<PmxObject.Vertex.BoneWeightType.Sdef>
         skinIndices.set([bw.boneIndices[0], bw.boneIndices[1], 0, 0], i * 4)
         const sdefWeights = bw.boneWeights
-        skinWeights.set([sdefWeights.boneWeight0, 1 - sdefWeights.boneWeight0, 0, 0], i * 4)
+        const weight0 = sdefWeights.boneWeight0
+        const weight1 = 1 - weight0
+        skinWeights.set([weight0, weight1, 0, 0], i * 4)
         sdefMask[i] = 1
         sdefC.set(sdefWeights.c, i * 3)
-        sdefR0.set(sdefWeights.r0, i * 3)
-        sdefR1.set(sdefWeights.r1, i * 3)
+        for (let axis = 0; axis < 3; axis++) {
+          const center = sdefWeights.c[axis]
+          const r0 = sdefWeights.r0[axis]
+          const r1 = sdefWeights.r1[axis]
+          const weightedR = r0 * weight0 + r1 * weight1
+
+          // The shader consumes RW0/RW1, not the raw PMX R0/R1 values.
+          sdefRW0[i * 3 + axis] = (center + center + r0 - weightedR) * 0.5
+          sdefRW1[i * 3 + axis] = (center + center + r1 - weightedR) * 0.5
+        }
         break
       }
     }
@@ -66,8 +76,8 @@ export const buildGeometry = (pmx: PmxObject): BufferGeometry => {
   // They are present for every mesh so material variants can share one layout.
   geometry.setAttribute('mmdSdefMask', new BufferAttribute(sdefMask, 1))
   geometry.setAttribute('mmdSdefC', new BufferAttribute(sdefC, 3))
-  geometry.setAttribute('mmdSdefR0', new BufferAttribute(sdefR0, 3))
-  geometry.setAttribute('mmdSdefR1', new BufferAttribute(sdefR1, 3))
+  geometry.setAttribute('mmdSdefRW0', new BufferAttribute(sdefRW0, 3))
+  geometry.setAttribute('mmdSdefRW1', new BufferAttribute(sdefRW1, 3))
 
   const indices = Array.from(pmx.indices)
   geometry.setIndex(indices)

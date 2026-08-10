@@ -664,4 +664,34 @@ describe('postParseProcessing IK limitations', () => {
     expect(limitation.minimumAngle).toEqual([-4, -5, 3])
     expect(limitation.maximumAngle).toEqual([-1, -2, 6])
   })
+
+  it('converts SDEF centers and offsets to right-handed coordinates', () => {
+    const pmx = {
+      ...createPmx([]),
+      vertices: [{
+        additionalVec4: [],
+        boneWeight: {
+          boneIndices: [0, 1],
+          boneWeights: {
+            boneWeight0: 0.25,
+            c: [1, 2, 3],
+            r0: [4, 5, 6],
+            r1: [7, 8, 9],
+          },
+        },
+        edgeScale: 1,
+        normal: [0, 1, 0],
+        position: [0, 0, 0],
+        uv: [0, 0],
+        weightType: PmxObject.Vertex.BoneWeightType.Sdef,
+      }],
+    } as PmxObject
+
+    postParseProcessing(pmx)
+
+    const sdef = (pmx.vertices[0].boneWeight as PmxObject.Vertex.BoneWeight<PmxObject.Vertex.BoneWeightType.Sdef>).boneWeights
+    expect(sdef.c).toEqual([1, 2, -3])
+    expect(sdef.r0).toEqual([4, 5, -6])
+    expect(sdef.r1).toEqual([7, 8, -9])
+  })
 })

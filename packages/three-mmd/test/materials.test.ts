@@ -196,7 +196,7 @@ describe('mmd toon bindings', () => {
 })
 
 describe('sdef geometry layout', () => {
-  it('retains PMX SDEF C/R0/R1 in loader-owned geometry attributes', () => {
+  it('precomputes PMX SDEF RW0/RW1 for the shader', () => {
     // eslint-disable-next-line @masknet/type-no-force-cast-via-top-type
     const pmx = {
       bones: [],
@@ -215,7 +215,7 @@ describe('sdef geometry layout', () => {
     const geometry = buildGeometry(pmx)
     expect(Array.from(geometry.getAttribute('mmdSdefMask').array)).toEqual([1])
     expect(Array.from(geometry.getAttribute('mmdSdefC').array)).toEqual([1, 2, 3])
-    expect(Array.from(geometry.getAttribute('mmdSdefR0').array)).toEqual([4, 5, 6])
-    expect(Array.from(geometry.getAttribute('mmdSdefR1').array)).toEqual([7, 8, 9])
+    expect(Array.from(geometry.getAttribute('mmdSdefRW0').array)).toEqual([-0.125, 0.875, 1.875])
+    expect(Array.from(geometry.getAttribute('mmdSdefRW1').array)).toEqual([1.375, 2.375, 3.375])
   })
 })
