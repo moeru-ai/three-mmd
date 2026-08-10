@@ -82,7 +82,7 @@ const DebugAmmo = () => {
 
   return (
     <>
-      <primitive object={mmd.mesh} />
+      <primitive object={mmd.mesh} position={[0, -10 * mmdScale, 0]} />
       {showIK && <primitive object={ikHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}
       {showPhysics && physicsHelper && <primitive object={physicsHelper} />}

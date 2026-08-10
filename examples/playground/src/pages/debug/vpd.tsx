@@ -58,7 +58,7 @@ const DebugVPD = () => {
 
   return (
     <>
-      <primitive object={mmd.mesh} />
+      <primitive object={mmd.mesh} position={[0, -10 * scale, 0]} />
       {showIK && <primitive object={ikHelper} />}
       {showPhysics && physicsHelper && <primitive object={physicsHelper} />}
       {showSkeleton && <skeletonHelper args={[mmd.mesh]} />}

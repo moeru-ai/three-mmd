@@ -10,6 +10,7 @@ const App = () => (
     <Stats />
     <Loader />
     <Canvas
+      camera={{ fov: 45, position: [0, 0, 3] }}
       gl={{ localClippingEnabled: true }}
       style={{ height: '100dvh', touchAction: 'none', width: '100dvw' }}
     >

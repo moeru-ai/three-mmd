@@ -30,7 +30,7 @@ const DebugMaterial = () => {
   if (mmd === undefined)
     return null
 
-  return <primitive object={mmd.mesh} scale={0.1} />
+  return <primitive object={mmd.mesh} position={[0, -1, 0]} scale={0.1} />
 }
 
 export default DebugMaterial

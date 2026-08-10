@@ -96,6 +96,7 @@ const DebugAmmo = () => {
     <>
       <primitive
         object={mmd.mesh}
+        position={[0, -10 * mmdScale, 0]}
         scale={mmdScale}
       />
       {showIK && <primitive object={ikHelper} />}

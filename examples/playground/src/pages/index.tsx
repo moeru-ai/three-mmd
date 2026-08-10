@@ -27,7 +27,7 @@ const Index = () => {
 
   return (
     <>
-      <primitive object={mmd.mesh} scale={0.1} />
+      <primitive object={mmd.mesh} position={[0, -1, 0]} scale={0.1} />
       <skeletonHelper args={[mmd.mesh]} />
     </>
   )

@@ -30,6 +30,7 @@ const DebugMesh = () => {
       <primitive
         object={object}
         // rotation={[0, Math.PI, 0]}
+        position={[0, -1, 0]}
         scale={0.1}
       />
       {showSkeleton && (
