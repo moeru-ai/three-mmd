@@ -9,8 +9,8 @@ const sdefDeclaration = /* glsl */`
 #ifdef USE_SKINNING
 attribute float mmdSdefMask;
 attribute vec3 mmdSdefC;
-attribute vec3 mmdSdefR0;
-attribute vec3 mmdSdefR1;
+attribute vec3 mmdSdefRW0;
+attribute vec3 mmdSdefRW1;
 
 vec4 mmdRotationMatrixToQuaternion( mat3 matrix ) {
   float trace = matrix[ 0 ][ 0 ] + matrix[ 1 ][ 1 ] + matrix[ 2 ][ 2 ];
@@ -63,7 +63,7 @@ const skinningVertex = /* glsl */`
   mat4 mmdBone0 = bindMatrixInverse * boneMatX * bindMatrix;
   mat4 mmdBone1 = bindMatrixInverse * boneMatY * bindMatrix;
   mat3 mmdRotation = mmdQuaternionToRotationMatrix( mmdSlerp( mmdRotationMatrixToQuaternion( mat3( mmdBone0 ) ), mmdRotationMatrixToQuaternion( mat3( mmdBone1 ) ), skinWeight.y ) );
-  vec3 mmdOffset = ( mmdBone0 * vec4( mmdSdefR0, 1.0 ) ).xyz * skinWeight.x + ( mmdBone1 * vec4( mmdSdefR1, 1.0 ) ).xyz * skinWeight.y;
+  vec3 mmdOffset = ( mmdBone0 * vec4( mmdSdefRW0, 1.0 ) ).xyz * skinWeight.x + ( mmdBone1 * vec4( mmdSdefRW1, 1.0 ) ).xyz * skinWeight.y;
   vec3 sdefTransformed = mmdRotation * ( transformed - mmdSdefC ) + mmdOffset;
   transformed = mix( linearTransformed, sdefTransformed, mmdSdefMask );
 #endif

@@ -13,6 +13,14 @@ export const postParseProcessing = (pmx: PmxObject): PmxObject => {
   pmx.vertices.forEach((v) => {
     v.position[2] = -v.position[2]
     v.normal[2] = -v.normal[2]
+
+    if (v.weightType !== PmxObject.Vertex.BoneWeightType.Sdef)
+      return
+
+    const sdef = (v.boneWeight as PmxObject.Vertex.BoneWeight<PmxObject.Vertex.BoneWeightType.Sdef>).boneWeights
+    sdef.c[2] = -sdef.c[2]
+    sdef.r0[2] = -sdef.r0[2]
+    sdef.r1[2] = -sdef.r1[2]
   })
 
   // Face winding (after Z flip)
