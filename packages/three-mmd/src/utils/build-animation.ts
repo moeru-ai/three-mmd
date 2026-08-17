@@ -401,20 +401,44 @@ class CubicBezierInterpolation extends Interpolant {
     const bx = 3.0 * (x2 - x1) - cx
     const ax = 1.0 - cx - bx
 
-    // Horner's method to evaluate f(t) and f'(t) at t = x with up to 4 Newton-Raphson steps
     let t = x
-    for (let i = 0; i < 4; i++) {
-      // f(t) = ((ax * t + bx) * t + cx) * t - x
+    let tMin = 0.0
+    let tMax = 1.0
+
+    // 1. First try up to 8 Newton-Raphson steps for fast quadratic convergence
+    for (let i = 0; i < 8; i++) {
       const ft = ((ax * t + bx) * t + cx) * t - x
       if (Math.abs(ft) < 1e-6)
         break
 
-      // f'(t) = (3 * ax * t + 2 * bx) * t + cx
       const dft = (3.0 * ax * t + 2.0 * bx) * t + cx
       if (Math.abs(dft) < 1e-6)
         break
 
-      t -= ft / dft
+      const tNext = t - ft / dft
+      if (tNext < tMin || tNext > tMax)
+        break
+
+      t = tNext
+    }
+
+    // 2. Fallback to Bisection (binary search) if Newton-Raphson didn't reach target tolerance
+    let ft = ((ax * t + bx) * t + cx) * t - x
+    if (Math.abs(ft) >= 1e-6) {
+      t = x
+
+      for (let i = 0; i < 16; i++) {
+        ft = ((ax * t + bx) * t + cx) * t - x
+        if (Math.abs(ft) < 1e-6)
+          break
+
+        if (ft > 0)
+          tMax = t
+        else
+          tMin = t
+
+        t = (tMin + tMax) * 0.5
+      }
     }
 
     // Clamp t within [0, 1]
