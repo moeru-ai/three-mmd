@@ -415,6 +415,10 @@ export class MMDIKSolver {
       this.rotation.copy(chain.ikRotation).multiply(chain.localRotation)
       const matrix = this.rotationMatrix.makeRotationFromQuaternion(this.rotation).elements
       const threshold = 88 * Math.PI / 180
+      // The clamped angle stays within +/-88 deg, so its cosine is always positive.
+      // Scaling both atan2 arguments by 1/cos would not change the result,
+      // and the cos !== 0 guard is unreachable - matrix elements are passed
+      // to atan2 directly.
       let rotationX: number
       let rotationY: number
       let rotationZ: number
@@ -425,12 +429,8 @@ export class MMDIKSolver {
           if (Math.abs(rotationZ) > threshold)
             rotationZ = rotationZ < 0 ? -threshold : threshold
 
-          let inverseCosZ = Math.cos(rotationZ)
-          if (inverseCosZ !== 0)
-            inverseCosZ = 1 / inverseCosZ
-
-          rotationX = Math.atan2(matrix[6] * inverseCosZ, matrix[5] * inverseCosZ)
-          rotationY = Math.atan2(matrix[8] * inverseCosZ, matrix[0] * inverseCosZ)
+          rotationX = Math.atan2(matrix[6], matrix[5])
+          rotationY = Math.atan2(matrix[8], matrix[0])
           rotationX = this.limitAngle(rotationX, chain.minimumAngle.x, chain.maximumAngle.x, useAxis)
           rotationY = this.limitAngle(rotationY, chain.minimumAngle.y, chain.maximumAngle.y, useAxis)
           rotationZ = this.limitAngle(rotationZ, chain.minimumAngle.z, chain.maximumAngle.z, useAxis)
@@ -446,12 +446,8 @@ export class MMDIKSolver {
           if (Math.abs(rotationX) > threshold)
             rotationX = rotationX < 0 ? -threshold : threshold
 
-          let inverseCosX = Math.cos(rotationX)
-          if (inverseCosX !== 0)
-            inverseCosX = 1 / inverseCosX
-
-          rotationY = Math.atan2(matrix[8] * inverseCosX, matrix[10] * inverseCosX)
-          rotationZ = Math.atan2(matrix[1] * inverseCosX, matrix[5] * inverseCosX)
+          rotationY = Math.atan2(matrix[8], matrix[10])
+          rotationZ = Math.atan2(matrix[1], matrix[5])
           rotationX = this.limitAngle(rotationX, chain.minimumAngle.x, chain.maximumAngle.x, useAxis)
           rotationY = this.limitAngle(rotationY, chain.minimumAngle.y, chain.maximumAngle.y, useAxis)
           rotationZ = this.limitAngle(rotationZ, chain.minimumAngle.z, chain.maximumAngle.z, useAxis)
@@ -467,12 +463,8 @@ export class MMDIKSolver {
           if (Math.abs(rotationY) > threshold)
             rotationY = rotationY < 0 ? -threshold : threshold
 
-          let inverseCosY = Math.cos(rotationY)
-          if (inverseCosY !== 0)
-            inverseCosY = 1 / inverseCosY
-
-          rotationX = Math.atan2(matrix[6] * inverseCosY, matrix[10] * inverseCosY)
-          rotationZ = Math.atan2(matrix[1] * inverseCosY, matrix[0] * inverseCosY)
+          rotationX = Math.atan2(matrix[6], matrix[10])
+          rotationZ = Math.atan2(matrix[1], matrix[0])
           rotationX = this.limitAngle(rotationX, chain.minimumAngle.x, chain.maximumAngle.x, useAxis)
           rotationY = this.limitAngle(rotationY, chain.minimumAngle.y, chain.maximumAngle.y, useAxis)
           rotationZ = this.limitAngle(rotationZ, chain.minimumAngle.z, chain.maximumAngle.z, useAxis)
