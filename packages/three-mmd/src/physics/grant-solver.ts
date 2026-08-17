@@ -155,7 +155,12 @@ export class GrantSolver {
       if (entry.affectRotation) {
         const sourceRotation = this.getSourceRotation(entry, bones, baseRotations)
         this.appendQuaternion.copy(this.identityQuaternion).slerp(sourceRotation, entry.ratio)
-        rotation.multiply(this.appendQuaternion)
+        if (entry.isLocal) {
+          rotation.multiply(this.appendQuaternion)
+        }
+        else {
+          rotation.premultiply(this.appendQuaternion)
+        }
         entry.appendRotation.copy(rotation)
       }
 

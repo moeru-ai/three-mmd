@@ -109,6 +109,25 @@ describe('grantSolver', () => {
     closeTo(bones[1].quaternion.angleTo(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 4)), 0)
   })
 
+  it('applies a global rotation with correct premultiply order', () => {
+    const { bones } = solve([
+      {},
+      { appendTransform: { parentIndex: 0, ratio: 1 }, flag: rotateFlag },
+    ], (bones) => {
+      // Set parent rotation A
+      bones[0].quaternion.setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2)
+      // Set child base rotation B
+      bones[1].quaternion.setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2)
+    })
+
+    // Expected: A * B (premultiply)
+    const expected = new Quaternion()
+      .setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2)
+      .multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2))
+
+    closeTo(bones[1].quaternion.angleTo(expected), 0)
+  })
+
   it('applies a global position offset and supports negative ratios', () => {
     const { bones } = solve([
       { position: [2, 0, 0] },
