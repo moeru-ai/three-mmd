@@ -48,6 +48,7 @@ export class MmdAmmoPhysicsModel {
   private readonly bodyStates: Uint8Array
   private readonly constraints: Ammo.btGeneric6DofSpringConstraint[] = []
   private disposed = false
+  private readonly dynamicBodiesInTopologicalOrder: RigidBodyResource[] = []
   private gravity = new Vector3(0, -98, 0)
   private readonly inversePhysicsRootMatrix = new Matrix4()
   private readonly inverseRootMatrix = new Matrix4()
@@ -90,6 +91,7 @@ export class MmdAmmoPhysicsModel {
 
     this.buildRigidBodies()
     this.buildConstraints()
+    this.dynamicBodiesInTopologicalOrder = this.buildTopologicallySortedDynamicBodies()
     this.world.setGravity(this.gravity, this.scalingFactor)
     this.initialize()
   }
@@ -197,7 +199,11 @@ export class MmdAmmoPhysicsModel {
   public syncBones() {
     this.readRootTransform()
 
-    for (const resource of this.bodies) {
+    const targetBodies = this.dynamicBodiesInTopologicalOrder.length > 0
+      ? this.dynamicBodiesInTopologicalOrder
+      : this.bodies
+
+    for (const resource of targetBodies) {
       if (
         !resource?.bone
         || resource.physicsMode === Pmx.RigidBody.PhysicsMode.FollowBone
@@ -448,6 +454,34 @@ export class MmdAmmoPhysicsModel {
       this.ammo.destroy(localInertia)
       this.ammo.destroy(ammoTransform)
     }
+  }
+
+  private buildTopologicallySortedDynamicBodies(): RigidBodyResource[] {
+    const dynamicBodies: { depth: number, index: number, resource: RigidBodyResource }[] = []
+    const getBoneDepth = (bone: Bone | null): number => {
+      let depth = 0
+      let current = bone?.parent
+      while (current && 'isBone' in current && current.isBone === true) {
+        depth++
+        current = current.parent
+      }
+      return depth
+    }
+
+    for (let i = 0; i < this.bodies.length; i++) {
+      const resource = this.bodies[i]
+      if (!resource || !resource.bone || resource.physicsMode === Pmx.RigidBody.PhysicsMode.FollowBone)
+        continue
+
+      dynamicBodies.push({
+        depth: getBoneDepth(resource.bone),
+        index: i,
+        resource,
+      })
+    }
+
+    dynamicBodies.sort((a, b) => a.depth - b.depth || a.index - b.index)
+    return dynamicBodies.map(item => item.resource)
   }
 
   private composeModelTransform(

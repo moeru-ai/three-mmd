@@ -165,4 +165,43 @@ describe('mmdAmmoPhysicsModel', () => {
     )
     expect(physicsScale.toArray()).toEqual([1, 1, 1])
   })
+
+  it('sorts dynamic bodies topologically by bone hierarchy depth', () => {
+    const model = Object.create(
+      MmdAmmoPhysicsModel.prototype,
+    ) as MmdAmmoPhysicsModel
+
+    const rootBone = { isBone: true, name: 'root', parent: null }
+    const midBone = { isBone: true, name: 'mid', parent: rootBone }
+    const leafBone = { isBone: true, name: 'leaf', parent: midBone }
+
+    // Provide bodies in reverse order: leaf (depth 2), root (depth 0), mid (depth 1)
+    const bodyLeaf = {
+      bone: leafBone,
+      physicsMode: PmxObject.RigidBody.PhysicsMode.Physics,
+    }
+    const bodyRoot = {
+      bone: rootBone,
+      physicsMode: PmxObject.RigidBody.PhysicsMode.Physics,
+    }
+    const bodyMid = {
+      bone: midBone,
+      physicsMode: PmxObject.RigidBody.PhysicsMode.Physics,
+    }
+    const bodyFollow = {
+      bone: rootBone,
+      physicsMode: PmxObject.RigidBody.PhysicsMode.FollowBone,
+    }
+
+    setPrivate(model, 'bodies', [bodyLeaf, bodyFollow, bodyRoot, bodyMid])
+
+    const sorted = callPrivate<[], unknown[]>(
+      model,
+      'buildTopologicallySortedDynamicBodies',
+    )
+
+    // Expected order: bodyRoot (depth 0), bodyMid (depth 1), bodyLeaf (depth 2)
+    // bodyFollow should be excluded from dynamic sorted list
+    expect(sorted).toEqual([bodyRoot, bodyMid, bodyLeaf])
+  })
 })
