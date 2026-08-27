@@ -6,10 +6,7 @@ import type { LoadingTexture, TextureContext, TextureLoadOptions } from './types
 import { SharedToonTextures } from 'babylon-mmd/esm/Loader/sharedToonTextures'
 import { LoaderUtils, NearestFilter, RepeatWrapping, SRGBColorSpace } from 'three'
 
-import {
-  markMMDTextureTransparent,
-  resolveMMDTextureAlphaMode,
-} from '../../materials/core/alpha-policy'
+import { resolveMMDTextureAlphaMode } from '../../materials/core/alpha-policy'
 import { NON_ALPHA_CHANNEL_FORMATS } from './types'
 
 // Check the alpha mode of the image area used by one geometry group.
@@ -91,7 +88,6 @@ export const checkImageTransparency = (
       if (!NON_ALPHA_CHANNEL_FORMATS.includes(texture.format)) {
         // any other way to check transparency of CompressedTexture?
         onAlphaMode?.('blend')
-        markMMDTextureTransparent(map)
       }
 
       return
@@ -111,7 +107,6 @@ export const checkImageTransparency = (
     )
     if (alphaMode !== undefined) {
       onAlphaMode?.(alphaMode)
-      markMMDTextureTransparent(map, alphaMode)
     }
   })
 }

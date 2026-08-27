@@ -1,4 +1,4 @@
-import type { MeshPhysicalMaterialParameters, Texture } from 'three'
+import type { MeshPhysicalMaterialParameters } from 'three'
 
 import type { MMDAlphaMode, MMDTextureAlphaMode } from '../core/alpha-policy'
 import type {
@@ -12,8 +12,6 @@ import { DoubleSide, FrontSide, MeshPhysicalMaterial } from 'three'
 
 import {
   applyMMDAlphaPolicy,
-  getMMDTextureAlphaMode,
-  onMMDTextureTransparency,
   resolveMMDAlphaPolicy,
 } from '../core/alpha-policy'
 import { installSdefPatch } from '../core/sdef'
@@ -81,7 +79,6 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
   public shininessToRoughness: MMDShininessToRoughness
   public specularMode: MMDPhysicalSpecularMode
   private alphaMorphEnabled = false
-  private stopTextureTransparencyWatch?: () => void
   private textureAlphaMode?: MMDTextureAlphaMode
 
   public constructor(descriptor: MMDMaterialDescriptor, options: MMDPhysicalMaterialOptions = {}) {
@@ -92,8 +89,7 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
     this.shininessToRoughness = resolvedOptions.shininessToRoughness
     this.specularMode = resolvedOptions.specularMode
     this.name = descriptor.name
-    this.watchDiffuseMap(descriptor.map)
-    this.textureAlphaMode = descriptor.textureAlphaMode ?? this.textureAlphaMode
+    this.textureAlphaMode = descriptor.textureAlphaMode
     this.updateAlphaPolicy(descriptor.opacity)
     installSdefPatch(this)
   }
@@ -127,7 +123,6 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
     this.shininessToRoughness = source.shininessToRoughness
     this.specularMode = source.specularMode
     this.alphaMorphEnabled = source.alphaMorphEnabled
-    this.watchDiffuseMap(source.map)
     this.textureAlphaMode = source.textureAlphaMode
     this.updateAlphaPolicy(this.opacity)
     return this
@@ -140,6 +135,11 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
   public setMMDAlphaMorphEnabled(enabled: boolean): void {
     this.alphaMorphEnabled = enabled
     this.updateAlphaPolicy(this.opacity)
+  }
+
+  public setMMDTextureAlphaMode(mode: MMDTextureAlphaMode | undefined): void {
+    this.textureAlphaMode = mode
+    this.updateAlphaPolicy(this.opacity, mode)
   }
 
   public setSdefEnabled(enabled: boolean): void {
@@ -171,18 +171,5 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
       ? 'mmd-depth-blend'
       : mode
     applyMMDAlphaPolicy(this, renderMode, this.descriptor.alphaTest ?? 0.5)
-  }
-
-  private watchDiffuseMap(map: null | Texture | undefined): void {
-    this.stopTextureTransparencyWatch?.()
-    this.stopTextureTransparencyWatch = undefined
-    this.textureAlphaMode = undefined
-    if (map === null || map === undefined)
-      return
-
-    this.stopTextureTransparencyWatch = onMMDTextureTransparency(map, () => {
-      this.textureAlphaMode = this.descriptor.textureAlphaMode ?? getMMDTextureAlphaMode(map)
-      this.updateAlphaPolicy(this.opacity, this.textureAlphaMode)
-    })
   }
 }

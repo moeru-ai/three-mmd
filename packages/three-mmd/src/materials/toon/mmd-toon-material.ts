@@ -2,6 +2,7 @@
 
 import type { Color, IUniform, MeshPhongMaterialParameters, Texture } from 'three'
 
+import type { MMDTextureAlphaMode } from '../core/alpha-policy'
 import type {
   MMDMaterialCapabilities,
   MMDMaterialDescriptor,
@@ -23,7 +24,6 @@ import {
 
 import {
   applyMMDAlphaPolicy,
-  onMMDTextureTransparency,
   resolveMMDAlphaPolicy,
 } from '../core/alpha-policy'
 import { installSdefPatch } from '../core/sdef'
@@ -173,8 +173,9 @@ export class MMDToonMaterial extends MeshPhongMaterial {
   public readonly toonTextureAdditiveColor = new Vector4(0, 0, 0, 0)
   public readonly toonTextureMultiplicativeColor = new Vector4(1, 1, 1, 1)
 
+  private alphaMorphEnabled = false
   private readonly mmdUniforms: Record<string, IUniform>
-  private stopTextureTransparencyWatch?: () => void
+  private textureAlphaMode?: MMDTextureAlphaMode
 
   public constructor(descriptor: MMDMaterialDescriptor) {
     super(createPhongParameters(descriptor))
@@ -186,7 +187,8 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     this.sphereMap = descriptor.sphereMap
     this.toonMap = descriptor.toonMap
     this.emissive.setRGB(0, 0, 0)
-    this.watchDiffuseMap(descriptor.map)
+    this.textureAlphaMode = descriptor.textureAlphaMode
+    this.updateAlphaPolicy(this.opacity)
     this.defines = {
       ...this.defines,
       MMD_SPHERE_BLEND_MODE: this.getSphereBlendModeValue(),
@@ -236,7 +238,7 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     this.sphereTextureAdditiveColor.copy(state.sphereTextureAdditiveColor)
     this.toonTextureMultiplicativeColor.copy(state.toonTextureMultiplicativeColor)
     this.toonTextureAdditiveColor.copy(state.toonTextureAdditiveColor)
-    this.transparent = this.transparent || this.opacity < 1
+    this.updateAlphaPolicy(state.opacity)
   }
 
   public override clone(): this {
@@ -258,10 +260,12 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     this.sphereTextureAdditiveColor.copy(source.sphereTextureAdditiveColor)
     this.toonTextureMultiplicativeColor.copy(source.toonTextureMultiplicativeColor)
     this.toonTextureAdditiveColor.copy(source.toonTextureAdditiveColor)
+    this.alphaMorphEnabled = source.alphaMorphEnabled
+    this.textureAlphaMode = source.textureAlphaMode
     this.mmdUniforms.mmdSphereMap.value = this.sphereMap ?? this.toonMap
     this.mmdUniforms.mmdToonMap.value = this.toonMap
     this.mmdUniforms.mmdSphereBlendMode.value = this.getSphereBlendModeValue()
-    this.watchDiffuseMap(source.map)
+    this.updateAlphaPolicy(this.opacity)
     return this
   }
 
@@ -270,10 +274,13 @@ export class MMDToonMaterial extends MeshPhongMaterial {
   }
 
   public setMMDAlphaMorphEnabled(enabled: boolean): void {
-    if (!(enabled))
-      return
-    this.transparent = true
-    this.depthWrite = true
+    this.alphaMorphEnabled = enabled
+    this.updateAlphaPolicy(this.opacity)
+  }
+
+  public setMMDTextureAlphaMode(mode: MMDTextureAlphaMode | undefined): void {
+    this.textureAlphaMode = mode
+    this.updateAlphaPolicy(this.opacity, mode)
   }
 
   public setSdefEnabled(enabled: boolean): void {
@@ -292,24 +299,21 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     return this.sphereBlendMode === 'add' ? 2 : 1
   }
 
-  private watchDiffuseMap(map: null | Texture | undefined): void {
-    this.stopTextureTransparencyWatch?.()
-    this.stopTextureTransparencyWatch = undefined
-    if (map === null || map === undefined)
-      return
-
-    this.stopTextureTransparencyWatch = onMMDTextureTransparency(map, () => {
-      const evaluatedMode = resolveMMDAlphaPolicy({
-        alphaTest: this.descriptor.alphaTest,
-        mode: 'evaluate',
-        opacity: this.opacity,
-        textureHasTransparency: true,
-      })
-      applyMMDAlphaPolicy(
-        this,
-        evaluatedMode === 'blend' ? 'mmd-depth-blend' : evaluatedMode,
-        this.descriptor.alphaTest ?? 0.5,
-      )
+  private updateAlphaPolicy(
+    opacity: number,
+    textureAlphaMode: MMDTextureAlphaMode | undefined = this.textureAlphaMode,
+  ): void {
+    const evaluatedMode = resolveMMDAlphaPolicy({
+      alphaTest: this.descriptor.alphaTest,
+      mode: 'evaluate',
+      opacity,
+      textureAlphaMode,
+      textureHasTransparency: textureAlphaMode !== undefined || this.alphaMorphEnabled,
     })
+    applyMMDAlphaPolicy(
+      this,
+      evaluatedMode === 'blend' ? 'mmd-depth-blend' : evaluatedMode,
+      this.descriptor.alphaTest ?? 0.5,
+    )
   }
 }

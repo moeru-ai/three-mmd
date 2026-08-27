@@ -8,6 +8,7 @@ export interface MMDMaterial extends Material {
   readonly isMMDMaterial: true
   readonly mmdCapabilities: MMDMaterialCapabilities
   setMMDAlphaMorphEnabled: (enabled: boolean) => void
+  setMMDTextureAlphaMode: (mode: MMDTextureAlphaMode | undefined) => void
   setSdefEnabled: (enabled: boolean) => void
 }
 
@@ -18,6 +19,8 @@ export const isMMDMaterial = (material: Material): material is MMDMaterial => (
   && typeof material.applyMMDMaterialState === 'function'
   && 'setMMDAlphaMorphEnabled' in material
   && typeof material.setMMDAlphaMorphEnabled === 'function'
+  && 'setMMDTextureAlphaMode' in material
+  && typeof material.setMMDTextureAlphaMode === 'function'
   && 'setSdefEnabled' in material
   && typeof material.setSdefEnabled === 'function'
 )

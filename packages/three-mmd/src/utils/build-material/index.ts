@@ -1,6 +1,7 @@
 import type { BufferGeometry, LoadingManager, Material } from 'three'
 
-import type { MMDMaterialConstructor, MMDMaterialDescriptor } from '../../materials/types'
+import type { MMDTextureAlphaMode } from '../../materials/core/alpha-policy'
+import type { MMDMaterial, MMDMaterialConstructor, MMDMaterialDescriptor } from '../../materials/types'
 import type { TextureContext } from './types'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
@@ -26,6 +27,7 @@ export const mapPmxToMaterialDescriptor = (
   geometry: BufferGeometry,
   ctx: TextureContext,
   groupIndex: number,
+  onAlphaMode?: (mode: MMDTextureAlphaMode) => void,
 ): MMDMaterialDescriptor => {
   const diffuse = new Color().setRGB(material.diffuse[0], material.diffuse[1], material.diffuse[2], SRGBColorSpace)
   const opacity = material.diffuse[3]
@@ -72,8 +74,12 @@ export const mapPmxToMaterialDescriptor = (
     toonMapFileName,
   }
 
-  if (map !== undefined && opacity === 1)
-    checkImageTransparency(map, geometry, groupIndex, (mode) => { descriptor.textureAlphaMode = mode })
+  if (map !== undefined && opacity === 1) {
+    checkImageTransparency(map, geometry, groupIndex, (mode) => {
+      descriptor.textureAlphaMode = mode
+      onAlphaMode?.(mode)
+    })
+  }
 
   return descriptor
 }
@@ -131,10 +137,20 @@ export const buildMaterial = (
     textures: {},
   }
 
-  // eslint-disable-next-line new-cap
-  const materials = data.materials.map((pmxMaterial, index) => new materialType(
-    mapPmxToMaterialDescriptor(pmxMaterial, data.textures, geometry, ctx, index),
+  const materials: MMDMaterial[] = []
+  const descriptors = data.materials.map((pmxMaterial, index) => mapPmxToMaterialDescriptor(
+    pmxMaterial,
+    data.textures,
+    geometry,
+    ctx,
+    index,
+    mode => materials[index]?.setMMDTextureAlphaMode(mode),
   ))
+
+  const MaterialType = materialType
+  for (const descriptor of descriptors)
+    materials.push(new MaterialType(descriptor))
+
   applyMorphTransparencyFix(materials, data.morphs)
   return materials
 }

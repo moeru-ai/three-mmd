@@ -1,7 +1,5 @@
 export {
   applyMMDAlphaPolicy,
-  getMMDTextureAlphaMode,
-  markMMDTextureTransparent,
   type MMDAlphaMode,
   type MMDAlphaPolicyInput,
   type MMDResolvedAlphaMode,

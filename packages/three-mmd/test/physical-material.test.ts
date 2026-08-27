@@ -5,8 +5,6 @@ import { Color, DoubleSide, ShaderLib, Texture } from 'three'
 import { describe, expect, it } from 'vitest'
 
 import {
-  getMMDTextureAlphaMode,
-  markMMDTextureTransparent,
   resolveMMDAlphaPolicy,
   resolveMMDTextureAlphaMode,
 } from '../src/materials/core/alpha-policy'
@@ -205,12 +203,25 @@ describe('mmd alpha policy', () => {
     const source = descriptor()
     const material = new MMDPhysicalMaterial(source)
 
-    markMMDTextureTransparent(source.map!, 'cutout')
+    material.setMMDTextureAlphaMode('cutout')
 
-    expect(getMMDTextureAlphaMode(source.map!)).toBe('cutout')
     expect(material.transparent).toBe(false)
     expect(material.depthWrite).toBe(true)
     expect(material.alphaTest).toBe(0.5)
+  })
+
+  it('keeps alpha results local when materials share a diffuse texture', () => {
+    const sharedMap = new Texture()
+    const cutout = new MMDPhysicalMaterial({ ...descriptor(), map: sharedMap })
+    const blend = new MMDPhysicalMaterial({ ...descriptor(), map: sharedMap })
+
+    cutout.setMMDTextureAlphaMode('cutout')
+    blend.setMMDTextureAlphaMode('blend')
+
+    expect(cutout.transparent).toBe(false)
+    expect(cutout.alphaTest).toBe(0.5)
+    expect(blend.transparent).toBe(true)
+    expect(blend.depthWrite).toBe(true)
   })
 
   it('preserves evaluated texture alpha through copy and state updates', () => {
@@ -232,8 +243,8 @@ describe('mmd alpha policy', () => {
     const physical = new MMDPhysicalMaterial(physicalDescriptor)
     const toon = new MMDToonMaterial(toonDescriptor)
 
-    markMMDTextureTransparent(physicalDescriptor.map!)
-    markMMDTextureTransparent(toonDescriptor.map!)
+    physical.setMMDTextureAlphaMode('blend')
+    toon.setMMDTextureAlphaMode('blend')
 
     expect(physical.transparent).toBe(true)
     expect(physical.depthWrite).toBe(true)
@@ -242,11 +253,10 @@ describe('mmd alpha policy', () => {
   })
 
   it('keeps the texture alpha binding synchronized when a Toon material is copied', () => {
-    const source = new MMDToonMaterial(descriptor())
+    const source = new MMDToonMaterial({ ...descriptor(), textureAlphaMode: 'blend' })
     const target = new MMDToonMaterial(descriptor())
 
     target.copy(source)
-    markMMDTextureTransparent(source.map!)
 
     expect(target.transparent).toBe(true)
     expect(target.depthWrite).toBe(true)
