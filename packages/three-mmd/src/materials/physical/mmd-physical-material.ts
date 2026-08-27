@@ -8,7 +8,7 @@ import type {
 } from '../types'
 import type { MMDPhysicalSpecularMode, MMDShininessToRoughness } from './mapping'
 
-import { MeshPhysicalMaterial } from 'three'
+import { DoubleSide, FrontSide, MeshPhysicalMaterial } from 'three'
 
 import {
   applyMMDAlphaPolicy,
@@ -58,20 +58,15 @@ const createPhysicalParameters = (
   const specularColor = resolveMMDPhysicalSpecularColor(descriptor.specular, options.specularMode)
   return {
     ...(descriptor.alphaTest === undefined ? {} : { alphaTest: descriptor.alphaTest }),
-    ...(descriptor.blendDst === undefined ? {} : { blendDst: descriptor.blendDst }),
-    ...(descriptor.blendDstAlpha === undefined ? {} : { blendDstAlpha: descriptor.blendDstAlpha }),
-    ...(descriptor.blending === undefined ? {} : { blending: descriptor.blending }),
-    ...(descriptor.blendSrc === undefined ? {} : { blendSrc: descriptor.blendSrc }),
-    ...(descriptor.blendSrcAlpha === undefined ? {} : { blendSrcAlpha: descriptor.blendSrcAlpha }),
     ...(descriptor.map === undefined ? {} : { map: descriptor.map }),
-    ...(descriptor.side === undefined ? {} : { side: descriptor.side }),
     color: descriptor.diffuse,
     fog: descriptor.fog,
     metalness: 0,
     opacity: descriptor.opacity,
     roughness: resolveMMDPhysicalRoughness(descriptor.shininess, options.shininessToRoughness),
     ...(specularColor === undefined ? {} : { specularColor }),
-    transparent: descriptor.transparent,
+    side: descriptor.doubleSided ? DoubleSide : FrontSide,
+    transparent: descriptor.opacity !== 1,
   }
 }
 

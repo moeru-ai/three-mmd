@@ -10,9 +10,14 @@ import type {
 } from '../types'
 
 import {
+  CustomBlending,
   DoubleSide,
+  DstAlphaFactor,
+  FrontSide,
   MeshPhongMaterial,
+  OneMinusSrcAlphaFactor,
   REVISION,
+  SrcAlphaFactor,
   Vector4,
 } from 'three'
 
@@ -128,19 +133,19 @@ const uniform = <T>(value: T): IUniform<T> => ({ value })
 
 const createPhongParameters = (descriptor: MMDMaterialDescriptor): MeshPhongMaterialParameters => ({
   ...(descriptor.alphaTest === undefined ? {} : { alphaTest: descriptor.alphaTest }),
-  ...(descriptor.blendDst === undefined ? {} : { blendDst: descriptor.blendDst }),
-  ...(descriptor.blendDstAlpha === undefined ? {} : { blendDstAlpha: descriptor.blendDstAlpha }),
-  ...(descriptor.blending === undefined ? {} : { blending: descriptor.blending }),
-  ...(descriptor.blendSrc === undefined ? {} : { blendSrc: descriptor.blendSrc }),
-  ...(descriptor.blendSrcAlpha === undefined ? {} : { blendSrcAlpha: descriptor.blendSrcAlpha }),
+  blendDst: OneMinusSrcAlphaFactor,
+  blendDstAlpha: DstAlphaFactor,
+  blending: CustomBlending,
+  blendSrc: SrcAlphaFactor,
+  blendSrcAlpha: SrcAlphaFactor,
   ...(descriptor.map === undefined ? {} : { map: descriptor.map }),
-  ...(descriptor.side === undefined ? {} : { side: descriptor.opacity !== 1 ? DoubleSide : descriptor.side }),
   color: descriptor.diffuse,
   fog: descriptor.fog,
   opacity: descriptor.opacity,
   shininess: descriptor.shininess,
+  side: descriptor.opacity !== 1 || descriptor.doubleSided ? DoubleSide : FrontSide,
   specular: descriptor.specular,
-  transparent: descriptor.transparent,
+  transparent: descriptor.opacity !== 1,
 })
 
 /**

@@ -6,13 +6,7 @@ import type { TextureContext } from './types'
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import {
   Color,
-  CustomBlending,
   DefaultLoadingManager,
-  DoubleSide,
-  DstAlphaFactor,
-  FrontSide,
-  OneMinusSrcAlphaFactor,
-  SrcAlphaFactor,
   SRGBColorSpace,
   TextureLoader,
 } from 'three'
@@ -22,8 +16,8 @@ import { MMDToonMaterial } from '../../materials/toon/mmd-toon-material'
 import { isMMDMaterial } from '../../materials/types'
 import { checkImageTransparency, loadTextureResource } from './utils'
 
-export const mapPmxMaterialSide = (flag: number): typeof DoubleSide | typeof FrontSide => (
-  (flag & PmxObject.Material.Flag.IsDoubleSided) !== 0 ? DoubleSide : FrontSide
+export const isPmxMaterialDoubleSided = (flag: number): boolean => (
+  (flag & PmxObject.Material.Flag.IsDoubleSided) !== 0
 )
 
 export const mapPmxToMaterialDescriptor = (
@@ -55,12 +49,8 @@ export const mapPmxToMaterialDescriptor = (
 
   const descriptor: MMDMaterialDescriptor = {
     ambient: new Color().setRGB(...material.ambient, SRGBColorSpace),
-    blendDst: OneMinusSrcAlphaFactor,
-    blendDstAlpha: DstAlphaFactor,
-    blending: CustomBlending,
-    blendSrc: SrcAlphaFactor,
-    blendSrcAlpha: SrcAlphaFactor,
     diffuse,
+    doubleSided: isPmxMaterialDoubleSided(material.flag),
     fog: true,
     isDefaultToonTexture,
     map,
@@ -74,14 +64,12 @@ export const mapPmxToMaterialDescriptor = (
       width: material.edgeSize / 300,
     },
     shininess: material.shininess,
-    side: mapPmxMaterialSide(material.flag),
     specular: new Color().setRGB(...material.specular, SRGBColorSpace),
     sphereBlendMode,
     sphereMap,
     sphereMapFileName,
     toonMap: loadTextureResource(toonMapFileName, ctx, { isDefaultToonTexture, isToonTexture: true }),
     toonMapFileName,
-    transparent: opacity !== 1,
   }
 
   if (map !== undefined && opacity === 1)

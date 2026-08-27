@@ -1,4 +1,4 @@
-import type { Color, Material, MaterialParameters, Texture, Vector4 } from 'three'
+import type { Color, Material, Texture, Vector4 } from 'three'
 
 import type { MMDResolvedAlphaMode, MMDTextureAlphaMode } from './core/alpha-policy'
 
@@ -43,9 +43,13 @@ export interface MMDMaterialConstructor {
  * This deliberately describes MMD semantics instead of renderer-specific
  * aliases such as `gradientMap` and `matcap`.
  */
-export interface MMDMaterialDescriptor extends MaterialParameters {
+export interface MMDMaterialDescriptor {
+  /** Optional PMX alpha-test override used by both renderer adapters. */
+  alphaTest?: number
   ambient: Color
   diffuse: Color
+  /** PMX's raster-sidedness flag, kept independent from Three's Side value. */
+  doubleSided: boolean
   fog: boolean
   isDefaultToonTexture: boolean
   map?: Texture
@@ -61,7 +65,6 @@ export interface MMDMaterialDescriptor extends MaterialParameters {
   textureAlphaMode?: MMDTextureAlphaMode
   toonMap: Texture
   toonMapFileName: string
-  transparent: boolean
 }
 
 export interface MMDMaterialEvaluatedState {

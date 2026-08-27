@@ -1,7 +1,7 @@
 import type { MMDMaterialDescriptor } from '../src/materials/types'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
-import { Color, DoubleSide, FrontSide, ShaderLib, Texture } from 'three'
+import { Color, DoubleSide, ShaderLib, Texture } from 'three'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -18,11 +18,12 @@ import {
   resolveMMDPhysicalSpecularColor,
 } from '../src/materials/physical'
 import { MMDToonMaterial } from '../src/materials/toon/mmd-toon-material'
-import { applyMorphTransparencyFix, mapPmxMaterialSide } from '../src/utils/build-material'
+import { applyMorphTransparencyFix, isPmxMaterialDoubleSided } from '../src/utils/build-material'
 
 const descriptor = (): MMDMaterialDescriptor => ({
   ambient: new Color(0.1, 0.2, 0.3),
   diffuse: new Color(0.4, 0.5, 0.6),
+  doubleSided: true,
   fog: true,
   isDefaultToonTexture: true,
   map: new Texture(),
@@ -30,13 +31,11 @@ const descriptor = (): MMDMaterialDescriptor => ({
   opacity: 1,
   outline: { alpha: 1, color: new Color(0.1, 0.1, 0.1), visible: true, width: 0.01 },
   shininess: 16,
-  side: DoubleSide,
   specular: new Color(0.2, 0.3, 0.4),
   sphereBlendMode: 'add',
   sphereMap: new Texture(),
   toonMap: new Texture(),
   toonMapFileName: 'toon01.bmp',
-  transparent: false,
 })
 
 describe('mmd physical material mapping', () => {
@@ -83,11 +82,11 @@ describe('mmd physical material mapping', () => {
   })
 
   it('derives raster sidedness only from the PMX double-sided flag', () => {
-    expect(mapPmxMaterialSide(0)).toBe(FrontSide)
-    expect(mapPmxMaterialSide(PmxObject.Material.Flag.EnabledToonEdge)).toBe(FrontSide)
-    expect(mapPmxMaterialSide(
+    expect(isPmxMaterialDoubleSided(0)).toBe(false)
+    expect(isPmxMaterialDoubleSided(PmxObject.Material.Flag.EnabledToonEdge)).toBe(false)
+    expect(isPmxMaterialDoubleSided(
       PmxObject.Material.Flag.IsDoubleSided | PmxObject.Material.Flag.EnabledToonEdge,
-    )).toBe(DoubleSide)
+    )).toBe(true)
   })
 
   it('creates a dielectric Physical material from exact PMX base fields', () => {
@@ -185,7 +184,7 @@ describe('mmd alpha policy', () => {
   })
 
   it('uses depth-writing blending for evaluated MMD alpha while keeping conventional blending opt-in', () => {
-    const translucentDescriptor = { ...descriptor(), opacity: 0.5, transparent: true }
+    const translucentDescriptor = { ...descriptor(), opacity: 0.5 }
     const evaluated = new MMDPhysicalMaterial(translucentDescriptor)
     const conventional = new MMDPhysicalMaterial(descriptor(), { alphaMode: 'blend' })
     const cutout = new MMDPhysicalMaterial(descriptor(), { alphaMode: 'cutout' })

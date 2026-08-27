@@ -3,7 +3,7 @@ import type { MeshDepthMaterial, MeshDistanceMaterial } from 'three'
 
 import type { MMDMaterialDescriptor } from '../src/materials/types'
 
-import { Bone, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, FrontSide, ShaderLib, Skeleton, SkinnedMesh, Texture } from 'three'
+import { Bone, BufferGeometry, Color, CustomBlending, DoubleSide, Float32BufferAttribute, FrontSide, NormalBlending, ShaderLib, Skeleton, SkinnedMesh, Texture } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MMDMaterialPlugin } from '../src/loaders/loader-plugin'
@@ -16,6 +16,7 @@ import { buildGeometry } from '../src/utils/build-geometry'
 const descriptor = (outline = { alpha: 1, color: new Color(0.1, 0.1, 0.1), visible: true, width: 0.01 }): MMDMaterialDescriptor => ({
   ambient: new Color(0.1, 0.2, 0.3),
   diffuse: new Color(0.4, 0.5, 0.6),
+  doubleSided: true,
   fog: true,
   isDefaultToonTexture: true,
   name: 'test material',
@@ -27,7 +28,6 @@ const descriptor = (outline = { alpha: 1, color: new Color(0.1, 0.1, 0.1), visib
   sphereMap: new Texture(),
   toonMap: new Texture(),
   toonMapFileName: 'toon01.bmp',
-  transparent: false,
 })
 
 const skinnedMesh = (materials: MMDToonMaterial[]): SkinnedMesh => {
@@ -54,6 +54,14 @@ describe('mmd material backends', () => {
     expect(material).toBeInstanceOf(MMDToonMaterial)
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
+  })
+
+  it('lets each backend own its renderer blending defaults', () => {
+    const toon = new MMDToonMaterial(descriptor())
+    const physical = new MMDPhysicalMaterial(descriptor())
+
+    expect(toon.blending).toBe(CustomBlending)
+    expect(physical.blending).toBe(NormalBlending)
   })
 
   it('clones with its descriptor and keeps copy metadata synchronized', () => {
@@ -219,8 +227,8 @@ describe('mmd toon bindings', () => {
   it('selects Physical shadow variants from each group alpha surface', () => {
     const firstMap = new Texture()
     const secondMap = new Texture()
-    const first = new MMDPhysicalMaterial({ ...descriptor(), alphaTest: 0.3, map: firstMap, side: FrontSide })
-    const second = new MMDPhysicalMaterial({ ...descriptor(), alphaTest: 0.8, map: secondMap, side: DoubleSide })
+    const first = new MMDPhysicalMaterial({ ...descriptor(), alphaTest: 0.3, doubleSided: false, map: firstMap })
+    const second = new MMDPhysicalMaterial({ ...descriptor(), alphaTest: 0.8, doubleSided: true, map: secondMap })
     const mesh = new SkinnedMesh(new BufferGeometry(), [first, second])
     const bone = new Bone()
     mesh.add(bone)
