@@ -6,21 +6,20 @@ import type {
   MMDMaterialDescriptor,
   MMDMaterialEvaluatedState,
 } from '../types'
-import type { MMDShininessToRoughness } from './mapping'
+import type { MMDPhysicalSpecularMode, MMDShininessToRoughness } from './mapping'
 
 import { MeshPhysicalMaterial } from 'three'
 
 import {
   applyMMDAlphaPolicy,
-
   onMMDTextureTransparency,
   resolveMMDAlphaPolicy,
 } from '../core/alpha-policy'
 import { installSdefPatch } from '../core/sdef'
 import {
   mmdShininessToRoughness,
-
   resolveMMDPhysicalRoughness,
+  resolveMMDPhysicalSpecularColor,
 } from './mapping'
 
 export interface MMDPhysicalMaterialOptions {
@@ -28,8 +27,6 @@ export interface MMDPhysicalMaterialOptions {
   shininessToRoughness?: MMDShininessToRoughness
   specularMode?: MMDPhysicalSpecularMode
 }
-
-export type MMDPhysicalSpecularMode = 'ignore' | 'physical-color'
 
 interface ResolvedMMDPhysicalMaterialOptions {
   alphaMode: MMDAlphaMode
@@ -56,23 +53,26 @@ const resolveOptions = (options: MMDPhysicalMaterialOptions): ResolvedMMDPhysica
 const createPhysicalParameters = (
   descriptor: MMDMaterialDescriptor,
   options: ResolvedMMDPhysicalMaterialOptions,
-): MeshPhysicalMaterialParameters => ({
-  ...(descriptor.alphaTest === undefined ? {} : { alphaTest: descriptor.alphaTest }),
-  ...(descriptor.blendDst === undefined ? {} : { blendDst: descriptor.blendDst }),
-  ...(descriptor.blendDstAlpha === undefined ? {} : { blendDstAlpha: descriptor.blendDstAlpha }),
-  ...(descriptor.blending === undefined ? {} : { blending: descriptor.blending }),
-  ...(descriptor.blendSrc === undefined ? {} : { blendSrc: descriptor.blendSrc }),
-  ...(descriptor.blendSrcAlpha === undefined ? {} : { blendSrcAlpha: descriptor.blendSrcAlpha }),
-  ...(descriptor.map === undefined ? {} : { map: descriptor.map }),
-  ...(descriptor.side === undefined ? {} : { side: descriptor.side }),
-  color: descriptor.diffuse,
-  fog: descriptor.fog,
-  metalness: 0,
-  opacity: descriptor.opacity,
-  roughness: resolveMMDPhysicalRoughness(descriptor.shininess, options.shininessToRoughness),
-  ...(options.specularMode === 'physical-color' ? { specularColor: descriptor.specular } : {}),
-  transparent: descriptor.transparent,
-})
+): MeshPhysicalMaterialParameters => {
+  const specularColor = resolveMMDPhysicalSpecularColor(descriptor.specular, options.specularMode)
+  return {
+    ...(descriptor.alphaTest === undefined ? {} : { alphaTest: descriptor.alphaTest }),
+    ...(descriptor.blendDst === undefined ? {} : { blendDst: descriptor.blendDst }),
+    ...(descriptor.blendDstAlpha === undefined ? {} : { blendDstAlpha: descriptor.blendDstAlpha }),
+    ...(descriptor.blending === undefined ? {} : { blending: descriptor.blending }),
+    ...(descriptor.blendSrc === undefined ? {} : { blendSrc: descriptor.blendSrc }),
+    ...(descriptor.blendSrcAlpha === undefined ? {} : { blendSrcAlpha: descriptor.blendSrcAlpha }),
+    ...(descriptor.map === undefined ? {} : { map: descriptor.map }),
+    ...(descriptor.side === undefined ? {} : { side: descriptor.side }),
+    color: descriptor.diffuse,
+    fog: descriptor.fog,
+    metalness: 0,
+    opacity: descriptor.opacity,
+    roughness: resolveMMDPhysicalRoughness(descriptor.shininess, options.shininessToRoughness),
+    ...(specularColor === undefined ? {} : { specularColor }),
+    transparent: descriptor.transparent,
+  }
+}
 
 /** Opt-in physically based MMD material backend for WebGLRenderer. */
 export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
@@ -105,8 +105,9 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
     this.color.copy(state.diffuse)
     this.opacity = state.opacity
     this.roughness = resolveMMDPhysicalRoughness(state.shininess, this.shininessToRoughness)
-    if (this.specularMode === 'physical-color')
-      this.specularColor.copy(state.specular)
+    const specularColor = resolveMMDPhysicalSpecularColor(state.specular, this.specularMode)
+    if (specularColor !== undefined)
+      this.specularColor.copy(specularColor)
     this.updateAlphaPolicy(state.opacity, this.textureHasTransparency)
   }
 

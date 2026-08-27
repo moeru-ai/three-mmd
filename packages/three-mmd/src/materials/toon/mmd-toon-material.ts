@@ -10,6 +10,7 @@ import type {
 } from '../types'
 
 import {
+  DoubleSide,
   MeshPhongMaterial,
   REVISION,
   Vector4,
@@ -133,7 +134,7 @@ const createPhongParameters = (descriptor: MMDMaterialDescriptor): MeshPhongMate
   ...(descriptor.blendSrc === undefined ? {} : { blendSrc: descriptor.blendSrc }),
   ...(descriptor.blendSrcAlpha === undefined ? {} : { blendSrcAlpha: descriptor.blendSrcAlpha }),
   ...(descriptor.map === undefined ? {} : { map: descriptor.map }),
-  ...(descriptor.side === undefined ? {} : { side: descriptor.side }),
+  ...(descriptor.side === undefined ? {} : { side: descriptor.opacity !== 1 ? DoubleSide : descriptor.side }),
   color: descriptor.diffuse,
   fog: descriptor.fog,
   opacity: descriptor.opacity,

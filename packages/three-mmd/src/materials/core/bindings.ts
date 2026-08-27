@@ -2,14 +2,14 @@
 
 import type { Material, SkinnedMesh } from 'three'
 
-import type { MMDMaterial } from '../types'
-
 import {
   MeshDepthMaterial,
   MeshDistanceMaterial,
   RGBADepthPacking,
+  Texture,
 } from 'three'
 
+import { isMMDMaterial } from '../types'
 import { installSdefPatch } from './sdef'
 
 /**
@@ -27,17 +27,11 @@ const installShadowMaterialVariants = (
   material.customProgramCacheKey = () => `${baseCacheKey()}|mmd-shadow-surface:${surfaceCacheKey}`
 
   return (surface) => {
-    surfaceCacheKey = surface.uuid
+    const map = 'map' in surface && surface.map instanceof Texture ? surface.map : undefined
+    surfaceCacheKey = `${surface.uuid}|map:${map?.uuid ?? 'none'}|alpha-test:${String(surface.alphaTest > 0)}|side:${String(surface.side)}`
     material.needsUpdate = true
   }
 }
-
-const isMMDMaterial = (material: Material): material is MMDMaterial => (
-  'isMMDMaterial' in material
-  && material.isMMDMaterial === true
-  && 'setSdefEnabled' in material
-  && typeof material.setSdefEnabled === 'function'
-)
 
 const hasSdefVertices = (mesh: SkinnedMesh): boolean => {
   if (!mesh.geometry.hasAttribute('mmdSdefMask'))

@@ -1,8 +1,11 @@
+import type { Color } from 'three'
+
 /** Precision boundary of the WebGL Physical baseline. */
 export const MMD_PHYSICAL_MATERIAL_MAPPING = {
   ambient: 'unsupported',
   diffuse: 'exact',
   diffuseTexture: 'exact',
+  doubleSided: 'exact',
   metalness: 'unsupported',
   opacity: 'approximate',
   outline: 'unsupported',
@@ -12,6 +15,14 @@ export const MMD_PHYSICAL_MATERIAL_MAPPING = {
   textureMorphColor: 'unsupported',
   toonTexture: 'unsupported',
 } as const
+
+export type MMDPhysicalSpecularMode = 'ignore' | 'physical-color'
+
+/** Maps PMX specular into the optional Physical non-metal F0 approximation. */
+export const resolveMMDPhysicalSpecularColor = (
+  specular: Color,
+  mode: MMDPhysicalSpecularMode,
+): Color | undefined => mode === 'physical-color' ? specular.clone() : undefined
 
 /**
  * Engineering approximation from a Blinn-Phong exponent to Three's GGX

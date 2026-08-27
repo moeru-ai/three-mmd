@@ -11,6 +11,17 @@ export interface MMDMaterial extends Material {
   setSdefEnabled: (enabled: boolean) => void
 }
 
+export const isMMDMaterial = (material: Material): material is MMDMaterial => (
+  'isMMDMaterial' in material
+  && material.isMMDMaterial === true
+  && 'applyMMDMaterialState' in material
+  && typeof material.applyMMDMaterialState === 'function'
+  && 'setMMDAlphaMorphEnabled' in material
+  && typeof material.setMMDAlphaMorphEnabled === 'function'
+  && 'setSdefEnabled' in material
+  && typeof material.setSdefEnabled === 'function'
+)
+
 export interface MMDMaterialCapabilities {
   readonly alpha: readonly MMDResolvedAlphaMode[]
   readonly materialMorph: 'binding'

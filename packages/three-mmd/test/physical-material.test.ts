@@ -1,8 +1,7 @@
-import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
-
 import type { MMDMaterialDescriptor } from '../src/materials/types'
 
-import { Color, DoubleSide, ShaderLib, Texture } from 'three'
+import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import { Color, DoubleSide, FrontSide, ShaderLib, Texture } from 'three'
 import { describe, expect, it } from 'vitest'
 
 import { markMMDTextureTransparent, resolveMMDAlphaPolicy } from '../src/materials/core/alpha-policy'
@@ -11,9 +10,10 @@ import {
   MMD_PHYSICAL_MATERIAL_MAPPING,
   MMDPhysicalMaterial,
   mmdShininessToRoughness,
+  resolveMMDPhysicalSpecularColor,
 } from '../src/materials/physical'
 import { MMDToonMaterial } from '../src/materials/toon/mmd-toon-material'
-import { applyMorphTransparencyFix } from '../src/utils/build-material'
+import { applyMorphTransparencyFix, mapPmxMaterialSide } from '../src/utils/build-material'
 
 const descriptor = (): MMDMaterialDescriptor => ({
   ambient: new Color(0.1, 0.2, 0.3),
@@ -47,6 +47,7 @@ describe('mmd physical material mapping', () => {
       ambient: 'unsupported',
       diffuse: 'exact',
       diffuseTexture: 'exact',
+      doubleSided: 'exact',
       metalness: 'unsupported',
       opacity: 'approximate',
       outline: 'unsupported',
@@ -56,6 +57,26 @@ describe('mmd physical material mapping', () => {
       textureMorphColor: 'unsupported',
       toonTexture: 'unsupported',
     })
+  })
+
+  it('maps PMX specular color only when the approximation is explicitly enabled', () => {
+    const source = new Color(0.2, 0.3, 0.4)
+
+    const ignored = resolveMMDPhysicalSpecularColor(source, 'ignore')
+    const mapped = resolveMMDPhysicalSpecularColor(source, 'physical-color')
+
+    expect(ignored).toBeUndefined()
+    expect(mapped).not.toBe(source)
+    expect(mapped?.toArray()).toEqual([0.2, 0.3, 0.4])
+    expect(source.toArray()).toEqual([0.2, 0.3, 0.4])
+  })
+
+  it('derives raster sidedness only from the PMX double-sided flag', () => {
+    expect(mapPmxMaterialSide(0)).toBe(FrontSide)
+    expect(mapPmxMaterialSide(PmxObject.Material.Flag.EnabledToonEdge)).toBe(FrontSide)
+    expect(mapPmxMaterialSide(
+      PmxObject.Material.Flag.IsDoubleSided | PmxObject.Material.Flag.EnabledToonEdge,
+    )).toBe(DoubleSide)
   })
 
   it('creates a dielectric Physical material from exact PMX base fields', () => {

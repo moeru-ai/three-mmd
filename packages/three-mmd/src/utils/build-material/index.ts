@@ -1,6 +1,6 @@
 import type { BufferGeometry, LoadingManager, Material } from 'three'
 
-import type { MMDMaterial, MMDMaterialConstructor, MMDMaterialDescriptor } from '../../materials/types'
+import type { MMDMaterialConstructor, MMDMaterialDescriptor } from '../../materials/types'
 import type { TextureContext } from './types'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
@@ -19,13 +19,11 @@ import {
 import { TGALoader } from 'three/addons/loaders/TGALoader.js'
 
 import { MMDToonMaterial } from '../../materials/toon/mmd-toon-material'
+import { isMMDMaterial } from '../../materials/types'
 import { checkImageTransparency, loadTextureResource } from './utils'
 
-const isMMDMaterial = (material: Material): material is MMDMaterial => (
-  'isMMDMaterial' in material
-  && material.isMMDMaterial === true
-  && 'setMMDAlphaMorphEnabled' in material
-  && typeof material.setMMDAlphaMorphEnabled === 'function'
+export const mapPmxMaterialSide = (flag: number): typeof DoubleSide | typeof FrontSide => (
+  (flag & PmxObject.Material.Flag.IsDoubleSided) !== 0 ? DoubleSide : FrontSide
 )
 
 export const mapPmxToMaterialDescriptor = (
@@ -79,7 +77,7 @@ export const mapPmxToMaterialDescriptor = (
       width: material.edgeSize / 300,
     },
     shininess: material.shininess,
-    side: (material.flag & PmxObject.Material.Flag.IsDoubleSided) !== 0 || opacity !== 1 ? DoubleSide : FrontSide,
+    side: mapPmxMaterialSide(material.flag),
     specular: new Color().setRGB(...material.specular, SRGBColorSpace),
     sphereBlendMode,
     sphereMap,

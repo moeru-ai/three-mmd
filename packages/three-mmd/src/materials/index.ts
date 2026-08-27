@@ -5,6 +5,7 @@ export {
   resolveMMDAlphaPolicy,
 } from './core/alpha-policy'
 export { applyMMDMaterialMorph, createMMDMaterialEvaluatedState } from './morph'
+export { isMMDMaterial } from './types'
 export type {
   MMDMaterial,
   MMDMaterialCapabilities,

@@ -3,7 +3,7 @@ import type { MeshDepthMaterial, MeshDistanceMaterial } from 'three'
 
 import type { MMDMaterialDescriptor } from '../src/materials/types'
 
-import { Bone, BufferGeometry, Color, Float32BufferAttribute, ShaderLib, Skeleton, SkinnedMesh, Texture } from 'three'
+import { Bone, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, FrontSide, ShaderLib, Skeleton, SkinnedMesh, Texture } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MMDMaterialPlugin } from '../src/loaders/loader-plugin'
@@ -214,6 +214,34 @@ describe('mmd toon bindings', () => {
     mesh.onBeforeShadow({} as never, {} as never, {} as never, {} as never, mesh.geometry, distance, { materialIndex: 1 } as never)
     expect(distance.customProgramCacheKey()).toContain(second.uuid)
     expect(distance.version).toBe(initialDistanceVersion + 1)
+  })
+
+  it('selects Physical shadow variants from each group alpha surface', () => {
+    const firstMap = new Texture()
+    const secondMap = new Texture()
+    const first = new MMDPhysicalMaterial({ ...descriptor(), alphaTest: 0.3, map: firstMap, side: FrontSide })
+    const second = new MMDPhysicalMaterial({ ...descriptor(), alphaTest: 0.8, map: secondMap, side: DoubleSide })
+    const mesh = new SkinnedMesh(new BufferGeometry(), [first, second])
+    const bone = new Bone()
+    mesh.add(bone)
+    mesh.bind(new Skeleton([bone]))
+    mesh.geometry.setAttribute('mmdSdefMask', new Float32BufferAttribute([1], 1))
+    installMMDMaterialBindings(mesh)
+
+    const depth = mesh.customDepthMaterial as MeshDepthMaterial
+    const distance = mesh.customDistanceMaterial as MeshDistanceMaterial
+
+    mesh.onBeforeShadow({} as never, {} as never, {} as never, {} as never, mesh.geometry, depth, { materialIndex: 0 } as never)
+    expect(depth.customProgramCacheKey()).toContain(first.uuid)
+    expect(depth.customProgramCacheKey()).toContain(`map:${firstMap.uuid}`)
+    expect(depth.customProgramCacheKey()).toContain('alpha-test:true')
+    expect(depth.customProgramCacheKey()).toContain(`side:${String(FrontSide)}`)
+
+    mesh.onBeforeShadow({} as never, {} as never, {} as never, {} as never, mesh.geometry, distance, { materialIndex: 1 } as never)
+    expect(distance.customProgramCacheKey()).toContain(second.uuid)
+    expect(distance.customProgramCacheKey()).toContain(`map:${secondMap.uuid}`)
+    expect(distance.customProgramCacheKey()).toContain('alpha-test:true')
+    expect(distance.customProgramCacheKey()).toContain(`side:${String(DoubleSide)}`)
   })
 })
 
