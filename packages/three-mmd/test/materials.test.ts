@@ -7,8 +7,9 @@ import { Bone, BufferGeometry, Color, Float32BufferAttribute, ShaderLib, Skeleto
 import { describe, expect, it, vi } from 'vitest'
 
 import { MMDMaterialPlugin } from '../src/loaders/loader-plugin'
+import { installMMDMaterialBindings } from '../src/materials/core/bindings'
 import { applyMMDMaterialMorph, createMMDMaterialEvaluatedState } from '../src/materials/morph'
-import { installMMDMaterialBindings } from '../src/materials/toon/bindings'
+import { MMDPhysicalMaterial } from '../src/materials/physical/mmd-physical-material'
 import { MMDToonMaterial } from '../src/materials/toon/mmd-toon-material'
 import { buildGeometry } from '../src/utils/build-geometry'
 
@@ -71,6 +72,12 @@ describe('mmd material backends', () => {
     const plugin = new MMDMaterialPlugin({ manager: {} as never, resourcePath: '' }, { materialType: MMDToonMaterial })
     expect(plugin.name).toBe('MMDMaterialPlugin')
     expect(plugin.materialType).toBe(MMDToonMaterial)
+  })
+
+  it('selects the opt-in Physical backend through MMDMaterialPlugin', () => {
+    const plugin = new MMDMaterialPlugin({ manager: {} as never, resourcePath: '' }, { materialType: MMDPhysicalMaterial })
+
+    expect(plugin.materialType).toBe(MMDPhysicalMaterial)
   })
 
   it('uses Three gradient-map coordinates for the PMX toon ramp', () => {
@@ -158,6 +165,21 @@ describe('mmd toon bindings', () => {
 
     expect(sdefMesh.customDepthMaterial).toBeDefined()
     expect(sdefMesh.customDistanceMaterial).toBeDefined()
+  })
+
+  it('installs the same SDEF surface and shadow binding for Physical materials', () => {
+    const material = new MMDPhysicalMaterial(descriptor())
+    const mesh = new SkinnedMesh(new BufferGeometry(), [material])
+    const bone = new Bone()
+    mesh.add(bone)
+    mesh.bind(new Skeleton([bone]))
+    mesh.geometry.setAttribute('mmdSdefMask', new Float32BufferAttribute([1], 1))
+
+    installMMDMaterialBindings(mesh)
+
+    expect(material.defines?.MMD_USE_SDEF).toBe(1)
+    expect(mesh.customDepthMaterial).toBeDefined()
+    expect(mesh.customDistanceMaterial).toBeDefined()
   })
 
   it('disables the SDEF shader variant for meshes without SDEF vertices', () => {

@@ -5,6 +5,7 @@ import type { LoadingTexture, TextureContext, TextureLoadOptions } from './types
 import { SharedToonTextures } from 'babylon-mmd/esm/Loader/sharedToonTextures'
 import { LoaderUtils, NearestFilter, RepeatWrapping, SRGBColorSpace } from 'three'
 
+import { markMMDTextureTransparent } from '../../materials/core/alpha-policy'
 import { NON_ALPHA_CHANNEL_FORMATS } from './types'
 
 // Check if the partial image area used by the texture is transparent.
@@ -59,7 +60,7 @@ export const checkImageTransparency = (map: LoadingTexture, geometry: BufferGeom
         const centerUV = { x: 0.0, y: 0.0 }
 
         for (let j = 0; j < 3; j++) {
-          const index = indices[i * 3 + j]
+          const index = indices[i + j]
           const uv = { x: uvs[index * 2 + 0], y: uvs[index * 2 + 1] }
 
           if (getAlphaByUv(image, uv) < threshold)
@@ -80,13 +81,9 @@ export const checkImageTransparency = (map: LoadingTexture, geometry: BufferGeom
     }
 
     if ('isCompressedTexture' in texture && texture.isCompressedTexture === true) {
-      if (NON_ALPHA_CHANNEL_FORMATS.includes(texture.format)) {
-        map.transparent = false
-      }
-      else {
+      if (!NON_ALPHA_CHANNEL_FORMATS.includes(texture.format))
         // any other way to check transparency of CompressedTexture?
-        map.transparent = true
-      }
+        markMMDTextureTransparent(map)
 
       return
     }
@@ -103,7 +100,7 @@ export const checkImageTransparency = (map: LoadingTexture, geometry: BufferGeom
       geometry.attributes.uv.array,
       geometry.index!.array.slice(group.start, group.start + group.count),
     )) {
-      map.transparent = true
+      markMMDTextureTransparent(map)
     }
   })
 }
@@ -177,7 +174,7 @@ export const loadTextureResource = (
       texture.readyCallbacks![i](texture)
 
     delete texture.readyCallbacks
-  }, ctx.onProgress, ctx.onError) as LoadingTexture
+  }, ctx.onProgress, ctx.onError)
 
   texture.readyCallbacks = []
 

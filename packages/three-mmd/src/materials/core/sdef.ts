@@ -95,7 +95,7 @@ const assertAndReplace = (source: string, expected: string, replacement: string,
   return source.replace(expected, replacement)
 }
 
-/** Applies toon-local SDEF hooks without mutating Three's global shader chunks. */
+/** Applies material-local SDEF hooks without mutating Three's global shader chunks. */
 export const installSdefPatch = (material: Material): void => {
   material.defines = { ...material.defines, MMD_USE_SDEF: 1 }
   const previous = material.onBeforeCompile

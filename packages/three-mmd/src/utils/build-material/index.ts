@@ -1,6 +1,6 @@
 import type { BufferGeometry, LoadingManager, Material } from 'three'
 
-import type { MMDMaterialConstructor, MMDMaterialDescriptor } from '../../materials/types'
+import type { MMDMaterial, MMDMaterialConstructor, MMDMaterialDescriptor } from '../../materials/types'
 import type { TextureContext } from './types'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
@@ -20,6 +20,13 @@ import { TGALoader } from 'three/addons/loaders/TGALoader.js'
 
 import { MMDToonMaterial } from '../../materials/toon/mmd-toon-material'
 import { checkImageTransparency, loadTextureResource } from './utils'
+
+const isMMDMaterial = (material: Material): material is MMDMaterial => (
+  'isMMDMaterial' in material
+  && material.isMMDMaterial === true
+  && 'setMMDAlphaMorphEnabled' in material
+  && typeof material.setMMDAlphaMorphEnabled === 'function'
+)
 
 export const mapPmxToMaterialDescriptor = (
   material: PmxObject.Material,
@@ -72,7 +79,7 @@ export const mapPmxToMaterialDescriptor = (
       width: material.edgeSize / 300,
     },
     shininess: material.shininess,
-    side: (material.flag & PmxObject.Material.Flag.IsDoubleSided) === 1 || opacity !== 1 ? DoubleSide : FrontSide,
+    side: (material.flag & PmxObject.Material.Flag.IsDoubleSided) !== 0 || opacity !== 1 ? DoubleSide : FrontSide,
     specular: new Color().setRGB(...material.specular, SRGBColorSpace),
     sphereBlendMode,
     sphereMap,
@@ -86,8 +93,16 @@ export const mapPmxToMaterialDescriptor = (
 export const applyMorphTransparencyFix = (materials: Material[], morphs: readonly PmxObject.Morph[]) => {
   const checkAlphaMorph = (elements: PmxObject.Morph.MaterialMorph['elements'], targetMaterials: Material[]) => {
     for (const element of elements) {
-      if (element.index !== -1 && targetMaterials[element.index]?.opacity !== element.diffuse[3])
-        targetMaterials[element.index].transparent = true
+      const material = element.index === -1 ? undefined : targetMaterials[element.index]
+      if (material === undefined || material.opacity === element.diffuse[3])
+        continue
+
+      if (isMMDMaterial(material)) {
+        material.setMMDAlphaMorphEnabled(true)
+      }
+      else {
+        material.transparent = true
+      }
     }
   }
 

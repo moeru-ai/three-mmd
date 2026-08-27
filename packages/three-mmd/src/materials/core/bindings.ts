@@ -1,6 +1,8 @@
 /* eslint-disable ts/unbound-method */
 
-import type { SkinnedMesh } from 'three'
+import type { Material, SkinnedMesh } from 'three'
+
+import type { MMDMaterial } from '../types'
 
 import {
   MeshDepthMaterial,
@@ -8,7 +10,6 @@ import {
   RGBADepthPacking,
 } from 'three'
 
-import { MMDToonMaterial } from './mmd-toon-material'
 import { installSdefPatch } from './sdef'
 
 /**
@@ -20,7 +21,7 @@ import { installSdefPatch } from './sdef'
  */
 const installShadowMaterialVariants = (
   material: MeshDepthMaterial | MeshDistanceMaterial,
-): ((surface: MMDToonMaterial) => void) => {
+): ((surface: Material) => void) => {
   const baseCacheKey = material.customProgramCacheKey.bind(material)
   let surfaceCacheKey = ''
   material.customProgramCacheKey = () => `${baseCacheKey()}|mmd-shadow-surface:${surfaceCacheKey}`
@@ -30,6 +31,13 @@ const installShadowMaterialVariants = (
     material.needsUpdate = true
   }
 }
+
+const isMMDMaterial = (material: Material): material is MMDMaterial => (
+  'isMMDMaterial' in material
+  && material.isMMDMaterial === true
+  && 'setSdefEnabled' in material
+  && typeof material.setSdefEnabled === 'function'
+)
 
 const hasSdefVertices = (mesh: SkinnedMesh): boolean => {
   if (!mesh.geometry.hasAttribute('mmdSdefMask'))
@@ -48,12 +56,12 @@ const hasSdefVertices = (mesh: SkinnedMesh): boolean => {
  */
 export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
   const surfaceMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-  if (!surfaceMaterials.every(material => material instanceof MMDToonMaterial))
+  if (!surfaceMaterials.every(isMMDMaterial))
     return
 
-  const toonMaterials = surfaceMaterials
+  const mmdMaterials = surfaceMaterials
   const meshHasSdefVertices = hasSdefVertices(mesh)
-  for (const material of toonMaterials)
+  for (const material of mmdMaterials)
     material.setSdefEnabled(meshHasSdefVertices)
 
   if (!meshHasSdefVertices)
@@ -73,7 +81,7 @@ export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
     previousOnBeforeShadow.call(mesh, renderer, object, camera, shadowCamera, geometry, shadowMaterial, group)
 
     const surfaceIndex = (group as unknown as null | { materialIndex?: number })?.materialIndex ?? 0
-    const surface = toonMaterials.at(surfaceIndex)
+    const surface = mmdMaterials.at(surfaceIndex)
     if (surface === undefined)
       return
 

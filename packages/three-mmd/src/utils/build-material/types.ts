@@ -11,7 +11,6 @@ import {
 
 export interface LoadingTexture extends Texture {
   readyCallbacks?: Array<(texture: Texture) => void>
-  transparent: boolean
 }
 
 export interface TextureContext {

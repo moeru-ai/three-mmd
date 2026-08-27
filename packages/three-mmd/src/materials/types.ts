@@ -1,15 +1,18 @@
 import type { Color, Material, MaterialParameters, Texture, Vector4 } from 'three'
 
-import type { MMDToonMaterial } from './toon/mmd-toon-material'
+import type { MMDResolvedAlphaMode } from './core/alpha-policy'
 
 export interface MMDMaterial extends Material {
   applyMMDMaterialState: (state: MMDMaterialEvaluatedState) => void
   readonly descriptor: MMDMaterialDescriptor
   readonly isMMDMaterial: true
   readonly mmdCapabilities: MMDMaterialCapabilities
+  setMMDAlphaMorphEnabled: (enabled: boolean) => void
+  setSdefEnabled: (enabled: boolean) => void
 }
 
 export interface MMDMaterialCapabilities {
+  readonly alpha: readonly MMDResolvedAlphaMode[]
   readonly materialMorph: 'binding'
   readonly outline: boolean
   readonly renderer: readonly ('webgl-renderer')[]
@@ -18,7 +21,10 @@ export interface MMDMaterialCapabilities {
   readonly toon: boolean
 }
 
-export type MMDMaterialConstructor = new (descriptor: MMDMaterialDescriptor) => MMDToonMaterial
+export interface MMDMaterialConstructor {
+  readonly isMMDMaterial: true
+  new (descriptor: MMDMaterialDescriptor): MMDMaterial
+}
 
 /**
  * Normalized PMX material data plus the textures resolved by the loader.

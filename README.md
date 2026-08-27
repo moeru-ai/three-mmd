@@ -4,7 +4,7 @@ Use MMD on Three.js
 
 ## Packages
 
-- [`@moeru/three-mmd`](packages/three-mmd/README.md) — core runtime and WebGL toon material
+- [`@moeru/three-mmd`](packages/three-mmd/README.md) — core runtime and opt-in WebGL toon/physical materials
 - [`@moeru/three-mmd-physics-ammo`](packages/three-mmd-physics-ammo/README.md) — Ammo.js physics
 - [`@moeru/three-mmd-physics-springbone`](packages/three-mmd-physics-springbone/README.md) — spring bone physics
 

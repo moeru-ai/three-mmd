@@ -15,9 +15,15 @@ import {
   Vector4,
 } from 'three'
 
-import { installSdefPatch } from './sdef'
+import {
+  applyMMDAlphaPolicy,
+  onMMDTextureTransparency,
+  resolveMMDAlphaPolicy,
+} from '../core/alpha-policy'
+import { installSdefPatch } from '../core/sdef'
 
 const capabilities: MMDMaterialCapabilities = {
+  alpha: ['opaque', 'cutout', 'mmd-depth-blend'],
   materialMorph: 'binding',
   outline: false,
   renderer: ['webgl-renderer'],
@@ -142,6 +148,8 @@ const createPhongParameters = (descriptor: MMDMaterialDescriptor): MeshPhongMate
  * such as `gradientMap` and `matcap`.
  */
 export class MMDToonMaterial extends MeshPhongMaterial {
+  public static readonly isMMDMaterial = true as const
+
   public ambient: Color
   public descriptor: MMDMaterialDescriptor
   public readonly isMMDMaterial = true as const
@@ -160,6 +168,7 @@ export class MMDToonMaterial extends MeshPhongMaterial {
   public readonly toonTextureMultiplicativeColor = new Vector4(1, 1, 1, 1)
 
   private readonly mmdUniforms: Record<string, IUniform>
+  private stopTextureTransparencyWatch?: () => void
 
   public constructor(descriptor: MMDMaterialDescriptor) {
     super(createPhongParameters(descriptor))
@@ -171,6 +180,7 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     this.sphereMap = descriptor.sphereMap
     this.toonMap = descriptor.toonMap
     this.emissive.setRGB(0, 0, 0)
+    this.watchDiffuseMap(descriptor.map)
     this.defines = {
       ...this.defines,
       MMD_SPHERE_BLEND_MODE: this.getSphereBlendModeValue(),
@@ -245,6 +255,7 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     this.mmdUniforms.mmdSphereMap.value = this.sphereMap ?? this.toonMap
     this.mmdUniforms.mmdToonMap.value = this.toonMap
     this.mmdUniforms.mmdSphereBlendMode.value = this.getSphereBlendModeValue()
+    this.watchDiffuseMap(source.map)
     return this
   }
 
@@ -252,7 +263,13 @@ export class MMDToonMaterial extends MeshPhongMaterial {
     return `${super.customProgramCacheKey()}|mmd-toon|${this.sphereBlendMode ?? 'none'}|${this.sphereMap === undefined ? 'no-sphere' : 'sphere'}|sdef:${String(this.defines?.MMD_USE_SDEF ?? 1)}`
   }
 
-  /** @internal */
+  public setMMDAlphaMorphEnabled(enabled: boolean): void {
+    if (!(enabled))
+      return
+    this.transparent = true
+    this.depthWrite = true
+  }
+
   public setSdefEnabled(enabled: boolean): void {
     const value = enabled ? 1 : 0
     if (this.defines?.MMD_USE_SDEF === value)
@@ -267,5 +284,26 @@ export class MMDToonMaterial extends MeshPhongMaterial {
       return 0
 
     return this.sphereBlendMode === 'add' ? 2 : 1
+  }
+
+  private watchDiffuseMap(map: null | Texture | undefined): void {
+    this.stopTextureTransparencyWatch?.()
+    this.stopTextureTransparencyWatch = undefined
+    if (map === null || map === undefined)
+      return
+
+    this.stopTextureTransparencyWatch = onMMDTextureTransparency(map, () => {
+      const evaluatedMode = resolveMMDAlphaPolicy({
+        alphaTest: this.descriptor.alphaTest,
+        mode: 'evaluate',
+        opacity: this.opacity,
+        textureHasTransparency: true,
+      })
+      applyMMDAlphaPolicy(
+        this,
+        evaluatedMode === 'blend' ? 'mmd-depth-blend' : evaluatedMode,
+        this.descriptor.alphaTest ?? 0.5,
+      )
+    })
   }
 }
