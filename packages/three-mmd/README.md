@@ -92,6 +92,7 @@ subclass:
 
 ```ts
 import type { MMDMaterialDescriptor } from '@moeru/three-mmd/materials'
+
 import { MMDPhysicalMaterial } from '@moeru/three-mmd/materials/physical'
 
 class ProjectPhysicalMaterial extends MMDPhysicalMaterial {
