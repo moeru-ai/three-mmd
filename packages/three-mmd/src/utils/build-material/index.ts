@@ -38,9 +38,6 @@ export const mapPmxToMaterialDescriptor = (
   const mapFileName = material.textureIndex === -1 ? undefined : pmxTextures[material.textureIndex]
   const map = mapFileName === undefined ? undefined : loadTextureResource(mapFileName, ctx)
 
-  if (map !== undefined && opacity === 1)
-    checkImageTransparency(map, geometry, groupIndex)
-
   const sphereMapFileName = material.sphereTextureIndex === -1 ? undefined : pmxTextures[material.sphereTextureIndex]
   const sphereBlendMode = material.sphereTextureMode === PmxObject.Material.SphereTextureMode.Multiply
     ? 'multiply'
@@ -56,7 +53,7 @@ export const mapPmxToMaterialDescriptor = (
     ? `toon${(`0${material.toonTextureIndex + 1}`).slice(-2)}.bmp`
     : pmxTextures[material.toonTextureIndex]
 
-  return {
+  const descriptor: MMDMaterialDescriptor = {
     ambient: new Color().setRGB(...material.ambient, SRGBColorSpace),
     blendDst: OneMinusSrcAlphaFactor,
     blendDstAlpha: DstAlphaFactor,
@@ -86,6 +83,11 @@ export const mapPmxToMaterialDescriptor = (
     toonMapFileName,
     transparent: opacity !== 1,
   }
+
+  if (map !== undefined && opacity === 1)
+    checkImageTransparency(map, geometry, groupIndex, (mode) => { descriptor.textureAlphaMode = mode })
+
+  return descriptor
 }
 
 export const applyMorphTransparencyFix = (materials: Material[], morphs: readonly PmxObject.Morph[]) => {

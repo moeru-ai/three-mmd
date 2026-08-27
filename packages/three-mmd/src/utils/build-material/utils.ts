@@ -1,15 +1,24 @@
 import type { BufferGeometry, Texture, TextureLoader, TypedArray } from 'three'
 
+import type { MMDTextureAlphaMode } from '../../materials/core/alpha-policy'
 import type { LoadingTexture, TextureContext, TextureLoadOptions } from './types'
 
 import { SharedToonTextures } from 'babylon-mmd/esm/Loader/sharedToonTextures'
 import { LoaderUtils, NearestFilter, RepeatWrapping, SRGBColorSpace } from 'three'
 
-import { markMMDTextureTransparent } from '../../materials/core/alpha-policy'
+import {
+  markMMDTextureTransparent,
+  resolveMMDTextureAlphaMode,
+} from '../../materials/core/alpha-policy'
 import { NON_ALPHA_CHANNEL_FORMATS } from './types'
 
-// Check if the partial image area used by the texture is transparent.
-export const checkImageTransparency = (map: LoadingTexture, geometry: BufferGeometry, groupIndex: number) => {
+// Check the alpha mode of the image area used by one geometry group.
+export const checkImageTransparency = (
+  map: LoadingTexture,
+  geometry: BufferGeometry,
+  groupIndex: number,
+  onAlphaMode?: (mode: MMDTextureAlphaMode) => void,
+) => {
   map.readyCallbacks!.push((texture: Texture) => {
     // Is there any efficient ways?
     const createImageData = (image: HTMLImageElement) => {
@@ -23,11 +32,11 @@ export const checkImageTransparency = (map: LoadingTexture, geometry: BufferGeom
       return context.getImageData(0, 0, canvas.width, canvas.height)
     }
 
-    const detectImageTransparency = (image: ImageData, uvs: TypedArray, indices: TypedArray) => {
+    const detectImageAlphaMode = (image: ImageData, uvs: TypedArray, indices: TypedArray) => {
       const width = image.width
       const height = image.height
       const data = image.data
-      const threshold = 253
+      const alphaValues: number[] = []
 
       /*
         * This method expects
@@ -54,36 +63,36 @@ export const checkImageTransparency = (map: LoadingTexture, geometry: BufferGeom
       }
 
       if (data.length / (width * height) !== 4)
-        return false
+        return undefined
 
       for (let i = 0; i < indices.length; i += 3) {
-        const centerUV = { x: 0.0, y: 0.0 }
+        const uv0 = { x: uvs[indices[i] * 2 + 0], y: uvs[indices[i] * 2 + 1] }
+        const uv1 = { x: uvs[indices[i + 1] * 2 + 0], y: uvs[indices[i + 1] * 2 + 1] }
+        const uv2 = { x: uvs[indices[i + 2] * 2 + 0], y: uvs[indices[i + 2] * 2 + 1] }
 
-        for (let j = 0; j < 3; j++) {
-          const index = indices[i + j]
-          const uv = { x: uvs[index * 2 + 0], y: uvs[index * 2 + 1] }
-
-          if (getAlphaByUv(image, uv) < threshold)
-            return true
-
-          centerUV.x += uv.x
-          centerUV.y += uv.y
+        // Sample a small barycentric grid instead of over-weighting the three
+        // vertices. This better approximates Babylon's raster alpha checker,
+        // where large opaque interiors should outweigh anti-aliased edges.
+        for (let u = 0; u <= 3; u++) {
+          for (let v = 0; v <= 3 - u; v++) {
+            const w = 3 - u - v
+            alphaValues.push(getAlphaByUv(image, {
+              x: (uv0.x * u + uv1.x * v + uv2.x * w) / 3,
+              y: (uv0.y * u + uv1.y * v + uv2.y * w) / 3,
+            }))
+          }
         }
-
-        centerUV.x /= 3
-        centerUV.y /= 3
-
-        if (getAlphaByUv(image, centerUV) < threshold)
-          return true
       }
 
-      return false
+      return resolveMMDTextureAlphaMode(alphaValues)
     }
 
     if ('isCompressedTexture' in texture && texture.isCompressedTexture === true) {
-      if (!NON_ALPHA_CHANNEL_FORMATS.includes(texture.format))
+      if (!NON_ALPHA_CHANNEL_FORMATS.includes(texture.format)) {
         // any other way to check transparency of CompressedTexture?
+        onAlphaMode?.('blend')
         markMMDTextureTransparent(map)
+      }
 
       return
     }
@@ -95,12 +104,14 @@ export const checkImageTransparency = (map: LoadingTexture, geometry: BufferGeom
 
     const group = geometry.groups[groupIndex]
 
-    if (detectImageTransparency(
+    const alphaMode = detectImageAlphaMode(
       imageData,
       geometry.attributes.uv.array,
       geometry.index!.array.slice(group.start, group.start + group.count),
-    )) {
-      markMMDTextureTransparent(map)
+    )
+    if (alphaMode !== undefined) {
+      onAlphaMode?.(alphaMode)
+      markMMDTextureTransparent(map, alphaMode)
     }
   })
 }

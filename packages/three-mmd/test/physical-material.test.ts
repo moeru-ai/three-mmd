@@ -4,7 +4,12 @@ import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import { Color, DoubleSide, FrontSide, ShaderLib, Texture } from 'three'
 import { describe, expect, it } from 'vitest'
 
-import { markMMDTextureTransparent, resolveMMDAlphaPolicy } from '../src/materials/core/alpha-policy'
+import {
+  getMMDTextureAlphaMode,
+  markMMDTextureTransparent,
+  resolveMMDAlphaPolicy,
+  resolveMMDTextureAlphaMode,
+} from '../src/materials/core/alpha-policy'
 import { createMMDMaterialEvaluatedState } from '../src/materials/morph'
 import {
   MMD_PHYSICAL_MATERIAL_MAPPING,
@@ -69,6 +74,12 @@ describe('mmd physical material mapping', () => {
     expect(mapped).not.toBe(source)
     expect(mapped?.toArray()).toEqual([0.2, 0.3, 0.4])
     expect(source.toArray()).toEqual([0.2, 0.3, 0.4])
+  })
+
+  it('matches Babylon alpha evaluation for cutout and blended texture samples', () => {
+    expect(resolveMMDTextureAlphaMode([255, 255, 0, 0])).toBe('cutout')
+    expect(resolveMMDTextureAlphaMode([255, 255, 55, 55])).toBe('blend')
+    expect(resolveMMDTextureAlphaMode([255, 255, 255])).toBeUndefined()
   })
 
   it('derives raster sidedness only from the PMX double-sided flag', () => {
@@ -167,24 +178,53 @@ describe('mmd alpha policy', () => {
     expect(resolveMMDAlphaPolicy({ mode: 'evaluate', opacity: 1, textureHasTransparency: false })).toBe('opaque')
     expect(resolveMMDAlphaPolicy({ mode: 'evaluate', opacity: 0.5, textureHasTransparency: false })).toBe('blend')
     expect(resolveMMDAlphaPolicy({ mode: 'evaluate', opacity: 1, textureHasTransparency: true })).toBe('blend')
+    expect(resolveMMDAlphaPolicy({ mode: 'evaluate', opacity: 1, textureAlphaMode: 'cutout', textureHasTransparency: true })).toBe('cutout')
     expect(resolveMMDAlphaPolicy({ alphaTest: 0.3, mode: 'evaluate', opacity: 1, textureHasTransparency: false })).toBe('cutout')
     expect(resolveMMDAlphaPolicy({ mode: 'cutout', opacity: 1, textureHasTransparency: false })).toBe('cutout')
     expect(resolveMMDAlphaPolicy({ mode: 'mmd-depth-blend', opacity: 1, textureHasTransparency: false })).toBe('mmd-depth-blend')
   })
 
-  it('applies conventional Physical blending while keeping explicit cutout and MMD depth modes available', () => {
+  it('uses depth-writing blending for evaluated MMD alpha while keeping conventional blending opt-in', () => {
     const translucentDescriptor = { ...descriptor(), opacity: 0.5, transparent: true }
     const evaluated = new MMDPhysicalMaterial(translucentDescriptor)
+    const conventional = new MMDPhysicalMaterial(descriptor(), { alphaMode: 'blend' })
     const cutout = new MMDPhysicalMaterial(descriptor(), { alphaMode: 'cutout' })
     const mmdBlend = new MMDPhysicalMaterial(descriptor(), { alphaMode: 'mmd-depth-blend' })
 
     expect(evaluated.transparent).toBe(true)
-    expect(evaluated.depthWrite).toBe(false)
+    expect(evaluated.depthWrite).toBe(true)
+    expect(conventional.transparent).toBe(true)
+    expect(conventional.depthWrite).toBe(false)
     expect(cutout.transparent).toBe(false)
     expect(cutout.depthWrite).toBe(true)
     expect(cutout.alphaTest).toBe(0.5)
     expect(mmdBlend.transparent).toBe(true)
     expect(mmdBlend.depthWrite).toBe(true)
+  })
+
+  it('applies a texture cutout mode without enabling blending', () => {
+    const source = descriptor()
+    const material = new MMDPhysicalMaterial(source)
+
+    markMMDTextureTransparent(source.map!, 'cutout')
+
+    expect(getMMDTextureAlphaMode(source.map!)).toBe('cutout')
+    expect(material.transparent).toBe(false)
+    expect(material.depthWrite).toBe(true)
+    expect(material.alphaTest).toBe(0.5)
+  })
+
+  it('preserves evaluated texture alpha through copy and state updates', () => {
+    const sourceDescriptor = { ...descriptor(), textureAlphaMode: 'cutout' as const }
+    const source = new MMDPhysicalMaterial(sourceDescriptor)
+    const target = new MMDPhysicalMaterial(descriptor())
+
+    target.copy(source)
+    target.applyMMDMaterialState(createMMDMaterialEvaluatedState(sourceDescriptor))
+
+    expect(target.transparent).toBe(false)
+    expect(target.depthWrite).toBe(true)
+    expect(target.alphaTest).toBe(0.5)
   })
 
   it('propagates asynchronous diffuse texture alpha to both material backends', () => {
@@ -197,7 +237,7 @@ describe('mmd alpha policy', () => {
     markMMDTextureTransparent(toonDescriptor.map!)
 
     expect(physical.transparent).toBe(true)
-    expect(physical.depthWrite).toBe(false)
+    expect(physical.depthWrite).toBe(true)
     expect(toon.transparent).toBe(true)
     expect(toon.depthWrite).toBe(true)
   })
@@ -238,6 +278,6 @@ describe('mmd alpha policy', () => {
     applyMorphTransparencyFix([physical], [morph])
 
     expect(physical.transparent).toBe(true)
-    expect(physical.depthWrite).toBe(false)
+    expect(physical.depthWrite).toBe(true)
   })
 })

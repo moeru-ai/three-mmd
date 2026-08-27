@@ -1,6 +1,6 @@
 import type { MeshPhysicalMaterialParameters, Texture } from 'three'
 
-import type { MMDAlphaMode } from '../core/alpha-policy'
+import type { MMDAlphaMode, MMDTextureAlphaMode } from '../core/alpha-policy'
 import type {
   MMDMaterialCapabilities,
   MMDMaterialDescriptor,
@@ -12,6 +12,7 @@ import { MeshPhysicalMaterial } from 'three'
 
 import {
   applyMMDAlphaPolicy,
+  getMMDTextureAlphaMode,
   onMMDTextureTransparency,
   resolveMMDAlphaPolicy,
 } from '../core/alpha-policy'
@@ -86,7 +87,7 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
   public specularMode: MMDPhysicalSpecularMode
   private alphaMorphEnabled = false
   private stopTextureTransparencyWatch?: () => void
-  private textureHasTransparency = false
+  private textureAlphaMode?: MMDTextureAlphaMode
 
   public constructor(descriptor: MMDMaterialDescriptor, options: MMDPhysicalMaterialOptions = {}) {
     const resolvedOptions = resolveOptions(options)
@@ -96,8 +97,9 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
     this.shininessToRoughness = resolvedOptions.shininessToRoughness
     this.specularMode = resolvedOptions.specularMode
     this.name = descriptor.name
-    this.updateAlphaPolicy(descriptor.opacity, false)
     this.watchDiffuseMap(descriptor.map)
+    this.textureAlphaMode = descriptor.textureAlphaMode ?? this.textureAlphaMode
+    this.updateAlphaPolicy(descriptor.opacity)
     installSdefPatch(this)
   }
 
@@ -108,7 +110,7 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
     const specularColor = resolveMMDPhysicalSpecularColor(state.specular, this.specularMode)
     if (specularColor !== undefined)
       this.specularColor.copy(specularColor)
-    this.updateAlphaPolicy(state.opacity, this.textureHasTransparency)
+    this.updateAlphaPolicy(state.opacity)
   }
 
   public override clone(): this {
@@ -130,8 +132,9 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
     this.shininessToRoughness = source.shininessToRoughness
     this.specularMode = source.specularMode
     this.alphaMorphEnabled = source.alphaMorphEnabled
-    this.textureHasTransparency = source.textureHasTransparency
     this.watchDiffuseMap(source.map)
+    this.textureAlphaMode = source.textureAlphaMode
+    this.updateAlphaPolicy(this.opacity)
     return this
   }
 
@@ -141,7 +144,7 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
 
   public setMMDAlphaMorphEnabled(enabled: boolean): void {
     this.alphaMorphEnabled = enabled
-    this.updateAlphaPolicy(this.opacity, this.textureHasTransparency)
+    this.updateAlphaPolicy(this.opacity)
   }
 
   public setSdefEnabled(enabled: boolean): void {
@@ -153,25 +156,38 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
     this.needsUpdate = true
   }
 
-  private updateAlphaPolicy(opacity: number, textureHasTransparency: boolean): void {
+  private updateAlphaPolicy(
+    opacity: number,
+    textureAlphaMode: MMDTextureAlphaMode | undefined = this.textureAlphaMode,
+  ): void {
     const mode = resolveMMDAlphaPolicy({
       alphaTest: this.descriptor.alphaTest,
       mode: this.alphaMode,
       opacity,
-      textureHasTransparency: textureHasTransparency || this.alphaMorphEnabled,
+      textureAlphaMode,
+      textureHasTransparency: textureAlphaMode !== undefined || this.alphaMorphEnabled,
     })
-    applyMMDAlphaPolicy(this, mode, this.descriptor.alphaTest ?? 0.5)
+    // Babylon-MMD's default PBR render method is
+    // DepthWriteAlphaBlendingWithEvaluation. Keep the evaluated MMD path's
+    // depth-writing blend so overlapping cutout/blended parts do not reveal
+    // surfaces behind them. Conventional depthWrite=false blending remains
+    // available through the explicit `blend` option.
+    const renderMode = this.alphaMode === 'evaluate' && mode === 'blend'
+      ? 'mmd-depth-blend'
+      : mode
+    applyMMDAlphaPolicy(this, renderMode, this.descriptor.alphaTest ?? 0.5)
   }
 
   private watchDiffuseMap(map: null | Texture | undefined): void {
     this.stopTextureTransparencyWatch?.()
     this.stopTextureTransparencyWatch = undefined
+    this.textureAlphaMode = undefined
     if (map === null || map === undefined)
       return
 
     this.stopTextureTransparencyWatch = onMMDTextureTransparency(map, () => {
-      this.textureHasTransparency = true
-      this.updateAlphaPolicy(this.opacity, true)
+      this.textureAlphaMode = this.descriptor.textureAlphaMode ?? getMMDTextureAlphaMode(map)
+      this.updateAlphaPolicy(this.opacity, this.textureAlphaMode)
     })
   }
 }

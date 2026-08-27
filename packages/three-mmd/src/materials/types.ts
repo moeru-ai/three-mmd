@@ -1,6 +1,6 @@
 import type { Color, Material, MaterialParameters, Texture, Vector4 } from 'three'
 
-import type { MMDResolvedAlphaMode } from './core/alpha-policy'
+import type { MMDResolvedAlphaMode, MMDTextureAlphaMode } from './core/alpha-policy'
 
 export interface MMDMaterial extends Material {
   applyMMDMaterialState: (state: MMDMaterialEvaluatedState) => void
@@ -58,6 +58,7 @@ export interface MMDMaterialDescriptor extends MaterialParameters {
   sphereBlendMode?: MMDSphereBlendMode
   sphereMap?: Texture
   sphereMapFileName?: string
+  textureAlphaMode?: MMDTextureAlphaMode
   toonMap: Texture
   toonMapFileName: string
   transparent: boolean
