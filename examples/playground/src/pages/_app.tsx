@@ -8,6 +8,7 @@ import { Suspense, useRef, useState } from 'react'
 import { Outlet } from 'react-router'
 import { BackSide } from 'three'
 
+/** @see {@link https://drei.docs.pmnd.rs/staging/lightformer} */
 const Lightformers = ({ positions = [2, 0, 2, 0, 2, 0, 2, 0] }) => {
   const groupRef = useRef<Group>(null)
 
