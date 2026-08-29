@@ -37,6 +37,8 @@ export interface MMDMaterialCapabilities {
 
 export interface MMDMaterialConstructor {
   readonly isMMDMaterial: true
+  /** Optional constructor-level capabilities used before an instance exists. */
+  readonly mmdCapabilities?: MMDMaterialCapabilities
   new (descriptor: MMDMaterialDescriptor): MMDMaterial
 }
 
@@ -66,7 +68,8 @@ export interface MMDMaterialDescriptor {
   sphereMap?: Texture
   sphereMapFileName?: string
   textureAlphaMode?: MMDTextureAlphaMode
-  toonMap: Texture
+  /** Resolved only when the selected material backend consumes toon shading. */
+  toonMap?: Texture
   toonMapFileName: string
 }
 

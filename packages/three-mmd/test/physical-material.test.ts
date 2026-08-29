@@ -1,8 +1,8 @@
 import type { MMDMaterialDescriptor } from '../src/materials/types'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
-import { Color, DoubleSide, ShaderLib, Texture } from 'three'
-import { describe, expect, it } from 'vitest'
+import { BufferGeometry, Color, DoubleSide, LoadingManager, ShaderLib, Texture, TextureLoader } from 'three'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   resolveMMDAlphaPolicy,
@@ -16,7 +16,53 @@ import {
   resolveMMDPhysicalSpecularColor,
 } from '../src/materials/physical'
 import { MMDToonMaterial } from '../src/materials/toon/mmd-toon-material'
-import { applyMorphTransparencyFix, isPmxMaterialDoubleSided } from '../src/utils/build-material'
+import { applyMorphTransparencyFix, buildMaterial, isPmxMaterialDoubleSided } from '../src/utils/build-material'
+
+const texturedPmx = (): PmxObject => ({
+  bones: [],
+  displayFrames: [],
+  header: {
+    additionalVec4Count: 0,
+    boneIndexSize: 4,
+    comment: '',
+    encoding: PmxObject.Header.Encoding.Utf8,
+    englishComment: '',
+    englishModelName: '',
+    materialIndexSize: 4,
+    modelName: '',
+    morphIndexSize: 4,
+    rigidBodyIndexSize: 4,
+    signature: 'PMX',
+    textureIndexSize: 4,
+    version: 2,
+    vertexIndexSize: 4,
+  },
+  indices: new Uint8Array(),
+  joints: [],
+  materials: [{
+    ambient: [0, 0, 0],
+    comment: '',
+    diffuse: [1, 1, 1, 1],
+    edgeColor: [0, 0, 0, 1],
+    edgeSize: 0,
+    englishName: '',
+    flag: 0,
+    indexCount: 0,
+    isSharedToonTexture: false,
+    name: 'textured material',
+    shininess: 16,
+    specular: [0, 0, 0],
+    sphereTextureIndex: 1,
+    sphereTextureMode: PmxObject.Material.SphereTextureMode.Add,
+    textureIndex: 0,
+    toonTextureIndex: 2,
+  }],
+  morphs: [],
+  rigidBodies: [],
+  softBodies: [],
+  textures: ['diffuse.png', 'sphere.png', 'toon.png'],
+  vertices: [],
+})
 
 const descriptor = (): MMDMaterialDescriptor => ({
   ambient: new Color(0.1, 0.2, 0.3),
@@ -37,6 +83,32 @@ const descriptor = (): MMDMaterialDescriptor => ({
 })
 
 describe('mmd physical material mapping', () => {
+  it('loads only backend-supported MMD textures', () => {
+    const load = vi.spyOn(TextureLoader.prototype, 'load').mockImplementation((() => new Texture()) as never)
+    const pmx = texturedPmx()
+    const manager = new LoadingManager()
+
+    try {
+      const physical = buildMaterial(pmx, new BufferGeometry(), '', manager, MMDPhysicalMaterial)
+      const physicalMaterial = physical[0] as MMDPhysicalMaterial
+
+      expect(load.mock.calls.map(([url]) => url)).toEqual(['diffuse.png'])
+      expect(physicalMaterial.descriptor.sphereMap).toBeUndefined()
+      expect(physicalMaterial.descriptor.toonMap).toBeUndefined()
+
+      load.mockClear()
+      const toon = buildMaterial(pmx, new BufferGeometry(), '', manager, MMDToonMaterial)
+      const toonMaterial = toon[0] as MMDToonMaterial
+
+      expect(load.mock.calls.map(([url]) => url)).toEqual(['diffuse.png', 'sphere.png', 'toon.png'])
+      expect(toonMaterial.descriptor.sphereMap).toBeDefined()
+      expect(toonMaterial.descriptor.toonMap).toBeDefined()
+    }
+    finally {
+      load.mockRestore()
+    }
+  })
+
   it('maps Blinn-Phong shininess to inverse GGX roughness', () => {
     expect(mmdShininessToRoughness(-1)).toBe(1)
     expect(mmdShininessToRoughness(0)).toBe(1)

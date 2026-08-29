@@ -71,6 +71,7 @@ const createPhysicalParameters = (
 /** Opt-in physically based MMD material backend for WebGLRenderer. */
 export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
   public static readonly isMMDMaterial = true as const
+  public static readonly mmdCapabilities = capabilities
 
   public alphaMode: MMDAlphaMode
   public descriptor: MMDMaterialDescriptor

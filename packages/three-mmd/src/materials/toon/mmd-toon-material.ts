@@ -155,6 +155,7 @@ const createPhongParameters = (descriptor: MMDMaterialDescriptor): MeshPhongMate
  */
 export class MMDToonMaterial extends MeshPhongMaterial {
   public static readonly isMMDMaterial = true as const
+  public static readonly mmdCapabilities = capabilities
 
   public ambient: Color
   public descriptor: MMDMaterialDescriptor
@@ -179,6 +180,9 @@ export class MMDToonMaterial extends MeshPhongMaterial {
 
   public constructor(descriptor: MMDMaterialDescriptor) {
     super(createPhongParameters(descriptor))
+
+    if (descriptor.toonMap === undefined)
+      throw new TypeError('MMDToonMaterial requires a resolved toon map.')
 
     this.descriptor = descriptor
     this.name = descriptor.name

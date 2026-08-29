@@ -1,7 +1,12 @@
 import type { BufferGeometry, LoadingManager, Material } from 'three'
 
 import type { MMDTextureAlphaMode } from '../../materials/core/alpha-policy'
-import type { MMDMaterial, MMDMaterialConstructor, MMDMaterialDescriptor } from '../../materials/types'
+import type {
+  MMDMaterial,
+  MMDMaterialCapabilities,
+  MMDMaterialConstructor,
+  MMDMaterialDescriptor,
+} from '../../materials/types'
 import type { TextureContext } from './types'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
@@ -28,6 +33,7 @@ export const mapPmxToMaterialDescriptor = (
   ctx: TextureContext,
   groupIndex: number,
   onAlphaMode?: (mode: MMDTextureAlphaMode) => void,
+  textureCapabilities?: Pick<MMDMaterialCapabilities, 'sphereTexture' | 'toon'>,
 ): MMDMaterialDescriptor => {
   const diffuse = new Color().setRGB(material.diffuse[0], material.diffuse[1], material.diffuse[2], SRGBColorSpace)
   const opacity = material.diffuse[3]
@@ -40,7 +46,9 @@ export const mapPmxToMaterialDescriptor = (
     : material.sphereTextureMode === PmxObject.Material.SphereTextureMode.Add
       ? 'add'
       : undefined
-  const sphereMap = sphereMapFileName !== undefined && sphereBlendMode !== undefined
+  const sphereTextureSupported = textureCapabilities === undefined
+    || (sphereBlendMode !== undefined && textureCapabilities.sphereTexture.includes(sphereBlendMode))
+  const sphereMap = sphereTextureSupported && sphereMapFileName !== undefined && sphereBlendMode !== undefined
     ? loadTextureResource(sphereMapFileName, ctx)
     : undefined
 
@@ -70,7 +78,9 @@ export const mapPmxToMaterialDescriptor = (
     sphereBlendMode,
     sphereMap,
     sphereMapFileName,
-    toonMap: loadTextureResource(toonMapFileName, ctx, { isDefaultToonTexture, isToonTexture: true }),
+    toonMap: textureCapabilities === undefined || textureCapabilities.toon
+      ? loadTextureResource(toonMapFileName, ctx, { isDefaultToonTexture, isToonTexture: true })
+      : undefined,
     toonMapFileName,
   }
 
@@ -138,6 +148,7 @@ export const buildMaterial = (
   }
 
   const materials: MMDMaterial[] = []
+  const textureCapabilities = materialType.mmdCapabilities
   const descriptors = data.materials.map((pmxMaterial, index) => mapPmxToMaterialDescriptor(
     pmxMaterial,
     data.textures,
@@ -145,6 +156,12 @@ export const buildMaterial = (
     ctx,
     index,
     mode => materials[index]?.setMMDTextureAlphaMode(mode),
+    textureCapabilities === undefined
+      ? undefined
+      : {
+          sphereTexture: textureCapabilities.sphereTexture,
+          toon: textureCapabilities.toon,
+        },
   ))
 
   const MaterialType = materialType
