@@ -1,15 +1,32 @@
-import type { Color, Material, MaterialParameters, Texture, Vector4 } from 'three'
+import type { Color, Material, Texture, Vector4 } from 'three'
 
-import type { MMDToonMaterial } from './toon/mmd-toon-material'
+import type { MMDResolvedAlphaMode, MMDTextureAlphaMode } from './core/alpha-policy'
 
 export interface MMDMaterial extends Material {
   applyMMDMaterialState: (state: MMDMaterialEvaluatedState) => void
   readonly descriptor: MMDMaterialDescriptor
   readonly isMMDMaterial: true
   readonly mmdCapabilities: MMDMaterialCapabilities
+  setMMDAlphaMorphEnabled: (enabled: boolean) => void
+  setMMDTextureAlphaMode: (mode: MMDTextureAlphaMode | undefined) => void
+  setSdefEnabled: (enabled: boolean) => void
 }
 
+export const isMMDMaterial = (material: Material): material is MMDMaterial => (
+  'isMMDMaterial' in material
+  && material.isMMDMaterial === true
+  && 'applyMMDMaterialState' in material
+  && typeof material.applyMMDMaterialState === 'function'
+  && 'setMMDAlphaMorphEnabled' in material
+  && typeof material.setMMDAlphaMorphEnabled === 'function'
+  && 'setMMDTextureAlphaMode' in material
+  && typeof material.setMMDTextureAlphaMode === 'function'
+  && 'setSdefEnabled' in material
+  && typeof material.setSdefEnabled === 'function'
+)
+
 export interface MMDMaterialCapabilities {
+  readonly alpha: readonly MMDResolvedAlphaMode[]
   readonly materialMorph: 'binding'
   readonly outline: boolean
   readonly renderer: readonly ('webgl-renderer')[]
@@ -18,7 +35,12 @@ export interface MMDMaterialCapabilities {
   readonly toon: boolean
 }
 
-export type MMDMaterialConstructor = new (descriptor: MMDMaterialDescriptor) => MMDToonMaterial
+export interface MMDMaterialConstructor {
+  readonly isMMDMaterial: true
+  /** Optional constructor-level capabilities used before an instance exists. */
+  readonly mmdCapabilities?: MMDMaterialCapabilities
+  new (descriptor: MMDMaterialDescriptor): MMDMaterial
+}
 
 /**
  * Normalized PMX material data plus the textures resolved by the loader.
@@ -26,9 +48,13 @@ export type MMDMaterialConstructor = new (descriptor: MMDMaterialDescriptor) => 
  * This deliberately describes MMD semantics instead of renderer-specific
  * aliases such as `gradientMap` and `matcap`.
  */
-export interface MMDMaterialDescriptor extends MaterialParameters {
+export interface MMDMaterialDescriptor {
+  /** Optional PMX alpha-test override used by both renderer adapters. */
+  alphaTest?: number
   ambient: Color
   diffuse: Color
+  /** PMX's raster-sidedness flag, kept independent from Three's Side value. */
+  doubleSided: boolean
   fog: boolean
   isDefaultToonTexture: boolean
   map?: Texture
@@ -41,9 +67,10 @@ export interface MMDMaterialDescriptor extends MaterialParameters {
   sphereBlendMode?: MMDSphereBlendMode
   sphereMap?: Texture
   sphereMapFileName?: string
-  toonMap: Texture
+  textureAlphaMode?: MMDTextureAlphaMode
+  /** Resolved only when the selected material backend consumes toon shading. */
+  toonMap?: Texture
   toonMapFileName: string
-  transparent: boolean
 }
 
 export interface MMDMaterialEvaluatedState {

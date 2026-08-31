@@ -1,17 +1,30 @@
 import type { MMD } from '@moeru/three-mmd'
 
 import { MMDLoader, MMDMaterialPlugin } from '@moeru/three-mmd'
+import { MMDPhysicalMaterial } from '@moeru/three-mmd/materials/physical'
 import { MMDToonMaterial } from '@moeru/three-mmd/materials/toon'
+import { useControls } from 'leva'
 import { startTransition, useEffect, useMemo, useState } from 'react'
 
 import pmxUrl from '../../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
 
 const DebugMaterial = () => {
+  const { backend } = useControls('Material', {
+    backend: {
+      label: 'Backend',
+      options: {
+        Physical: 'physical',
+        Toon: 'toon',
+      },
+      value: 'toon',
+    },
+  })
+  const materialType = backend === 'physical' ? MMDPhysicalMaterial : MMDToonMaterial
   const loader = useMemo(() => {
     const next = new MMDLoader()
-    next.register(parser => new MMDMaterialPlugin(parser, { materialType: MMDToonMaterial }))
+    next.register(parser => new MMDMaterialPlugin(parser, { materialType }))
     return next
-  }, [])
+  }, [materialType])
   const [mmd, setMmd] = useState<MMD>()
 
   useEffect(() => {

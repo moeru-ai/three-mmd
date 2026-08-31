@@ -1,25 +1,30 @@
 import type { BufferGeometry, LoadingManager, Material } from 'three'
 
-import type { MMDMaterialConstructor, MMDMaterialDescriptor } from '../../materials/types'
+import type { MMDTextureAlphaMode } from '../../materials/core/alpha-policy'
+import type {
+  MMDMaterial,
+  MMDMaterialCapabilities,
+  MMDMaterialConstructor,
+  MMDMaterialDescriptor,
+} from '../../materials/types'
 import type { TextureContext } from './types'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import {
   Color,
-  CustomBlending,
   DefaultLoadingManager,
-  DoubleSide,
-  DstAlphaFactor,
-  FrontSide,
-  OneMinusSrcAlphaFactor,
-  SrcAlphaFactor,
   SRGBColorSpace,
   TextureLoader,
 } from 'three'
 import { TGALoader } from 'three/addons/loaders/TGALoader.js'
 
 import { MMDToonMaterial } from '../../materials/toon/mmd-toon-material'
+import { isMMDMaterial } from '../../materials/types'
 import { checkImageTransparency, loadTextureResource } from './utils'
+
+export const isPmxMaterialDoubleSided = (flag: number): boolean => (
+  (flag & PmxObject.Material.Flag.IsDoubleSided) !== 0
+)
 
 export const mapPmxToMaterialDescriptor = (
   material: PmxObject.Material,
@@ -27,14 +32,13 @@ export const mapPmxToMaterialDescriptor = (
   geometry: BufferGeometry,
   ctx: TextureContext,
   groupIndex: number,
+  onAlphaMode?: (mode: MMDTextureAlphaMode) => void,
+  textureCapabilities?: Pick<MMDMaterialCapabilities, 'sphereTexture' | 'toon'>,
 ): MMDMaterialDescriptor => {
   const diffuse = new Color().setRGB(material.diffuse[0], material.diffuse[1], material.diffuse[2], SRGBColorSpace)
   const opacity = material.diffuse[3]
   const mapFileName = material.textureIndex === -1 ? undefined : pmxTextures[material.textureIndex]
   const map = mapFileName === undefined ? undefined : loadTextureResource(mapFileName, ctx)
-
-  if (map !== undefined && opacity === 1)
-    checkImageTransparency(map, geometry, groupIndex)
 
   const sphereMapFileName = material.sphereTextureIndex === -1 ? undefined : pmxTextures[material.sphereTextureIndex]
   const sphereBlendMode = material.sphereTextureMode === PmxObject.Material.SphereTextureMode.Multiply
@@ -42,7 +46,9 @@ export const mapPmxToMaterialDescriptor = (
     : material.sphereTextureMode === PmxObject.Material.SphereTextureMode.Add
       ? 'add'
       : undefined
-  const sphereMap = sphereMapFileName !== undefined && sphereBlendMode !== undefined
+  const sphereTextureSupported = textureCapabilities === undefined
+    || (sphereBlendMode !== undefined && textureCapabilities.sphereTexture.includes(sphereBlendMode))
+  const sphereMap = sphereTextureSupported && sphereMapFileName !== undefined && sphereBlendMode !== undefined
     ? loadTextureResource(sphereMapFileName, ctx)
     : undefined
 
@@ -51,14 +57,10 @@ export const mapPmxToMaterialDescriptor = (
     ? `toon${(`0${material.toonTextureIndex + 1}`).slice(-2)}.bmp`
     : pmxTextures[material.toonTextureIndex]
 
-  return {
+  const descriptor: MMDMaterialDescriptor = {
     ambient: new Color().setRGB(...material.ambient, SRGBColorSpace),
-    blendDst: OneMinusSrcAlphaFactor,
-    blendDstAlpha: DstAlphaFactor,
-    blending: CustomBlending,
-    blendSrc: SrcAlphaFactor,
-    blendSrcAlpha: SrcAlphaFactor,
     diffuse,
+    doubleSided: isPmxMaterialDoubleSided(material.flag),
     fog: true,
     isDefaultToonTexture,
     map,
@@ -72,22 +74,39 @@ export const mapPmxToMaterialDescriptor = (
       width: material.edgeSize / 300,
     },
     shininess: material.shininess,
-    side: (material.flag & PmxObject.Material.Flag.IsDoubleSided) === 1 || opacity !== 1 ? DoubleSide : FrontSide,
     specular: new Color().setRGB(...material.specular, SRGBColorSpace),
     sphereBlendMode,
     sphereMap,
     sphereMapFileName,
-    toonMap: loadTextureResource(toonMapFileName, ctx, { isDefaultToonTexture, isToonTexture: true }),
+    toonMap: textureCapabilities === undefined || textureCapabilities.toon
+      ? loadTextureResource(toonMapFileName, ctx, { isDefaultToonTexture, isToonTexture: true })
+      : undefined,
     toonMapFileName,
-    transparent: opacity !== 1,
   }
+
+  if (map !== undefined && opacity === 1) {
+    checkImageTransparency(map, geometry, groupIndex, (mode) => {
+      descriptor.textureAlphaMode = mode
+      onAlphaMode?.(mode)
+    })
+  }
+
+  return descriptor
 }
 
 export const applyMorphTransparencyFix = (materials: Material[], morphs: readonly PmxObject.Morph[]) => {
   const checkAlphaMorph = (elements: PmxObject.Morph.MaterialMorph['elements'], targetMaterials: Material[]) => {
     for (const element of elements) {
-      if (element.index !== -1 && targetMaterials[element.index]?.opacity !== element.diffuse[3])
-        targetMaterials[element.index].transparent = true
+      const material = element.index === -1 ? undefined : targetMaterials[element.index]
+      if (material === undefined || material.opacity === element.diffuse[3])
+        continue
+
+      if (isMMDMaterial(material)) {
+        material.setMMDAlphaMorphEnabled(true)
+      }
+      else {
+        material.transparent = true
+      }
     }
   }
 
@@ -128,10 +147,27 @@ export const buildMaterial = (
     textures: {},
   }
 
-  // eslint-disable-next-line new-cap
-  const materials = data.materials.map((pmxMaterial, index) => new materialType(
-    mapPmxToMaterialDescriptor(pmxMaterial, data.textures, geometry, ctx, index),
+  const materials: MMDMaterial[] = []
+  const textureCapabilities = materialType.mmdCapabilities
+  const descriptors = data.materials.map((pmxMaterial, index) => mapPmxToMaterialDescriptor(
+    pmxMaterial,
+    data.textures,
+    geometry,
+    ctx,
+    index,
+    mode => materials[index]?.setMMDTextureAlphaMode(mode),
+    textureCapabilities === undefined
+      ? undefined
+      : {
+          sphereTexture: textureCapabilities.sphereTexture,
+          toon: textureCapabilities.toon,
+        },
   ))
+
+  const MaterialType = materialType
+  for (const descriptor of descriptors)
+    materials.push(new MaterialType(descriptor))
+
   applyMorphTransparencyFix(materials, data.morphs)
   return materials
 }

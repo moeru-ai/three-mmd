@@ -35,6 +35,7 @@ catalog:
   eslint-plugin-react-hooks: ^7.1.1
   eslint-plugin-react-refresh: ^0.5.3
   foxact: ^0.3.8
+  lamina: ^1.2.2
   pkgroll: ^2.27.1
   playwright: 1.60.0
   three: ^0.185.1

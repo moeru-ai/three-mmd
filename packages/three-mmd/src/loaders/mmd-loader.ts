@@ -13,7 +13,7 @@ import { PmdReader } from 'babylon-mmd/esm/Loader/Parser/pmdReader'
 import { PmxReader } from 'babylon-mmd/esm/Loader/Parser/pmxReader'
 import { FileLoader, Loader, LoaderUtils, SkinnedMesh } from 'three'
 
-import { installMMDMaterialBindings } from '../materials/toon/bindings'
+import { installMMDMaterialBindings } from '../materials/core/bindings'
 import { extractModelExtension } from '../utils/_extract-model-extension'
 import { buildBones } from '../utils/build-bones'
 import { buildGeometry } from '../utils/build-geometry'

@@ -3,18 +3,20 @@ import type { MeshDepthMaterial, MeshDistanceMaterial } from 'three'
 
 import type { MMDMaterialDescriptor } from '../src/materials/types'
 
-import { Bone, BufferGeometry, Color, Float32BufferAttribute, ShaderLib, Skeleton, SkinnedMesh, Texture } from 'three'
+import { Bone, BufferGeometry, Color, CustomBlending, DoubleSide, Float32BufferAttribute, FrontSide, NormalBlending, ShaderLib, Skeleton, SkinnedMesh, Texture } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MMDMaterialPlugin } from '../src/loaders/loader-plugin'
+import { installMMDMaterialBindings } from '../src/materials/core/bindings'
 import { applyMMDMaterialMorph, createMMDMaterialEvaluatedState } from '../src/materials/morph'
-import { installMMDMaterialBindings } from '../src/materials/toon/bindings'
+import { MMDPhysicalMaterial } from '../src/materials/physical/mmd-physical-material'
 import { MMDToonMaterial } from '../src/materials/toon/mmd-toon-material'
 import { buildGeometry } from '../src/utils/build-geometry'
 
 const descriptor = (outline = { alpha: 1, color: new Color(0.1, 0.1, 0.1), visible: true, width: 0.01 }): MMDMaterialDescriptor => ({
   ambient: new Color(0.1, 0.2, 0.3),
   diffuse: new Color(0.4, 0.5, 0.6),
+  doubleSided: true,
   fog: true,
   isDefaultToonTexture: true,
   name: 'test material',
@@ -26,7 +28,6 @@ const descriptor = (outline = { alpha: 1, color: new Color(0.1, 0.1, 0.1), visib
   sphereMap: new Texture(),
   toonMap: new Texture(),
   toonMapFileName: 'toon01.bmp',
-  transparent: false,
 })
 
 const skinnedMesh = (materials: MMDToonMaterial[]): SkinnedMesh => {
@@ -55,6 +56,14 @@ describe('mmd material backends', () => {
     warn.mockRestore()
   })
 
+  it('lets each backend own its renderer blending defaults', () => {
+    const toon = new MMDToonMaterial(descriptor())
+    const physical = new MMDPhysicalMaterial(descriptor())
+
+    expect(toon.blending).toBe(CustomBlending)
+    expect(physical.blending).toBe(NormalBlending)
+  })
+
   it('clones with its descriptor and keeps copy metadata synchronized', () => {
     const source = new MMDToonMaterial(descriptor())
     const target = new MMDToonMaterial(descriptor({ alpha: 1, color: new Color(), visible: false, width: 0 }))
@@ -67,10 +76,28 @@ describe('mmd material backends', () => {
     expect(target.descriptor).toBe(source.descriptor)
   })
 
+  it('invalidates the Toon shader after copy changes the SDEF define', () => {
+    const source = new MMDToonMaterial(descriptor())
+    const target = new MMDToonMaterial(descriptor())
+    target.setSdefEnabled(false)
+    const version = target.version
+
+    target.copy(source)
+
+    expect(target.defines?.MMD_USE_SDEF).toBe(1)
+    expect(target.version).toBeGreaterThan(version)
+  })
+
   it('selects a material class through MMDMaterialPlugin', () => {
     const plugin = new MMDMaterialPlugin({ manager: {} as never, resourcePath: '' }, { materialType: MMDToonMaterial })
     expect(plugin.name).toBe('MMDMaterialPlugin')
     expect(plugin.materialType).toBe(MMDToonMaterial)
+  })
+
+  it('selects the opt-in Physical backend through MMDMaterialPlugin', () => {
+    const plugin = new MMDMaterialPlugin({ manager: {} as never, resourcePath: '' }, { materialType: MMDPhysicalMaterial })
+
+    expect(plugin.materialType).toBe(MMDPhysicalMaterial)
   })
 
   it('uses Three gradient-map coordinates for the PMX toon ramp', () => {
@@ -160,6 +187,21 @@ describe('mmd toon bindings', () => {
     expect(sdefMesh.customDistanceMaterial).toBeDefined()
   })
 
+  it('installs the same SDEF surface and shadow binding for Physical materials', () => {
+    const material = new MMDPhysicalMaterial(descriptor())
+    const mesh = new SkinnedMesh(new BufferGeometry(), [material])
+    const bone = new Bone()
+    mesh.add(bone)
+    mesh.bind(new Skeleton([bone]))
+    mesh.geometry.setAttribute('mmdSdefMask', new Float32BufferAttribute([1], 1))
+
+    installMMDMaterialBindings(mesh)
+
+    expect(material.defines?.MMD_USE_SDEF).toBe(1)
+    expect(mesh.customDepthMaterial).toBeDefined()
+    expect(mesh.customDistanceMaterial).toBeDefined()
+  })
+
   it('disables the SDEF shader variant for meshes without SDEF vertices', () => {
     const material = new MMDToonMaterial(descriptor())
     const mesh = skinnedMesh([material])
@@ -192,6 +234,34 @@ describe('mmd toon bindings', () => {
     mesh.onBeforeShadow({} as never, {} as never, {} as never, {} as never, mesh.geometry, distance, { materialIndex: 1 } as never)
     expect(distance.customProgramCacheKey()).toContain(second.uuid)
     expect(distance.version).toBe(initialDistanceVersion + 1)
+  })
+
+  it('selects Physical shadow variants from each group alpha surface', () => {
+    const firstMap = new Texture()
+    const secondMap = new Texture()
+    const first = new MMDPhysicalMaterial({ ...descriptor(), alphaTest: 0.3, doubleSided: false, map: firstMap })
+    const second = new MMDPhysicalMaterial({ ...descriptor(), alphaTest: 0.8, doubleSided: true, map: secondMap })
+    const mesh = new SkinnedMesh(new BufferGeometry(), [first, second])
+    const bone = new Bone()
+    mesh.add(bone)
+    mesh.bind(new Skeleton([bone]))
+    mesh.geometry.setAttribute('mmdSdefMask', new Float32BufferAttribute([1], 1))
+    installMMDMaterialBindings(mesh)
+
+    const depth = mesh.customDepthMaterial as MeshDepthMaterial
+    const distance = mesh.customDistanceMaterial as MeshDistanceMaterial
+
+    mesh.onBeforeShadow({} as never, {} as never, {} as never, {} as never, mesh.geometry, depth, { materialIndex: 0 } as never)
+    expect(depth.customProgramCacheKey()).toContain(first.uuid)
+    expect(depth.customProgramCacheKey()).toContain(`map:${firstMap.uuid}`)
+    expect(depth.customProgramCacheKey()).toContain('alpha-test:true')
+    expect(depth.customProgramCacheKey()).toContain(`side:${String(FrontSide)}`)
+
+    mesh.onBeforeShadow({} as never, {} as never, {} as never, {} as never, mesh.geometry, distance, { materialIndex: 1 } as never)
+    expect(distance.customProgramCacheKey()).toContain(second.uuid)
+    expect(distance.customProgramCacheKey()).toContain(`map:${secondMap.uuid}`)
+    expect(distance.customProgramCacheKey()).toContain('alpha-test:true')
+    expect(distance.customProgramCacheKey()).toContain(`side:${String(DoubleSide)}`)
   })
 })
 

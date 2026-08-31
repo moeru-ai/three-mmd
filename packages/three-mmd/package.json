@@ -20,6 +20,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./materials": "./src/materials/index.ts",
+    "./materials/physical": "./src/materials/physical/index.ts",
     "./materials/toon": "./src/materials/toon/index.ts"
   },
   "files": [
@@ -34,6 +35,10 @@
       "./materials": {
         "types": "./dist/materials/index.d.ts",
         "default": "./dist/materials/index.js"
+      },
+      "./materials/physical": {
+        "types": "./dist/materials/physical.d.ts",
+        "default": "./dist/materials/physical.js"
       },
       "./materials/toon": {
         "types": "./dist/materials/toon.d.ts",

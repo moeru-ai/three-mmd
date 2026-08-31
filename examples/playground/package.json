@@ -15,6 +15,7 @@
     "@react-three/drei": "catalog:r3f",
     "@react-three/fiber": "catalog:r3f",
     "foxact": "catalog:",
+    "lamina": "catalog:",
     "leva": "catalog:r3f",
     "react": "catalog:r3f",
     "react-dom": "catalog:r3f",

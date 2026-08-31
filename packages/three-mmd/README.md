@@ -65,6 +65,46 @@ const mmd = await new MMDLoader()
 
 The default material backend is the WebGL `MMDToonMaterial`.
 
+## Opt-in Physical material
+
+`MMDPhysicalMaterial` keeps Three's native physical lights and environment
+lighting. Register it before loading a model and provide a PMREM-backed
+`scene.environment` for stable image-based lighting:
+
+```ts
+import { MMDLoader, MMDMaterialPlugin } from '@moeru/three-mmd'
+import { MMDPhysicalMaterial } from '@moeru/three-mmd/materials/physical'
+
+const loader = new MMDLoader()
+loader.register(parser => new MMDMaterialPlugin(parser, {
+  materialType: MMDPhysicalMaterial,
+}))
+
+const mmd = await loader.loadAsync('/models/miku.pmx')
+```
+
+The baseline maps diffuse color/map and double-sided rendering directly,
+keeps `metalness` at `0`, and approximates PMX shininess as GGX roughness.
+PMX ambient, toon, sphere, outline, and texture-morph colors remain explicitly
+unsupported by this pure Physical backend. PMX specular color is opt-in through
+constructor options; when selecting options through the loader, provide a small
+subclass:
+
+```ts
+import type { MMDMaterialDescriptor } from '@moeru/three-mmd/materials'
+
+import { MMDPhysicalMaterial } from '@moeru/three-mmd/materials/physical'
+
+class ProjectPhysicalMaterial extends MMDPhysicalMaterial {
+  constructor(descriptor: MMDMaterialDescriptor) {
+    super(descriptor, {
+      alphaMode: 'evaluate',
+      specularMode: 'physical-color',
+    })
+  }
+}
+```
+
 ## License
 
 [MIT](../../LICENSE.md)

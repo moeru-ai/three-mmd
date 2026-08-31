@@ -6,6 +6,7 @@ export default defineConfig({
   entry: {
     'index': './src/index.ts',
     'materials/index': './src/materials/index.ts',
+    'materials/physical': './src/materials/physical/index.ts',
     'materials/toon': './src/materials/toon/index.ts',
   },
   fixedExtension: false,
