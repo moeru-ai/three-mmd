@@ -76,6 +76,18 @@ describe('mmd material backends', () => {
     expect(target.descriptor).toBe(source.descriptor)
   })
 
+  it('invalidates the Toon shader after copy changes the SDEF define', () => {
+    const source = new MMDToonMaterial(descriptor())
+    const target = new MMDToonMaterial(descriptor())
+    target.setSdefEnabled(false)
+    const version = target.version
+
+    target.copy(source)
+
+    expect(target.defines?.MMD_USE_SDEF).toBe(1)
+    expect(target.version).toBeGreaterThan(version)
+  })
+
   it('selects a material class through MMDMaterialPlugin', () => {
     const plugin = new MMDMaterialPlugin({ manager: {} as never, resourcePath: '' }, { materialType: MMDToonMaterial })
     expect(plugin.name).toBe('MMDMaterialPlugin')

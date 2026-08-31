@@ -228,6 +228,18 @@ describe('mmd physical material mapping', () => {
     }
   })
 
+  it('invalidates the Physical shader after copy changes the SDEF define', () => {
+    const source = new MMDPhysicalMaterial(descriptor())
+    const target = new MMDPhysicalMaterial(descriptor())
+    target.setSdefEnabled(false)
+    const version = target.version
+
+    target.copy(source)
+
+    expect(target.defines?.MMD_USE_SDEF).toBe(1)
+    expect(target.version).toBeGreaterThan(version)
+  })
+
   it('keeps the native Physical lighting and IBL shader seams', () => {
     const material = new MMDPhysicalMaterial(descriptor())
     const shader = {

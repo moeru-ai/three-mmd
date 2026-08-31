@@ -120,6 +120,7 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
   public override copy(source: this): this {
     super.copy(source)
     this.defines = { ...source.defines }
+    this.needsUpdate = true
     this.descriptor = source.descriptor
     this.alphaMode = source.alphaMode
     this.shininessToRoughness = source.shininessToRoughness

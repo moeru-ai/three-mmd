@@ -253,6 +253,7 @@ export class MMDToonMaterial extends MeshPhongMaterial {
   public override copy(source: this): this {
     super.copy(source)
     this.defines = { ...source.defines }
+    this.needsUpdate = true
     this.descriptor = source.descriptor
     this.ambient.copy(source.ambient)
     this.sphereBlendMode = source.sphereBlendMode
