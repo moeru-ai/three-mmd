@@ -119,6 +119,7 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
 
   public override copy(source: this): this {
     super.copy(source)
+    this.defines = { ...source.defines }
     this.descriptor = source.descriptor
     this.alphaMode = source.alphaMode
     this.shininessToRoughness = source.shininessToRoughness
@@ -164,11 +165,16 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
       textureHasTransparency: textureAlphaMode !== undefined || this.alphaMorphEnabled,
     })
     // Babylon-MMD's default PBR render method is
-    // DepthWriteAlphaBlendingWithEvaluation. Keep the evaluated MMD path's
-    // depth-writing blend so overlapping cutout/blended parts do not reveal
-    // surfaces behind them. Conventional depthWrite=false blending remains
-    // available through the explicit `blend` option.
-    const renderMode = this.alphaMode === 'evaluate' && mode === 'blend'
+    // DepthWriteAlphaBlendingWithEvaluation. Both non-opaque texture results
+    // (cutout and blend) use depth-writing blending in the evaluated MMD path.
+    // An explicit alphaTest remains a cutout, and conventional
+    // depthWrite=false blending remains available through the explicit `blend`
+    // option.
+    const evaluatedTextureCutout = mode === 'cutout'
+      && textureAlphaMode === 'cutout'
+      && (this.descriptor.alphaTest ?? 0) <= 0
+    const renderMode = this.alphaMode === 'evaluate'
+      && (mode === 'blend' || evaluatedTextureCutout)
       ? 'mmd-depth-blend'
       : mode
     applyMMDAlphaPolicy(this, renderMode, this.descriptor.alphaTest ?? 0.5)

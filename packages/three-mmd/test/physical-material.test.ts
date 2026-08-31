@@ -204,23 +204,28 @@ describe('mmd physical material mapping', () => {
     expect(source.specular.toArray()).toEqual([0.2, 0.3, 0.4])
   })
 
-  it('clones and copies the descriptor-backed Physical policy', () => {
-    const source = new MMDPhysicalMaterial(descriptor(), {
-      alphaMode: 'mmd-depth-blend',
-      shininessToRoughness: () => 0.25,
-      specularMode: 'physical-color',
-    })
-    const target = new MMDPhysicalMaterial(descriptor())
+  it('clones and copies the descriptor-backed Physical policy and SDEF define', () => {
+    for (const sdefEnabled of [false, true]) {
+      const source = new MMDPhysicalMaterial(descriptor(), {
+        alphaMode: 'mmd-depth-blend',
+        shininessToRoughness: () => 0.25,
+        specularMode: 'physical-color',
+      })
+      const target = new MMDPhysicalMaterial(descriptor())
+      source.setSdefEnabled(sdefEnabled)
 
-    const clone = source.clone()
-    target.copy(source)
+      const clone = source.clone()
+      target.copy(source)
 
-    expect(clone).not.toBe(source)
-    expect(clone.descriptor).toBe(source.descriptor)
-    expect(clone.alphaMode).toBe('mmd-depth-blend')
-    expect(clone.specularMode).toBe('physical-color')
-    expect(target.descriptor).toBe(source.descriptor)
-    expect(target.shininessToRoughness(16)).toBe(0.25)
+      expect(clone).not.toBe(source)
+      expect(clone.descriptor).toBe(source.descriptor)
+      expect(clone.alphaMode).toBe('mmd-depth-blend')
+      expect(clone.specularMode).toBe('physical-color')
+      expect(clone.defines?.MMD_USE_SDEF).toBe(sdefEnabled ? 1 : 0)
+      expect(target.descriptor).toBe(source.descriptor)
+      expect(target.shininessToRoughness(16)).toBe(0.25)
+      expect(target.defines?.MMD_USE_SDEF).toBe(sdefEnabled ? 1 : 0)
+    }
   })
 
   it('keeps the native Physical lighting and IBL shader seams', () => {
@@ -271,15 +276,15 @@ describe('mmd alpha policy', () => {
     expect(mmdBlend.depthWrite).toBe(true)
   })
 
-  it('applies a texture cutout mode without enabling blending', () => {
+  it('uses depth-writing blending for evaluated texture cutout alpha', () => {
     const source = descriptor()
     const material = new MMDPhysicalMaterial(source)
 
     material.setMMDTextureAlphaMode('cutout')
 
-    expect(material.transparent).toBe(false)
+    expect(material.transparent).toBe(true)
     expect(material.depthWrite).toBe(true)
-    expect(material.alphaTest).toBe(0.5)
+    expect(material.alphaTest).toBe(0)
   })
 
   it('keeps alpha results local when materials share a diffuse texture', () => {
@@ -290,8 +295,9 @@ describe('mmd alpha policy', () => {
     cutout.setMMDTextureAlphaMode('cutout')
     blend.setMMDTextureAlphaMode('blend')
 
-    expect(cutout.transparent).toBe(false)
-    expect(cutout.alphaTest).toBe(0.5)
+    expect(cutout.transparent).toBe(true)
+    expect(cutout.depthWrite).toBe(true)
+    expect(cutout.alphaTest).toBe(0)
     expect(blend.transparent).toBe(true)
     expect(blend.depthWrite).toBe(true)
   })
@@ -304,9 +310,9 @@ describe('mmd alpha policy', () => {
     target.copy(source)
     target.applyMMDMaterialState(createMMDMaterialEvaluatedState(sourceDescriptor))
 
-    expect(target.transparent).toBe(false)
+    expect(target.transparent).toBe(true)
     expect(target.depthWrite).toBe(true)
-    expect(target.alphaTest).toBe(0.5)
+    expect(target.alphaTest).toBe(0)
   })
 
   it('propagates asynchronous diffuse texture alpha to both material backends', () => {
