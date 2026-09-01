@@ -97,7 +97,8 @@ class AnimationBuilder {
       position.set(0, 0, -distance)
       center.set(pos[0], pos[1], pos[2])
 
-      euler.set(-rot[0], -rot[1], -rot[2])
+      // MMD camera specifies Euler angles in YXZ (Yaw -> Pitch -> Roll) rotation order.
+      euler.set(-rot[0], -rot[1], -rot[2], 'YXZ')
       quaternion.setFromEuler(euler)
 
       position.add(center)
