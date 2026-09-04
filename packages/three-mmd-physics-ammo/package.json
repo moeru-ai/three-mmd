@@ -33,7 +33,7 @@
     "types": "./dist/index.d.ts"
   },
   "scripts": {
-    "build": "pkgroll"
+    "build": "tsdown"
   },
   "peerDependencies": {
     "@moeru/three-mmd": "workspace:^",
