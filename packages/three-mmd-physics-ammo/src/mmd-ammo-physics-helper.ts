@@ -46,7 +46,7 @@ export class MmdAmmoPhysicsHelper extends Object3D {
     }),
   ] as const
 
-  private readonly matrix = new Matrix4()
+  private readonly temporaryMatrix = new Matrix4()
 
   public constructor(
     rigidBodies: readonly PmxObject.RigidBody[],
@@ -105,7 +105,7 @@ export class MmdAmmoPhysicsHelper extends Object3D {
     resource: RigidBodyResource,
     model: MmdAmmoPhysicsModel,
   ) {
-    model.getBodyRenderMatrix(resource, this.matrix).decompose(
+    model.getBodyRenderMatrix(resource, this.temporaryMatrix).decompose(
       child.position,
       child.quaternion,
       child.scale,
