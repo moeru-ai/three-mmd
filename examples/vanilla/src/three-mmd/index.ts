@@ -1,11 +1,11 @@
 import type { MMD, MMDIKHelper } from '@moeru/three-mmd'
-import type { AnimationAction, Object3D } from 'three'
+import type { Object3D } from 'three'
 
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 
-import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
+import { buildAnimation, MMDAnimationManager, MMDLoader, VMDLoader } from '@moeru/three-mmd'
 import { MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
-import { AmbientLight, AnimationMixer, Color, DirectionalLight, PerspectiveCamera, PolarGridHelper, Scene, Timer, WebGLRenderer } from 'three'
+import { AmbientLight, Color, DirectionalLight, PerspectiveCamera, PolarGridHelper, Scene, Timer, WebGLRenderer } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
@@ -20,21 +20,20 @@ const main = async () => {
   let renderer!: WebGLRenderer
   let scene!: Scene
   let mmd: MMD | undefined
-  let mixer: AnimationMixer | undefined
-  let animationAction: AnimationAction | undefined
   let ikHelper!: MMDIKHelper
   let physicsHelper: Object3D | undefined
   let animationEnabled = true
   let ikEnabled = true
   let physicsEnabled = true
 
+  const manager = new MMDAnimationManager()
   const timer = new Timer()
 
   const render = () => {
     const delta = timer.getDelta()
 
-    if (mmd !== undefined && mixer !== undefined) {
-      mmd.updateWithMixer(delta, mixer, {
+    if (mmd !== undefined && animationEnabled) {
+      manager.update(delta, {
         ik: ikEnabled,
         physics: physicsEnabled,
       })
@@ -111,8 +110,6 @@ const main = async () => {
 
       gui.add(api, 'animation').onChange(() => {
         animationEnabled = api.animation
-        if (animationAction !== undefined)
-          animationAction.paused = !animationEnabled
       })
 
       gui.add(api, 'ik').onChange(() => {
@@ -151,10 +148,7 @@ const main = async () => {
     mmd.mesh.position.y = -10
     scene.add(mmd.mesh)
 
-    mixer = new AnimationMixer(mmd.mesh)
-    animationAction = mixer.clipAction(buildAnimation(vmd, mmd.mesh)).play()
-    mmd.updateWithMixer(0, mixer, { physics: false })
-    mmd.physics?.reset?.()
+    manager.add(mmd, { animation: buildAnimation(vmd, mmd.mesh) })
 
     ikHelper = mmd.ikSolver.createHelper()
     ikHelper.visible = false
@@ -167,8 +161,6 @@ const main = async () => {
     }
 
     initGui()
-
-    animationAction.paused = !animationEnabled
   }
 
   await init()

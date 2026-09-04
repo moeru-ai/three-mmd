@@ -2,7 +2,7 @@ import type { Object3D } from 'three'
 
 import { applyVPD } from '@moeru/three-mmd'
 import { MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
-import { useMMD, useVPD } from '@moeru/three-mmd-r3f'
+import { useMMD, useMMDAnimationManager, useVPD } from '@moeru/three-mmd-r3f'
 import { useFrame } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo } from 'react'
@@ -37,7 +37,15 @@ const DebugVPD = () => {
 
   const mmd = useMMD(modelUrl, loader => loader.register(MMDAmmoPlugin))
   const vpd = useVPD(pose)
-  useFrame((_, delta) => mmd.update(delta))
+  const manager = useMMDAnimationManager(undefined, (manager) => {
+    manager.add(mmd)
+
+    return () => {
+      manager.remove(mmd)
+    }
+  })
+
+  useFrame((_, delta) => manager.update(delta))
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
   const physicsHelper = useMemo(
     () => mmd.physics?.createHelper<Object3D>(),
@@ -46,10 +54,6 @@ const DebugVPD = () => {
 
   useEffect(() => {
     applyVPD(mmd, vpd)
-
-    return () => {
-      mmd.mesh.pose()
-    }
   }, [mmd, vpd])
 
   useEffect(() => {

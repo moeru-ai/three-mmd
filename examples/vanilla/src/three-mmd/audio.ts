@@ -1,8 +1,6 @@
-import type { MMD } from '@moeru/three-mmd'
-
-import { buildAnimation, buildCameraAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
+import { buildAnimation, buildCameraAnimation, MMDAnimationManager, MMDLoader, VMDLoader } from '@moeru/three-mmd'
 import { initAmmo, MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
-import { AmbientLight, AnimationMixer, Audio, AudioListener, AudioLoader, Color, DirectionalLight, Object3D, PerspectiveCamera, PolarGridHelper, Scene, Timer, WebGLRenderer } from 'three'
+import { AmbientLight, Audio, AudioListener, AudioLoader, Color, DirectionalLight, PerspectiveCamera, PolarGridHelper, Scene, Timer, WebGLRenderer } from 'three'
 import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
 
 import audioFile from '../assets/audios/wavefile_short.mp3?url'
@@ -12,21 +10,14 @@ import vmdFile from '../assets/vmds/wavefile_v2.vmd?url'
 
 const main = () => {
   let camera!: PerspectiveCamera
-  let cameraMixer!: AnimationMixer
-  let cameraTarget!: Object3D
   let effect!: OutlineEffect
-  let mixer!: AnimationMixer
   let renderer!: WebGLRenderer
   let scene!: Scene
-  let mmd!: MMD
-  let sound!: Audio
 
-  let currentTime = 0
-  let duration = 0
   let ready = false
-  let soundDuration = 0
 
   const delayTime = 160 / 30
+  let manager!: MMDAnimationManager
   const timer = new Timer()
 
   const overlay = document.createElement('div')
@@ -35,32 +26,10 @@ const main = () => {
   overlay.appendChild(startButton)
   document.body.appendChild(overlay)
 
-  const updateAudio = (delta: number) => {
-    currentTime += delta
-
-    if (sound.isPlaying && currentTime >= duration)
-      sound.stop()
-
-    while (currentTime >= duration)
-      currentTime -= duration
-
-    if (sound.isPlaying || currentTime < delayTime || currentTime - delayTime > soundDuration)
-      return
-
-    sound.play()
-  }
-
   const render = () => {
     if (ready) {
       const delta = timer.getDelta()
-
-      updateAudio(delta)
-      mmd.updateWithMixer(delta, mixer)
-      cameraMixer.update(delta)
-      camera.updateProjectionMatrix()
-      camera.up.set(0, 1, 0)
-      camera.up.applyQuaternion(camera.quaternion)
-      camera.lookAt(cameraTarget.position)
+      manager.update(delta)
     }
 
     effect.render(scene, camera)
@@ -93,10 +62,6 @@ const main = () => {
 
     const listener = new AudioListener()
     camera.add(listener)
-
-    cameraTarget = new Object3D()
-    cameraTarget.name = 'target'
-    camera.add(cameraTarget)
     scene.add(camera)
 
     scene.add(new AmbientLight(0xAAAAAA, 3))
@@ -126,22 +91,16 @@ const main = () => {
 
     const animation = buildAnimation(vmd, loadedMMD.mesh)
     const cameraAnimation = buildCameraAnimation(cameraVmd)
+    const duration = Math.max(animation.duration, cameraAnimation.duration, buffer.duration + delayTime)
 
-    duration = Math.max(animation.duration, cameraAnimation.duration, buffer.duration + delayTime)
-    animation.duration = duration
-    cameraAnimation.duration = duration
+    const sound = new Audio(listener).setBuffer(buffer)
 
-    mmd = loadedMMD
-    mixer = new AnimationMixer(mmd.mesh)
-    mixer.clipAction(animation).play()
+    manager = new MMDAnimationManager({ duration })
+    manager.add(loadedMMD, { animation })
+    manager.add(camera, { animation: cameraAnimation })
+    manager.add(sound, { delayTime })
 
-    cameraMixer = new AnimationMixer(camera)
-    cameraMixer.clipAction(cameraAnimation).play()
-
-    sound = new Audio(listener).setBuffer(buffer)
-    soundDuration = buffer.duration
-
-    scene.add(mmd.mesh)
+    scene.add(loadedMMD.mesh)
     ready = true
 
     window.addEventListener('resize', onWindowResize)

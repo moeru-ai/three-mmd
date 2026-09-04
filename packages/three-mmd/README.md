@@ -46,6 +46,28 @@ const vpd = await new VPDLoader().loadAsync('/poses/pose.vpd')
 applyVPD(mmd, vpd)
 ```
 
+## Coordinate multiple MMD assets
+
+`MMDAnimationManager` owns one standard Three.js mixer per MMD model and can
+also coordinate one camera animation and one audio source:
+
+```ts
+import { MMDAnimationManager } from '@moeru/three-mmd'
+
+const manager = new MMDAnimationManager()
+manager.add(firstMMD, { animation: firstAnimation })
+manager.add(secondMMD, { animation: secondAnimation })
+manager.add(camera, { animation: cameraAnimation })
+manager.add(audio, { delayTime: 160 / 30 })
+
+// Keep this as the only update call for the registered assets.
+const update = () => manager.update(timer.getDelta())
+```
+
+Animations passed to `add` are created and played by the manager. The mixer and
+actions remain internal, so callers only need to register objects and call
+`update()`.
+
 ## Physics plugins
 
 Physics is provided by separate packages. Register one plugin before loading

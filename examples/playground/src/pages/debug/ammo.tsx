@@ -1,8 +1,11 @@
 import type { Object3D } from 'three'
 
 import { MMDAmmoPlugin } from '@moeru/three-mmd-physics-ammo'
-import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
-import { useAnimations } from '@react-three/drei'
+import {
+  useMMD,
+  useMMDAnimation,
+  useMMDAnimationManager,
+} from '@moeru/three-mmd-r3f'
 import { useFrame } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo } from 'react'
@@ -38,41 +41,25 @@ const DebugAmmo = () => {
 
   const mmd = useMMD(pmxUrl, loader => loader.register(MMDAmmoPlugin))
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
-  const animations = useMemo(() => [animation], [animation])
-  const { actions } = useAnimations(animations, mmd.mesh)
-  const action = actions.dance
-
-  useFrame((_, delta) => {
-    // Keep IK, grants, and the cached animation pose evaluated while the
-    // animation is paused. Skipping this stage leaves the raw mixer pose on
-    // the skeleton after useMMD() restores it at the start of each frame.
-    mmd.update(paused ? 0 : delta)
-  })
-
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
   const physicsHelper = useMemo(
-    () => mmd.physics?.createHelper<Object3D>(),
+    () => mmd.physics?.createHelper<Object3D & { dispose?: () => void }>(),
     [mmd.physics],
   )
+  const manager = useMMDAnimationManager(undefined, (manager) => {
+    manager.add(mmd, { animation })
 
-  useEffect(() => {
-    mmd.physics?.reset?.()
-    action?.play()
+    return () => manager.remove(mmd)
+  })
 
-    return () => {
-      action?.stop()
-      mmd.mesh.pose()
-      if (physicsHelper && 'dispose' in physicsHelper)
-        (physicsHelper as Object3D & { dispose: () => void }).dispose()
-    }
-  }, [action, mmd, physicsHelper])
-
-  useEffect(() => {
-    if (!action)
+  useFrame((_, delta) => {
+    if (paused)
       return
 
-    action.paused = paused
-  }, [action, paused])
+    manager.update(delta)
+  })
+
+  useEffect(() => () => physicsHelper?.dispose?.(), [physicsHelper])
 
   useEffect(() => mmd.setScalar(mmdScale), [mmd, mmdScale])
 
