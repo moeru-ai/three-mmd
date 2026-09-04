@@ -66,3 +66,7 @@ The default material backend is the WebGL `MMDToonMaterial`.
 
 This project is based on the code from [babylon-mmd](https://github.com/noname0310/babylon-mmd),
  [three.js](https://github.com/mrdoob/three.js/tree/r171) and [three-ts-types](https://github.com/three-types/three-ts-types/tree/r171) r171.
+
+## Sponsors
+
+![sponsors](https://github.com/kwaa/sponsors/blob/main/public/sponsors.svg?raw=true)
