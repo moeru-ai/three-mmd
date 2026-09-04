@@ -12,24 +12,19 @@ pnpm add -D @types/three
 ## Load a model and play a VMD animation
 
 ```ts
-import {
-  buildAnimation,
-  MMDLoader,
-  VMDLoader,
-} from '@moeru/three-mmd'
-import { AnimationMixer, Clock } from 'three'
+import { buildAnimation, MMDLoader, VMDLoader } from '@moeru/three-mmd'
+import { AnimationMixer, Timer } from 'three'
 
 const mmd = await new MMDLoader().loadAsync('/models/miku_v2.pmd')
 const vmd = await new VMDLoader().loadAsync('/motions/wavefile_v2.vmd')
 const mixer = new AnimationMixer(mmd.mesh)
-const clock = new Clock()
+const timer = new Timer()
 
 mixer.clipAction(buildAnimation(vmd, mmd.mesh)).play()
 
 // Call this once per render frame.
-const update = () => {
-  mmd.updateWithMixer(clock.getDelta(), mixer)
-}
+const update = () =>
+  mmd.updateWithMixer(timer.getDelta(), mixer)
 ```
 
 `updateWithMixer()` restores the previous animation pose, advances the mixer,
