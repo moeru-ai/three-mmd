@@ -16,27 +16,21 @@ export interface AudioAnimationOptions {
   delayTime?: number
 }
 
-export interface CameraAnimationOptions {
-  animation?: MMDAnimation
+export interface CameraAnimationOptions extends MMDAnimationOptions {
   target?: Object3D
 }
 
-export type MMDAnimation = AnimationClip | readonly AnimationClip[]
-
 export interface MMDAnimationOptions {
-  animation?: MMDAnimation
+  animation?: AnimationClip | AnimationClip[]
 }
 
-const playAnimation = (mixer: AnimationMixer, animation: MMDAnimation | undefined) => {
-  if (animation === undefined)
+const playAnimation = (mixer: AnimationMixer, animation?: AnimationClip | AnimationClip[]) => {
+  if (animation == null)
     return
 
   const animations = (Array.isArray(animation) ? animation : [animation]) as readonly AnimationClip[]
   animations.forEach(clip => mixer.clipAction(clip).play())
 }
-
-const isCamera = (object: Audio | Camera): object is Camera =>
-  'isCamera' in object && object.isCamera === true
 
 /** Coordinates MMD, camera, and audio animation on a single render-loop update. */
 export class MMDAnimationManager {
@@ -71,8 +65,7 @@ export class MMDAnimationManager {
       playAnimation(mixer, animation)
       return this
     }
-
-    if (isCamera(object)) {
+    else if ('isCamera' in object) {
       if (this.camera !== undefined)
         throw new Error('MMDAnimationManager: Camera has already been added.')
 
@@ -87,8 +80,7 @@ export class MMDAnimationManager {
       playAnimation(this.cameraMixer, cameraOptions.animation)
       return this
     }
-
-    if (object.type === 'Audio') {
+    else if (object.type === 'Audio') {
       if (this.audio !== undefined)
         throw new Error('MMDAnimationManager: Audio has already been added.')
 
@@ -100,8 +92,9 @@ export class MMDAnimationManager {
       this.audioStartedByManager = false
       return this
     }
-
-    throw new Error('MMDAnimationManager.add: expected an MMD, Camera, or Audio.')
+    else {
+      throw new TypeError('MMDAnimationManager.add: expected an MMD, Camera, or Audio.')
+    }
   }
 
   public dispose() {
@@ -118,7 +111,7 @@ export class MMDAnimationManager {
   public remove(object: Audio | Camera | MMD): this {
     if (object instanceof MMD) {
       const mixer = this.models.get(object)
-      if (mixer === undefined)
+      if (mixer == null)
         return this
 
       mixer.stopAllAction()
@@ -126,9 +119,8 @@ export class MMDAnimationManager {
       this.models.delete(object)
       return this
     }
-
-    if (isCamera(object)) {
-      if (this.camera !== object || this.cameraMixer === undefined)
+    else if ('isCamera' in object) {
+      if (this.camera !== object || this.cameraMixer == null)
         return this
 
       this.cameraMixer.stopAllAction()
@@ -141,8 +133,7 @@ export class MMDAnimationManager {
       this.cameraTarget = undefined
       return this
     }
-
-    if (object.type === 'Audio') {
+    else if (object.type === 'Audio') {
       if (this.audio !== object)
         return this
 
@@ -156,8 +147,9 @@ export class MMDAnimationManager {
       this.audioStartedByManager = false
       return this
     }
-
-    throw new Error('MMDAnimationManager.remove: expected an MMD, Camera, or Audio.')
+    else {
+      throw new Error('MMDAnimationManager.remove: expected an MMD, Camera, or Audio.')
+    }
   }
 
   public update(delta: number, options?: MMDUpdateOptions): this {
@@ -166,7 +158,7 @@ export class MMDAnimationManager {
     for (const [mmd, mixer] of this.models)
       mmd.updateWithMixer(delta, mixer, options)
 
-    if (this.camera !== undefined && this.cameraMixer !== undefined && this.cameraTarget !== undefined) {
+    if (this.camera != null && this.cameraMixer != null && this.cameraTarget != null) {
       this.cameraMixer.update(delta)
       const camera = this.camera as Camera & { updateProjectionMatrix?: () => void }
       camera.updateProjectionMatrix?.()
@@ -179,7 +171,7 @@ export class MMDAnimationManager {
   }
 
   private updateAudio(delta: number) {
-    if (this.audio === undefined)
+    if (this.audio == null)
       return
 
     this.audioElapsed += delta

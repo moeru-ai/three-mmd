@@ -21,7 +21,6 @@ export { MMD, type MMDUpdateOptions } from './utils/mmd'
 export {
   type AudioAnimationOptions,
   type CameraAnimationOptions,
-  type MMDAnimation,
   MMDAnimationManager,
   type MMDAnimationOptions,
 } from './utils/mmd-animation-manager'
