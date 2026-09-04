@@ -1,14 +1,12 @@
 import type {
   AnimationClip,
-  AnimationMixer,
   Audio,
   Camera,
-  Object3D,
 } from 'three'
 
 import type { MMDUpdateOptions } from './mmd'
 
-import { AnimationMixer as ThreeAnimationMixer, Object3D as ThreeObject3D } from 'three'
+import { AnimationMixer, Object3D } from 'three'
 
 import { MMD } from './mmd'
 
@@ -54,7 +52,7 @@ export class MMDAnimationManager {
         throw new Error('MMDAnimationManager: MMD has already been added.')
 
       const mmdOptions = options as MMDAnimationOptions
-      const mixer = new ThreeAnimationMixer(object.mesh)
+      const mixer = new AnimationMixer(object.mesh)
       const { animation } = mmdOptions
 
       this.models.set(object, mixer)
@@ -69,12 +67,12 @@ export class MMDAnimationManager {
       this.camera = object
 
       if (cameraOptions.animation != null) {
-        const target = new ThreeObject3D()
+        const target = new Object3D()
         target.name = 'target'
 
         object.add(target)
         this.cameraTarget = target
-        this.cameraMixer = new ThreeAnimationMixer(object)
+        this.cameraMixer = new AnimationMixer(object)
         playAnimation(this.cameraMixer, cameraOptions.animation)
       }
 
