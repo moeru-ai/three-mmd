@@ -110,9 +110,13 @@ describe('mMDAnimationManager', () => {
   it('resets physics when a skeletal animation loops', () => {
     const mmd = createMmd('physics-loop')
     const events: string[] = []
+    const resetPositions: number[] = []
     const physics = {
       createHelper: <T>() => undefined as T,
-      reset: () => events.push('reset'),
+      reset: () => {
+        resetPositions.push(mmd.mesh.skeleton.bones[0].position.x)
+        events.push('reset')
+      },
       update: () => events.push('update'),
     }
     mmd.setPhysics(() => physics)
@@ -126,6 +130,7 @@ describe('mMDAnimationManager', () => {
     manager.update(2.1)
 
     expect(events).toEqual(['reset', 'update'])
+    expect(resetPositions[0]).toBeCloseTo(0.1)
 
     manager.update(2.1, { physics: false })
     expect(events).toEqual(['reset', 'update', 'reset'])

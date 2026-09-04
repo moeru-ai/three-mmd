@@ -9,7 +9,8 @@ const useMMDAnimationManager = (
   options?: MMDAnimationManagerOptions,
   setup?: MMDAnimationManagerSetup,
 ) => {
-  const manager = useMemo(() => new MMDAnimationManager(options), [options])
+  const duration = options?.duration
+  const manager = useMemo(() => new MMDAnimationManager({ duration }), [duration])
   const setupRef = useRef(setup)
 
   useEffect(() => {

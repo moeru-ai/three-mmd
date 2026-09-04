@@ -75,14 +75,6 @@ export class MMDAnimationManager {
       const mixer = new AnimationMixer(object.mesh)
       const { animation } = mmdOptions
 
-      mixer.addEventListener('loop', (event) => {
-        if (!event.action.getClip().tracks.some(track => track.name.startsWith('.bones'))) {
-          return
-        }
-
-        object.physics?.reset?.()
-      })
-
       this.models.set(object, mixer)
       playAnimation(mixer, animation, this.duration)
       return this
@@ -186,7 +178,7 @@ export class MMDAnimationManager {
     this.updateAudio(delta)
 
     for (const [mmd, mixer] of this.models)
-      mmd.updateWithMixer(delta, mixer, options)
+      this.updateMMD(mmd, mixer, delta, options)
 
     if (this.camera != null && this.cameraMixer != null && this.cameraTarget != null) {
       this.cameraMixer.update(delta)
@@ -227,5 +219,44 @@ export class MMDAnimationManager {
         this.audioStartedByManager = true
       }
     }
+  }
+
+  private updateMMD(
+    mmd: MMD,
+    mixer: AnimationMixer,
+    delta: number,
+    options?: MMDUpdateOptions,
+  ) {
+    let skeletalAnimationLooped = false
+    const onLoop = (event: { action: { getClip: () => AnimationClip } }) => {
+      if (!event.action.getClip().tracks.some(track => track.name.startsWith('.bones'))) {
+        return
+      }
+
+      skeletalAnimationLooped = true
+    }
+
+    mmd.beforeUpdate()
+    mixer.addEventListener('loop', onLoop)
+    try {
+      mixer.update(delta)
+    }
+    finally {
+      mixer.removeEventListener('loop', onLoop)
+    }
+
+    mmd.update(delta, { grant: false, ik: false, physics: false })
+
+    if (options?.ik !== false)
+      mmd.ikSolver.update(delta, options?.physics !== false && mmd.physics?.affectsIK === true)
+
+    if (options?.grant !== false)
+      mmd.grantSolver.update()
+
+    if (skeletalAnimationLooped)
+      mmd.physics?.reset?.()
+
+    if (options?.physics !== false)
+      mmd.physics?.update(delta)
   }
 }
