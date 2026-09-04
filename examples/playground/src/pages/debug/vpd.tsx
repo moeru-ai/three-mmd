@@ -37,7 +37,7 @@ const DebugVPD = () => {
 
   const mmd = useMMD(modelUrl, loader => loader.register(MMDAmmoPlugin))
   const vpd = useVPD(pose)
-  const manager = useMMDAnimationManager((manager) => {
+  const manager = useMMDAnimationManager(undefined, (manager) => {
     manager.add(mmd)
 
     return () => {

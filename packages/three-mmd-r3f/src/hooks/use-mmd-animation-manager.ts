@@ -1,11 +1,15 @@
 import { MMDAnimationManager } from '@moeru/three-mmd'
 import { useEffect, useMemo, useRef } from 'react'
 
+type MMDAnimationManagerOptions = ConstructorParameters<typeof MMDAnimationManager>[0]
 type MMDAnimationManagerSetup = (manager: MMDAnimationManager) => (() => void) | void
 
 /** Creates a manager, runs setup once, and disposes it with the R3F component. */
-const useMMDAnimationManager = (setup?: MMDAnimationManagerSetup) => {
-  const manager = useMemo(() => new MMDAnimationManager(), [])
+const useMMDAnimationManager = (
+  options?: MMDAnimationManagerOptions,
+  setup?: MMDAnimationManagerSetup,
+) => {
+  const manager = useMemo(() => new MMDAnimationManager(options), [options])
   const setupRef = useRef(setup)
 
   useEffect(() => {

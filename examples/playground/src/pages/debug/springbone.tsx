@@ -44,7 +44,7 @@ const DebugAmmo = () => {
 
   const mmd = useMMD(pmxUrl, loader => loader.register(MMDSpringBonePlugin))
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
-  const manager = useMMDAnimationManager((manager) => {
+  const manager = useMMDAnimationManager(undefined, (manager) => {
     manager.add(mmd, { animation })
 
     return () => manager.remove(mmd)

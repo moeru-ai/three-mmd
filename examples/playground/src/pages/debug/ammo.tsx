@@ -46,7 +46,7 @@ const DebugAmmo = () => {
     () => mmd.physics?.createHelper<Object3D & { dispose?: () => void }>(),
     [mmd.physics],
   )
-  const manager = useMMDAnimationManager((manager) => {
+  const manager = useMMDAnimationManager(undefined, (manager) => {
     manager.add(mmd, { animation })
 
     return () => manager.remove(mmd)

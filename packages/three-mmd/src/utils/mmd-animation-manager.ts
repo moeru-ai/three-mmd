@@ -41,6 +41,7 @@ const playAnimation = (
 export class MMDAnimationManager {
   private audio?: Audio
   private audioDelay = 0
+  private audioDuration?: number
 
   private audioElapsed = 0
   private audioStarted = false
@@ -74,6 +75,14 @@ export class MMDAnimationManager {
       const mixer = new AnimationMixer(object.mesh)
       const { animation } = mmdOptions
 
+      mixer.addEventListener('loop', (event) => {
+        if (!event.action.getClip().tracks.some(track => track.name.startsWith('.bones'))) {
+          return
+        }
+
+        object.physics?.reset?.()
+      })
+
       this.models.set(object, mixer)
       playAnimation(mixer, animation, this.duration)
       return this
@@ -104,6 +113,7 @@ export class MMDAnimationManager {
       const audioOptions = options as AudioAnimationOptions
       this.audio = object
       this.audioDelay = audioOptions.delayTime ?? 0
+      this.audioDuration = object.buffer?.duration
       this.audioElapsed = 0
       this.audioStarted = object.isPlaying
       this.audioStartedByManager = false
@@ -161,6 +171,7 @@ export class MMDAnimationManager {
 
       this.audio = undefined
       this.audioDelay = 0
+      this.audioDuration = undefined
       this.audioElapsed = 0
       this.audioStarted = false
       this.audioStartedByManager = false
@@ -205,7 +216,11 @@ export class MMDAnimationManager {
       }
     }
 
-    if (!this.audioStarted && this.audioElapsed >= this.audioDelay) {
+    const audioEnd = this.audioDuration == null
+      ? Number.POSITIVE_INFINITY
+      : this.audioDelay + this.audioDuration
+
+    if (!this.audioStarted && this.audioElapsed >= this.audioDelay && this.audioElapsed <= audioEnd) {
       this.audioStarted = true
       if (!this.audio.isPlaying) {
         this.audio.play()

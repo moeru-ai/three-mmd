@@ -107,6 +107,30 @@ describe('mMDAnimationManager', () => {
     expect(secondPhysicsUpdate).toHaveBeenCalledWith(0.25)
   })
 
+  it('resets physics when a skeletal animation loops', () => {
+    const mmd = createMmd('physics-loop')
+    const events: string[] = []
+    const physics = {
+      createHelper: <T>() => undefined as T,
+      reset: () => events.push('reset'),
+      update: () => events.push('update'),
+    }
+    mmd.setPhysics(() => physics)
+    const manager = new MMDAnimationManager({ duration: 2 })
+
+    manager.add(mmd, {
+      animation: new AnimationClip('skeletal animation', 1, [
+        new VectorKeyframeTrack('.bones[0].position', [0, 1], [0, 0, 0, 1, 0, 0]),
+      ]),
+    })
+    manager.update(2.1)
+
+    expect(events).toEqual(['reset', 'update'])
+
+    manager.update(2.1, { physics: false })
+    expect(events).toEqual(['reset', 'update', 'reset'])
+  })
+
   it('passes MMD update options to every registered model', () => {
     const mmd = createMmd('options')
     const physicsUpdate = vi.fn()
@@ -234,6 +258,36 @@ describe('mMDAnimationManager', () => {
 
     manager.update(0.5)
     expect(play).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not start audio in the trailing silence of a global loop', () => {
+    let playing = false
+    const play = vi.fn(() => {
+      playing = true
+    })
+    const stop = vi.fn(() => {
+      playing = false
+    })
+    const audio = {
+      buffer: { duration: 3 },
+      get isPlaying() {
+        return playing
+      },
+      play,
+      stop,
+      type: 'Audio',
+    } as unknown as import('three').Audio
+    const manager = new MMDAnimationManager({ duration: 10 })
+
+    manager.add(audio, { delayTime: 2 })
+    manager.update(6)
+    expect(play).not.toHaveBeenCalled()
+
+    manager.update(10)
+    expect(play).not.toHaveBeenCalled()
+
+    manager.update(6)
+    expect(play).toHaveBeenCalledOnce()
   })
 
   it('removes one model without affecting other registered objects', () => {

@@ -11,7 +11,7 @@ import pmxUrl from '../../../assets/げのげ式初音ミク/げのげ式初音�
 const Index = () => {
   const mmd = useMMD(pmxUrl)
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
-  const manager = useMMDAnimationManager((manager) => {
+  const manager = useMMDAnimationManager(undefined, (manager) => {
     manager.add(mmd, { animation })
 
     return () => {
