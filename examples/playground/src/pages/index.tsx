@@ -14,7 +14,7 @@ const Index = () => {
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
   const manager = useMMDAnimationManager()
 
-  useFrame((_, delta) => manager.update(delta), -1)
+  useFrame((_, delta) => manager.update(delta))
 
   useEffect(() => {
     manager.add(mmd, { animation })

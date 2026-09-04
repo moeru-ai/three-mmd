@@ -38,7 +38,7 @@ const DebugVPD = () => {
   const mmd = useMMD(modelUrl, loader => loader.register(MMDAmmoPlugin))
   const vpd = useVPD(pose)
   const manager = useMMDAnimationManager()
-  useFrame((_, delta) => manager.update(delta), -1)
+  useFrame((_, delta) => manager.update(delta))
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
   const physicsHelper = useMemo(
     () => mmd.physics?.createHelper<Object3D>(),

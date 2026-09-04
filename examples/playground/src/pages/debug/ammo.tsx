@@ -48,7 +48,7 @@ const DebugAmmo = () => {
       return
 
     manager.update(delta)
-  }, -1)
+  })
 
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
   const physicsHelper = useMemo(
