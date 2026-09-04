@@ -44,7 +44,15 @@ const DebugAmmo = () => {
 
   const mmd = useMMD(pmxUrl, loader => loader.register(MMDSpringBonePlugin))
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
-  const manager = useMMDAnimationManager()
+  const manager = useMMDAnimationManager((manager) => {
+    manager.add(mmd, { animation })
+    mmd.physics?.reset?.()
+
+    return () => {
+      manager.remove(mmd)
+      mmd.mesh.pose()
+    }
+  })
 
   useFrame((_, delta) => {
     if (editingScale)
@@ -61,17 +69,6 @@ const DebugAmmo = () => {
   )
 
   // Play the animation on mount
-  useEffect(() => {
-    manager.add(mmd, { animation })
-    mmd.physics?.reset?.()
-
-    return () => {
-      manager.remove(mmd)
-      mmd.mesh.pose()
-    }
-  }, [animation, manager, mmd])
-
-  // Scale handling
   useEffect(() => mmd.setScalar(mmdScale), [mmd, mmdScale])
 
   useEffect(() => {

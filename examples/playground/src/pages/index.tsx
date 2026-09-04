@@ -4,7 +4,6 @@ import {
   useMMDAnimationManager,
 } from '@moeru/three-mmd-r3f'
 import { useFrame } from '@react-three/fiber'
-import { useEffect } from 'react'
 
 import vmdUrl from '../../../assets/Telephone/モーションデータ(forMMD)/telephone_motion.vmd?url'
 import pmxUrl from '../../../assets/げのげ式初音ミク/げのげ式初音ミク.pmx?url'
@@ -12,17 +11,15 @@ import pmxUrl from '../../../assets/げのげ式初音ミク/げのげ式初音�
 const Index = () => {
   const mmd = useMMD(pmxUrl)
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
-  const manager = useMMDAnimationManager()
-
-  useFrame((_, delta) => manager.update(delta))
-
-  useEffect(() => {
+  const manager = useMMDAnimationManager((manager) => {
     manager.add(mmd, { animation })
 
     return () => {
       manager.remove(mmd)
     }
-  }, [animation, manager, mmd])
+  })
+
+  useFrame((_, delta) => manager.update(delta))
 
   return (
     <>

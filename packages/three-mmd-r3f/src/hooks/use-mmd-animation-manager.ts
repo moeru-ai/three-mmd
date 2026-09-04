@@ -1,11 +1,22 @@
 import { MMDAnimationManager } from '@moeru/three-mmd'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
-/** Creates an MMD animation manager and disposes it with the R3F component. */
-const useMMDAnimationManager = () => {
+type MMDAnimationManagerSetup = (manager: MMDAnimationManager) => (() => void) | void
+
+/** Creates a manager, runs setup once, and disposes it with the R3F component. */
+const useMMDAnimationManager = (setup?: MMDAnimationManagerSetup) => {
   const manager = useMemo(() => new MMDAnimationManager(), [])
+  const setupRef = useRef(setup)
 
-  useEffect(() => () => manager.dispose(), [manager])
+  useEffect(() => {
+    const cleanup = setupRef.current?.(manager)
+
+    return () => {
+      if (typeof cleanup === 'function')
+        cleanup()
+      manager.dispose()
+    }
+  }, [manager])
 
   return manager
 }

@@ -63,9 +63,19 @@ Animations passed to `add` are created and played by the manager. The mixer and
 actions remain internal, so callers only need to register objects and call
 `update()`.
 
-For React Three Fiber, use `useMMDAnimationManager()` for the manager lifetime
-and call `manager.update(delta)` from one `useFrame`. `useMMD()` only loads the
-model; do not also update the same root with Drei's `useAnimations`.
+For React Three Fiber, pass registration and cleanup to
+`useMMDAnimationManager()` and call `manager.update(delta)` from one
+`useFrame`. `useMMD()` only loads the model; do not also update the same root
+with Drei's `useAnimations`.
+
+```tsx
+const manager = useMMDAnimationManager(manager => {
+  manager.add(mmd, { animation })
+  return () => manager.remove(mmd)
+})
+
+useFrame((_, delta) => manager.update(delta))
+```
 
 For a static VPD pose, load it with `VPDLoader` and apply it with `applyVPD`:
 

@@ -41,22 +41,12 @@ const DebugAmmo = () => {
 
   const mmd = useMMD(pmxUrl, loader => loader.register(MMDAmmoPlugin))
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
-  const manager = useMMDAnimationManager()
-
-  useFrame((_, delta) => {
-    if (paused)
-      return
-
-    manager.update(delta)
-  })
-
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
   const physicsHelper = useMemo(
     () => mmd.physics?.createHelper<Object3D>(),
     [mmd.physics],
   )
-
-  useEffect(() => {
+  const manager = useMMDAnimationManager((manager) => {
     manager.add(mmd, { animation })
     mmd.physics?.reset?.()
 
@@ -66,7 +56,14 @@ const DebugAmmo = () => {
       if (physicsHelper && 'dispose' in physicsHelper)
         (physicsHelper as Object3D & { dispose: () => void }).dispose()
     }
-  }, [animation, manager, mmd, physicsHelper])
+  })
+
+  useFrame((_, delta) => {
+    if (paused)
+      return
+
+    manager.update(delta)
+  })
 
   useEffect(() => mmd.setScalar(mmdScale), [mmd, mmdScale])
 
