@@ -54,10 +54,6 @@ const DebugVPD = () => {
 
   useEffect(() => {
     applyVPD(mmd, vpd)
-
-    return () => {
-      mmd.mesh.pose()
-    }
   }, [mmd, vpd])
 
   useEffect(() => {

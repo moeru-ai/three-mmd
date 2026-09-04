@@ -46,12 +46,8 @@ const DebugAmmo = () => {
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
   const manager = useMMDAnimationManager((manager) => {
     manager.add(mmd, { animation })
-    mmd.physics?.reset?.()
 
-    return () => {
-      manager.remove(mmd)
-      mmd.mesh.pose()
-    }
+    return () => manager.remove(mmd)
   })
 
   useFrame((_, delta) => {
