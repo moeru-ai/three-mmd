@@ -16,10 +16,6 @@ export interface AudioAnimationOptions {
   delayTime?: number
 }
 
-export interface CameraAnimationOptions extends MMDAnimationOptions {
-  target?: Object3D
-}
-
 export interface MMDAnimationOptions {
   animation?: AnimationClip | AnimationClip[]
 }
@@ -47,11 +43,11 @@ export class MMDAnimationManager {
   private readonly models = new Map<MMD, AnimationMixer>()
 
   public add(mmd: MMD, options?: MMDAnimationOptions): this
-  public add(camera: Camera, options?: CameraAnimationOptions): this
+  public add(camera: Camera, options?: MMDAnimationOptions): this
   public add(audio: Audio, options?: AudioAnimationOptions): this
   public add(
     object: Audio | Camera | MMD,
-    options: AudioAnimationOptions | CameraAnimationOptions | MMDAnimationOptions = {},
+    options: AudioAnimationOptions | MMDAnimationOptions = {},
   ): this {
     if (object instanceof MMD) {
       if (this.models.has(object))
@@ -69,15 +65,19 @@ export class MMDAnimationManager {
       if (this.camera !== undefined)
         throw new Error('MMDAnimationManager: Camera has already been added.')
 
-      const cameraOptions = options as CameraAnimationOptions
-      const target = cameraOptions.target ?? new ThreeObject3D()
-      target.name = 'target'
-
-      object.add(target)
+      const cameraOptions = options as MMDAnimationOptions
       this.camera = object
-      this.cameraTarget = target
-      this.cameraMixer = new ThreeAnimationMixer(object)
-      playAnimation(this.cameraMixer, cameraOptions.animation)
+
+      if (cameraOptions.animation != null) {
+        const target = new ThreeObject3D()
+        target.name = 'target'
+
+        object.add(target)
+        this.cameraTarget = target
+        this.cameraMixer = new ThreeAnimationMixer(object)
+        playAnimation(this.cameraMixer, cameraOptions.animation)
+      }
+
       return this
     }
     else if (object.type === 'Audio') {
@@ -120,11 +120,13 @@ export class MMDAnimationManager {
       return this
     }
     else if ('isCamera' in object) {
-      if (this.camera !== object || this.cameraMixer == null)
+      if (this.camera !== object)
         return this
 
-      this.cameraMixer.stopAllAction()
-      this.cameraMixer.uncacheRoot(object)
+      if (this.cameraMixer != null) {
+        this.cameraMixer.stopAllAction()
+        this.cameraMixer.uncacheRoot(object)
+      }
       if (this.cameraTarget?.parent === object)
         object.remove(this.cameraTarget)
 

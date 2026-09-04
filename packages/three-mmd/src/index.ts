@@ -20,7 +20,6 @@ export { buildAnimation, buildCameraAnimation } from './utils/build-animation'
 export { MMD, type MMDUpdateOptions } from './utils/mmd'
 export {
   type AudioAnimationOptions,
-  type CameraAnimationOptions,
   MMDAnimationManager,
   type MMDAnimationOptions,
 } from './utils/mmd-animation-manager'

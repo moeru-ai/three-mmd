@@ -143,6 +143,25 @@ describe('mMDAnimationManager', () => {
     expect(direction.z).toBeCloseTo(-0.87287156, 6)
   })
 
+  it('does not update or attach a target to a camera without animation', () => {
+    const camera = new PerspectiveCamera()
+    camera.position.set(1, 2, 3)
+    camera.rotation.set(0.1, 0.2, 0.3)
+    const position = camera.position.clone()
+    const quaternion = camera.quaternion.clone()
+    const manager = new MMDAnimationManager()
+
+    manager.add(camera)
+    manager.update(1)
+
+    expect(camera.position.equals(position)).toBe(true)
+    expect(camera.quaternion.equals(quaternion)).toBe(true)
+    expect(camera.children).toHaveLength(0)
+
+    manager.remove(camera)
+    expect(() => manager.add(new PerspectiveCamera())).not.toThrow()
+  })
+
   it('starts delayed audio once and stops audio it started when removed', () => {
     let playing = false
     const play = vi.fn(() => {
