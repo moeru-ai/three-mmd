@@ -126,6 +126,20 @@ describe('mMDAnimationManager', () => {
     expect(physicsUpdate).toHaveBeenCalledWith(0.25)
   })
 
+  it('syncs registered animation clips to the configured duration without changing the source clip', () => {
+    const mmd = createMmd('duration')
+    const animation = createClip('duration animation')
+    const manager = new MMDAnimationManager({ duration: 2 })
+
+    manager.add(mmd, { animation })
+    manager.update(1.5)
+    expect(mmd.mesh.position.x).toBeCloseTo(1)
+    expect(animation.duration).toBe(1)
+
+    manager.update(0.5)
+    expect(mmd.mesh.position.x).toBeCloseTo(0)
+  })
+
   it('updates the registered MMD camera and its target after animation', () => {
     const camera = new PerspectiveCamera(30, 1, 0.1, 100)
     const manager = new MMDAnimationManager()
@@ -190,6 +204,36 @@ describe('mMDAnimationManager', () => {
 
     manager.remove(audio)
     expect(stop).toHaveBeenCalledOnce()
+  })
+
+  it('restarts audio after each configured duration and delay', () => {
+    let playing = false
+    const play = vi.fn(() => {
+      playing = true
+    })
+    const stop = vi.fn(() => {
+      playing = false
+    })
+    const audio = {
+      get isPlaying() {
+        return playing
+      },
+      play,
+      stop,
+      type: 'Audio',
+    } as unknown as import('three').Audio
+    const manager = new MMDAnimationManager({ duration: 2 })
+
+    manager.add(audio, { delayTime: 0.5 })
+    manager.update(0.5)
+    expect(play).toHaveBeenCalledOnce()
+
+    manager.update(1.5)
+    expect(stop).toHaveBeenCalledOnce()
+    expect(play).toHaveBeenCalledOnce()
+
+    manager.update(0.5)
+    expect(play).toHaveBeenCalledTimes(2)
   })
 
   it('removes one model without affecting other registered objects', () => {

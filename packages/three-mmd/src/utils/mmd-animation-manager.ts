@@ -18,12 +18,23 @@ export interface MMDAnimationOptions {
   animation?: AnimationClip | AnimationClip[]
 }
 
-const playAnimation = (mixer: AnimationMixer, animation?: AnimationClip | AnimationClip[]) => {
+const playAnimation = (
+  mixer: AnimationMixer,
+  animation?: AnimationClip | AnimationClip[],
+  duration?: number,
+) => {
   if (animation == null)
     return
 
   const animations = (Array.isArray(animation) ? animation : [animation]) as readonly AnimationClip[]
-  animations.forEach(clip => mixer.clipAction(clip).play())
+  animations.forEach((clip) => {
+    if (duration != null) {
+      clip = clip.clone()
+      clip.duration = duration
+    }
+
+    mixer.clipAction(clip).play()
+  })
 }
 
 /** Coordinates MMD, camera, and audio animation on a single render-loop update. */
@@ -38,7 +49,15 @@ export class MMDAnimationManager {
   private camera?: Camera
   private cameraMixer?: AnimationMixer
   private cameraTarget?: Object3D
+  private readonly duration?: number
   private readonly models = new Map<MMD, AnimationMixer>()
+
+  public constructor(options: { duration?: number } = {}) {
+    if (options.duration != null && (!Number.isFinite(options.duration) || options.duration <= 0))
+      throw new RangeError('MMDAnimationManager: duration must be a positive finite number.')
+
+    this.duration = options.duration
+  }
 
   public add(mmd: MMD, options?: MMDAnimationOptions): this
   public add(camera: Camera, options?: MMDAnimationOptions): this
@@ -56,7 +75,7 @@ export class MMDAnimationManager {
       const { animation } = mmdOptions
 
       this.models.set(object, mixer)
-      playAnimation(mixer, animation)
+      playAnimation(mixer, animation, this.duration)
       return this
     }
     else if ('isCamera' in object) {
@@ -73,7 +92,7 @@ export class MMDAnimationManager {
         object.add(target)
         this.cameraTarget = target
         this.cameraMixer = new AnimationMixer(object)
-        playAnimation(this.cameraMixer, cameraOptions.animation)
+        playAnimation(this.cameraMixer, cameraOptions.animation, this.duration)
       }
 
       return this
@@ -175,6 +194,17 @@ export class MMDAnimationManager {
       return
 
     this.audioElapsed += delta
+
+    if (this.duration != null) {
+      while (this.audioElapsed >= this.duration) {
+        this.audioElapsed -= this.duration
+        if (this.audio.isPlaying)
+          this.audio.stop()
+        this.audioStarted = false
+        this.audioStartedByManager = false
+      }
+    }
+
     if (!this.audioStarted && this.audioElapsed >= this.audioDelay) {
       this.audioStarted = true
       if (!this.audio.isPlaying) {

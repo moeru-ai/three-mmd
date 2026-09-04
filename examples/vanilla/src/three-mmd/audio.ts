@@ -17,7 +17,7 @@ const main = () => {
   let ready = false
 
   const delayTime = 160 / 30
-  const manager = new MMDAnimationManager()
+  let manager!: MMDAnimationManager
   const timer = new Timer()
 
   const overlay = document.createElement('div')
@@ -91,9 +91,11 @@ const main = () => {
 
     const animation = buildAnimation(vmd, loadedMMD.mesh)
     const cameraAnimation = buildCameraAnimation(cameraVmd)
+    const duration = Math.max(animation.duration, cameraAnimation.duration, buffer.duration + delayTime)
 
     const sound = new Audio(listener).setBuffer(buffer)
 
+    manager = new MMDAnimationManager({ duration })
     manager.add(loadedMMD, { animation })
     manager.add(camera, { animation: cameraAnimation })
     manager.add(sound, { delayTime })
