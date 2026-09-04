@@ -1,8 +1,11 @@
 import type { SpringBoneHelpers } from '@moeru/three-mmd-physics-springbone'
 
 import { MMDSpringBonePlugin } from '@moeru/three-mmd-physics-springbone'
-import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
-import { useAnimations } from '@react-three/drei'
+import {
+  useMMD,
+  useMMDAnimation,
+  useMMDAnimationManager,
+} from '@moeru/three-mmd-r3f'
 import { useFrame } from '@react-three/fiber'
 import { useControls } from 'leva'
 import { useEffect, useMemo, useState } from 'react'
@@ -28,14 +31,8 @@ const DebugAmmo = () => {
     mmdScale: {
       max: 1,
       min: 0.01,
-      onEditEnd: () => {
-        // console.log('end setting scale')
-        setEditingScale(false)
-      },
-      onEditStart: () => {
-        // console.log('start setting scale')
-        setEditingScale(true)
-      },
+      onEditEnd: () => setEditingScale(false),
+      onEditStart: () => setEditingScale(true),
       step: 0.01,
       value: 0.1,
       // value: 1,
@@ -47,10 +44,14 @@ const DebugAmmo = () => {
 
   const mmd = useMMD(pmxUrl, loader => loader.register(MMDSpringBonePlugin))
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
-  const { actions } = useAnimations([animation], mmd.mesh)
+  const manager = useMMDAnimationManager()
 
-  // This must follow `useAnimations`: at priority 0, R3F invokes them in registration order.
-  useFrame((_, delta) => mmd.update(delta))
+  useFrame((_, delta) => {
+    if (editingScale)
+      return
+
+    manager.update(delta)
+  }, -1)
 
   // Helpers
   const ikHelper = useMemo(() => mmd.ikSolver.createHelper(), [mmd.ikSolver])
@@ -61,14 +62,14 @@ const DebugAmmo = () => {
 
   // Play the animation on mount
   useEffect(() => {
+    manager.add(mmd, { animation })
     mmd.physics?.reset?.()
-    actions.dance?.play()
 
     return () => {
-      actions.dance?.stop()
+      manager.remove(mmd)
       mmd.mesh.pose()
     }
-  }, [actions, mmd])
+  }, [animation, manager, mmd])
 
   // Scale handling
   useEffect(() => mmd.setScalar(mmdScale), [mmd, mmdScale])
@@ -76,21 +77,6 @@ const DebugAmmo = () => {
   useEffect(() => {
     mmd.physics?.setGravity?.(new Vector3(gravity.x, gravity.y, gravity.z))
   }, [gravity.x, gravity.y, gravity.z, mmd.physics])
-
-  useEffect(() => {
-    if (!actions?.dance)
-      return
-
-    if (editingScale) {
-      actions.dance.paused = true
-      actions?.dance?.stop()
-      mmd.mesh.pose()
-    }
-    else {
-      actions.dance.paused = false
-      actions?.dance?.play()
-    }
-  }, [actions, mmd, editingScale])
 
   return (
     <>

@@ -1,5 +1,8 @@
-import { useMMD, useMMDAnimation } from '@moeru/three-mmd-r3f'
-import { useAnimations } from '@react-three/drei'
+import {
+  useMMD,
+  useMMDAnimation,
+  useMMDAnimationManager,
+} from '@moeru/three-mmd-r3f'
 import { useFrame } from '@react-three/fiber'
 import { useEffect } from 'react'
 
@@ -9,21 +12,17 @@ import pmxUrl from '../../../assets/げのげ式初音ミク/げのげ式初音�
 const Index = () => {
   const mmd = useMMD(pmxUrl)
   const animation = useMMDAnimation(vmdUrl, mmd.mesh, 'dance')
-  const { actions } = useAnimations([animation], mmd.mesh)
+  const manager = useMMDAnimationManager()
 
-  // Keep this after `useAnimations`: both use priority 0, so the generic mixer
-  // samples the VMD first and MMD then applies its IK and grants.
-  useFrame((_, delta) => mmd.update(delta))
+  useFrame((_, delta) => manager.update(delta), -1)
 
   useEffect(() => {
-    const action = actions?.dance
-    action?.play()
+    manager.add(mmd, { animation })
 
     return () => {
-      action?.stop()
-      mmd.mesh.pose()
+      manager.remove(mmd)
     }
-  }, [actions, mmd])
+  }, [animation, manager, mmd])
 
   return (
     <>

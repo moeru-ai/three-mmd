@@ -37,6 +37,36 @@ then applies MMD IK, grants, and the optional physics service. Use `update()`
 directly when the mixer is managed elsewhere; do not call both methods for the
 same frame.
 
+## Coordinate multiple MMD assets
+
+`MMDAnimationManager` owns one standard Three.js mixer per MMD model and can
+also coordinate one camera animation and one audio source:
+
+```ts
+import {
+  buildAnimation,
+  buildCameraAnimation,
+  MMDAnimationManager,
+} from '@moeru/three-mmd'
+
+const manager = new MMDAnimationManager()
+manager.add(firstMMD, { animation: firstAnimation })
+manager.add(secondMMD, { animation: secondAnimation })
+manager.add(camera, { animation: cameraAnimation })
+manager.add(audio, { delayTime: 160 / 30 })
+
+// Keep this as the only update call for the registered assets.
+const update = () => manager.update(timer.getDelta())
+```
+
+Animations passed to `add` are created and played by the manager. The mixer and
+actions remain internal, so callers only need to register objects and call
+`update()`.
+
+For React Three Fiber, use `useMMDAnimationManager()` for the manager lifetime
+and call `manager.update(delta)` from one `useFrame`. `useMMD()` only loads the
+model; do not also update the same root with Drei's `useAnimations`.
+
 For a static VPD pose, load it with `VPDLoader` and apply it with `applyVPD`:
 
 ```ts
