@@ -107,6 +107,25 @@ describe('mMDAnimationManager', () => {
     expect(secondPhysicsUpdate).toHaveBeenCalledWith(0.25)
   })
 
+  it('passes MMD update options to every registered model', () => {
+    const mmd = createMmd('options')
+    const physicsUpdate = vi.fn()
+    const physics = {
+      createHelper: <T>() => undefined as T,
+      update: physicsUpdate,
+    }
+    mmd.setPhysics(() => physics)
+    const manager = new MMDAnimationManager()
+
+    manager.add(mmd)
+    manager.update(0.25, { physics: false })
+    expect(physicsUpdate).not.toHaveBeenCalled()
+
+    manager.update(0.25)
+    expect(physicsUpdate).toHaveBeenCalledOnce()
+    expect(physicsUpdate).toHaveBeenCalledWith(0.25)
+  })
+
   it('updates the registered MMD camera and its target after animation', () => {
     const camera = new PerspectiveCamera(30, 1, 0.1, 100)
     const manager = new MMDAnimationManager()

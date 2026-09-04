@@ -23,7 +23,7 @@ export interface CameraAnimationOptions {
 
 export type MMDAnimation = AnimationClip | readonly AnimationClip[]
 
-export interface MMDAnimationOptions extends MMDUpdateOptions {
+export interface MMDAnimationOptions {
   animation?: MMDAnimation
 }
 
@@ -50,7 +50,6 @@ export class MMDAnimationManager {
   private camera?: Camera
   private cameraMixer?: AnimationMixer
   private cameraTarget?: Object3D
-  private readonly modelOptions = new Map<MMD, MMDUpdateOptions>()
   private readonly models = new Map<MMD, AnimationMixer>()
 
   public add(mmd: MMD, options?: MMDAnimationOptions): this
@@ -66,10 +65,9 @@ export class MMDAnimationManager {
 
       const mmdOptions = options as MMDAnimationOptions
       const mixer = new ThreeAnimationMixer(object.mesh)
-      const { animation, grant, ik, physics } = mmdOptions
+      const { animation } = mmdOptions
 
       this.models.set(object, mixer)
-      this.modelOptions.set(object, { grant, ik, physics })
       playAnimation(mixer, animation)
       return this
     }
@@ -126,7 +124,6 @@ export class MMDAnimationManager {
       mixer.stopAllAction()
       mixer.uncacheRoot(object.mesh)
       this.models.delete(object)
-      this.modelOptions.delete(object)
       return this
     }
 
@@ -163,11 +160,11 @@ export class MMDAnimationManager {
     throw new Error('MMDAnimationManager.remove: expected an MMD, Camera, or Audio.')
   }
 
-  public update(delta: number): this {
+  public update(delta: number, options?: MMDUpdateOptions): this {
     this.updateAudio(delta)
 
     for (const [mmd, mixer] of this.models)
-      mmd.updateWithMixer(delta, mixer, this.modelOptions.get(mmd))
+      mmd.updateWithMixer(delta, mixer, options)
 
     if (this.camera !== undefined && this.cameraMixer !== undefined && this.cameraTarget !== undefined) {
       this.cameraMixer.update(delta)
