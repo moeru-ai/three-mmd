@@ -1,6 +1,7 @@
-import type { AnimationMixer, SkinnedMesh, Vector3 } from 'three'
+import type { AnimationAction, AnimationMixer, SkinnedMesh, Vector3 } from 'three'
 
 import type { PhysicsFactory, PhysicsService } from '../physics/physics-service'
+import type { MMDAnimationUserData, MMDPropertyTrackData } from './build-animation'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import { Quaternion } from 'three'
@@ -12,6 +13,29 @@ export interface MMDUpdateOptions {
   grant?: boolean
   ik?: boolean
   physics?: boolean
+}
+
+const getActiveActions = (mixer: AnimationMixer): readonly AnimationAction[] => {
+  const internal = mixer as unknown as {
+    _actions?: AnimationAction[]
+    _nActiveActions?: number
+  }
+  return internal._actions?.slice(0, internal._nActiveActions) ?? []
+}
+
+const getPropertyFrameIndex = (propertyTrack: MMDPropertyTrackData, actionTime: number) => {
+  const frameNumber = actionTime * 30
+  let low = 0
+  let high = propertyTrack.frameNumbers.length
+  while (low < high) {
+    const middle = (low + high) >>> 1
+    if (propertyTrack.frameNumbers[middle] <= frameNumber)
+      low = middle + 1
+    else
+      high = middle
+  }
+
+  return low - 1
 }
 
 /**
@@ -26,9 +50,14 @@ export class MMD {
   public pmx: PmxObject
   public scale: number
 
+  private readonly animationControlledIKBones = new Map<number, boolean>()
   private animationPose?: { position: Vector3, rotation: Quaternion }[]
   private readonly boneOrder: number[]
+  private readonly currentAnimationIKStates = new Map<number, boolean>()
+  private readonly currentAnimationIKWeights = new Map<number, number>()
+  private readonly ikBoneIndicesByName = new Map<string, number>()
   private ikRotations: Quaternion[]
+  private readonly normalizedIkBoneIndicesByName = new Map<string, number>()
 
   constructor(pmx: PmxObject, mesh: SkinnedMesh) {
     this.pmx = pmx
@@ -37,6 +66,16 @@ export class MMD {
     this.ikRotations = pmx.bones.map(() => new Quaternion())
     this.ikSolver = new MMDIKSolver(mesh, pmx, this.ikRotations)
     this.grantSolver = new GrantSolver(mesh, pmx, this.ikRotations)
+    pmx.bones.forEach((bone, boneIndex) => {
+      if (bone.ik === undefined)
+        return
+
+      this.ikBoneIndicesByName.set(bone.name, boneIndex)
+
+      const normalizedName = bone.name.normalize('NFKC')
+      if (!this.normalizedIkBoneIndicesByName.has(normalizedName))
+        this.normalizedIkBoneIndicesByName.set(normalizedName, boneIndex)
+    })
     this.boneOrder = pmx.bones.map((_, index) => index).sort((a, b) =>
       pmx.bones[a].transformOrder - pmx.bones[b].transformOrder || a - b,
     )
@@ -119,6 +158,64 @@ export class MMD {
     this.afterPhysics(options)
   }
 
+  public updateAnimation(mixer?: AnimationMixer) {
+    this.currentAnimationIKStates.clear()
+    this.currentAnimationIKWeights.clear()
+
+    if (mixer != null) {
+      const animationActions = getActiveActions(mixer)
+
+      for (const action of animationActions) {
+        const propertyTrack = (action.getClip().userData as MMDAnimationUserData).propertyTrack
+        if (propertyTrack == null)
+          continue
+
+        const weight = action.getEffectiveWeight()
+        if (weight <= 0 || propertyTrack.frameNumbers.length === 0)
+          continue
+
+        const frameIndex = getPropertyFrameIndex(propertyTrack, action.time)
+        if (frameIndex < 0)
+          continue
+
+        for (let i = 0; i < propertyTrack.ikBoneNames.length; i++) {
+          const ikBoneName = propertyTrack.ikBoneNames[i]
+          const boneIndex = this.ikBoneIndicesByName.get(ikBoneName)
+            ?? this.normalizedIkBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
+          if (boneIndex === undefined)
+            continue
+
+          const enabled = propertyTrack.ikStates[i]?.[frameIndex]
+          if (enabled == null)
+            continue
+
+          const currentWeight = this.currentAnimationIKWeights.get(boneIndex)
+          if (currentWeight !== undefined && currentWeight >= weight)
+            continue
+
+          this.currentAnimationIKWeights.set(boneIndex, weight)
+          this.currentAnimationIKStates.set(boneIndex, enabled)
+        }
+      }
+    }
+
+    for (const [boneIndex, enabled] of this.currentAnimationIKStates) {
+      if (!this.animationControlledIKBones.has(boneIndex))
+        this.animationControlledIKBones.set(boneIndex, this.ikSolver.isEnabled(boneIndex))
+      if (this.ikSolver.isEnabled(boneIndex) !== enabled)
+        this.ikSolver.setEnabled(boneIndex, enabled)
+    }
+
+    for (const [boneIndex, enabled] of this.animationControlledIKBones) {
+      if (this.currentAnimationIKStates.has(boneIndex))
+        continue
+
+      if (this.ikSolver.isEnabled(boneIndex) !== enabled)
+        this.ikSolver.setEnabled(boneIndex, enabled)
+      this.animationControlledIKBones.delete(boneIndex)
+    }
+  }
+
   public updateWithMixer(
     delta: number,
     mixer: AnimationMixer,
@@ -126,6 +223,7 @@ export class MMD {
   ) {
     this.beforeUpdate()
     mixer.update(delta)
+    this.updateAnimation(mixer)
     this.update(delta, options)
   }
 

@@ -16,7 +16,12 @@ export { MMDIKSolver } from './physics/mmd-ik-solver'
 export type { PhysicsFactory, PhysicsService } from './physics/physics-service'
 
 export { applyVPD, type ApplyVPDOptions } from './utils/apply-vpd'
-export { buildAnimation, buildCameraAnimation } from './utils/build-animation'
+export {
+  buildAnimation,
+  buildCameraAnimation,
+  type MMDAnimationUserData,
+  type MMDPropertyTrackData,
+} from './utils/build-animation'
 export { MMD, type MMDUpdateOptions } from './utils/mmd'
 export {
   type AudioAnimationOptions,

@@ -12,6 +12,17 @@ import {
   VectorKeyframeTrack,
 } from 'three'
 
+export interface MMDAnimationUserData {
+  propertyTrack?: MMDPropertyTrackData
+}
+
+export interface MMDPropertyTrackData {
+  frameNumbers: number[]
+  ikBoneNames: string[]
+  /** State arrays are indexed as [ikBoneIndex][frameIndex]. */
+  ikStates: boolean[][]
+}
+
 class AnimationBuilder {
   private static readonly _tempCenter = new Vector3()
   private static readonly _tempEuler = new Euler()
@@ -23,9 +34,6 @@ class AnimationBuilder {
    * @param mesh - tracks will be fitting to mesh
    */
   build(vmd: VmdObject, mesh: SkinnedMesh): AnimationClip {
-    // TODO: Convert VMD propertyKeyFrames into per-IK enable state updates
-    // through MMDIKSolver.setEnabled().
-
     // combine skeletal and morph animations
 
     const tracks = this.buildSkeletalAnimation(vmd, mesh).tracks
@@ -35,7 +43,18 @@ class AnimationBuilder {
       tracks.push(tracks2[i])
     }
 
-    return new AnimationClip('', -1, tracks)
+    const clip = new AnimationClip('', -1, tracks)
+    const propertyTrack = this.buildPropertyTrack(vmd)
+    if (propertyTrack !== undefined) {
+      (clip.userData as MMDAnimationUserData).propertyTrack = propertyTrack
+      const lastPropertyFrame = propertyTrack.frameNumbers[propertyTrack.frameNumbers.length - 1]
+      clip.duration = Math.max(
+        clip.duration,
+        (lastPropertyFrame + 1) / 30,
+      )
+    }
+
+    return clip
   }
 
   /** @param vmd - parsed VMD data */
@@ -227,7 +246,52 @@ class AnimationBuilder {
     return new AnimationClip('', -1, tracks)
   }
 
-  // private method
+  private buildPropertyTrack(vmd: VmdObject): MMDPropertyTrackData | undefined {
+    const propertyKeyFrames = Array.from(vmd.propertyKeyFrames)
+    if (propertyKeyFrames.length === 0)
+      return undefined
+
+    propertyKeyFrames.sort((a, b) => a.frameNumber - b.frameNumber)
+
+    const frames: VmdObject.PropertyKeyFrame[] = []
+    for (const propertyKeyFrame of propertyKeyFrames) {
+      const previous = frames[frames.length - 1]
+      if (previous?.frameNumber === propertyKeyFrame.frameNumber)
+        frames[frames.length - 1] = propertyKeyFrame
+      else
+        frames.push(propertyKeyFrame)
+    }
+
+    const ikBoneNames: string[] = []
+    const ikBoneNameIndices = new Map<string, number>()
+    for (const propertyKeyFrame of frames) {
+      for (const [ikBoneName] of propertyKeyFrame.ikStates) {
+        if (ikBoneNameIndices.has(ikBoneName))
+          continue
+
+        ikBoneNameIndices.set(ikBoneName, ikBoneNames.length)
+        ikBoneNames.push(ikBoneName)
+      }
+    }
+
+    if (ikBoneNames.length === 0)
+      return undefined
+
+    const currentStates = Array.from({ length: ikBoneNames.length }).fill(false) as boolean[]
+    const frameNumbers: number[] = []
+    const ikStates = ikBoneNames.map(() => [] as boolean[])
+
+    for (const propertyKeyFrame of frames) {
+      frameNumbers.push(propertyKeyFrame.frameNumber)
+      for (const [ikBoneName, enabled] of propertyKeyFrame.ikStates) {
+        currentStates[ikBoneNameIndices.get(ikBoneName)!] = enabled
+      }
+      for (let i = 0; i < currentStates.length; i++)
+        ikStates[i].push(currentStates[i])
+    }
+
+    return { frameNumbers, ikBoneNames, ikStates }
+  }
 
   /**
    * @param vmd - parsed VMD data

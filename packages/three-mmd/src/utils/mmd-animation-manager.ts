@@ -1,8 +1,4 @@
-import type {
-  AnimationClip,
-  Audio,
-  Camera,
-} from 'three'
+import type { AnimationClip, Audio, Camera } from 'three'
 
 import type { MMDUpdateOptions } from './mmd'
 
@@ -134,6 +130,7 @@ export class MMDAnimationManager {
         return this
 
       mixer.stopAllAction()
+      object.updateAnimation()
       mixer.uncacheRoot(object.mesh)
       this.models.delete(object)
       return this
@@ -245,6 +242,7 @@ export class MMDAnimationManager {
       mixer.removeEventListener('loop', onLoop)
     }
 
+    mmd.updateAnimation(mixer)
     mmd.beforePhysics(options)
 
     if (skeletalAnimationLooped)
