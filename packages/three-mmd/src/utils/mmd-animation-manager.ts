@@ -1,8 +1,4 @@
-import type {
-  AnimationClip,
-  Audio,
-  Camera,
-} from 'three'
+import type { AnimationClip, Audio, Camera } from 'three'
 
 import type { MMDUpdateOptions } from './mmd'
 
@@ -245,7 +241,7 @@ export class MMDAnimationManager {
       mixer.removeEventListener('loop', onLoop)
     }
 
-    mmd.beforePhysics(options)
+    mmd.beforePhysics(options, mixer)
 
     if (skeletalAnimationLooped)
       mmd.physics?.reset?.()

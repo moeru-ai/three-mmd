@@ -1,6 +1,7 @@
-import type { AnimationMixer, SkinnedMesh, Vector3 } from 'three'
+import type { AnimationAction, AnimationMixer, SkinnedMesh, Vector3 } from 'three'
 
 import type { PhysicsFactory, PhysicsService } from '../physics/physics-service'
+import type { MMDAnimationUserData } from './build-animation'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import { Quaternion } from 'three'
@@ -12,6 +13,14 @@ export interface MMDUpdateOptions {
   grant?: boolean
   ik?: boolean
   physics?: boolean
+}
+
+const getActiveActions = (mixer: AnimationMixer): readonly AnimationAction[] => {
+  const internal = mixer as unknown as {
+    _actions?: AnimationAction[]
+    _nActiveActions?: number
+  }
+  return internal._actions?.slice(0, internal._nActiveActions) ?? []
 }
 
 /**
@@ -50,7 +59,8 @@ export class MMD {
   }
 
   /** Restores unchanged solver output, captures the input, and evaluates pre-physics bones. */
-  public beforePhysics(options: MMDUpdateOptions = {}) {
+  public beforePhysics(options: MMDUpdateOptions = {}, mixer?: AnimationMixer) {
+    this.applyAnimationPropertyTrack(mixer)
     this.grantSolver.beginFrame()
     this.ikSolver.beginFrame()
     const bones = this.mesh.skeleton.bones
@@ -126,7 +136,60 @@ export class MMD {
   ) {
     this.beforeUpdate()
     mixer.update(delta)
+    this.applyAnimationPropertyTrack(mixer)
     this.update(delta, options)
+  }
+
+  private applyAnimationPropertyTrack(mixer?: AnimationMixer) {
+    if (mixer == null)
+      return
+
+    const animationActions = getActiveActions(mixer)
+    let activePropertyTrack: MMDAnimationUserData['propertyTrack']
+    let activeActionTime = 0
+    let activeWeight = 0
+
+    for (const action of animationActions) {
+      const propertyTrack = (action.getClip().userData as MMDAnimationUserData).propertyTrack
+      if (propertyTrack == null)
+        continue
+
+      const weight = action.getEffectiveWeight()
+      if (weight <= activeWeight)
+        continue
+
+      activePropertyTrack = propertyTrack
+      activeActionTime = action.time
+      activeWeight = weight
+    }
+
+    if (activePropertyTrack == null || activePropertyTrack.frameNumbers.length === 0)
+      return
+
+    const frameNumber = activeActionTime * 30
+    let low = 0
+    let high = activePropertyTrack.frameNumbers.length
+    while (low < high) {
+      const middle = (low + high) >>> 1
+      if (activePropertyTrack.frameNumbers[middle] <= frameNumber)
+        low = middle + 1
+      else
+        high = middle
+    }
+
+    const frameIndex = Math.max(0, low - 1)
+    const boneIndicesByName = new Map<string, number>()
+    this.pmx.bones.forEach((bone, boneIndex) => boneIndicesByName.set(bone.name, boneIndex))
+
+    for (let i = 0; i < activePropertyTrack.ikBoneNames.length; i++) {
+      const boneIndex = boneIndicesByName.get(activePropertyTrack.ikBoneNames[i])
+      if (boneIndex === undefined || this.pmx.bones[boneIndex].ik === undefined)
+        continue
+
+      const enabled = activePropertyTrack.ikStates[i]?.[frameIndex]
+      if (enabled != null && this.ikSolver.isEnabled(boneIndex) !== enabled)
+        this.ikSolver.setEnabled(boneIndex, enabled)
+    }
   }
 
   private updateBones(afterPhysics: boolean, options: MMDUpdateOptions) {
