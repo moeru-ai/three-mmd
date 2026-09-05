@@ -226,6 +226,31 @@ describe('mmd property animation', () => {
     expect(mmd.ikSolver.isEnabled(0)).toBe(true)
   })
 
+  it('restores the IK state that existed before animation took control', () => {
+    const mmd = createIkMmd()
+    mmd.ikSolver.setEnabled(0, false)
+
+    const propertyClip = new AnimationClip('property', 1, [])
+    propertyClip.userData = {
+      propertyTrack: {
+        frameNumbers: [0],
+        ikBoneNames: ['ik'],
+        ikStates: [[true]],
+      },
+    }
+    const mixer = new AnimationMixer(mmd.mesh)
+    const propertyAction = mixer.clipAction(propertyClip).play()
+
+    mmd.updateWithMixer(0, mixer, { grant: false, physics: false })
+    expect(mmd.ikSolver.isEnabled(0)).toBe(true)
+
+    propertyAction.stop()
+    mixer.clipAction(new AnimationClip('plain', 1, [])).play()
+    mmd.updateWithMixer(0, mixer, { grant: false, physics: false })
+
+    expect(mmd.ikSolver.isEnabled(0)).toBe(false)
+  })
+
   it('restores animation-controlled IK when an animation manager removes the MMD', () => {
     const mmd = createIkMmd()
     const clip = new AnimationClip('property', 1, [])

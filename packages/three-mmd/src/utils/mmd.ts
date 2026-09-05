@@ -35,9 +35,10 @@ export class MMD {
   public pmx: PmxObject
   public scale: number
 
-  private readonly animationControlledIKBones = new Set<number>()
+  private readonly animationControlledIKBones = new Map<number, boolean>()
   private animationPose?: { position: Vector3, rotation: Quaternion }[]
   private readonly boneOrder: number[]
+  private readonly currentAnimationControlledIKBones = new Set<number>()
   private readonly ikBoneIndicesByName = new Map<string, number>()
   private ikRotations: Quaternion[]
   private readonly normalizedIkBoneIndicesByName = new Map<string, number>()
@@ -142,66 +143,70 @@ export class MMD {
   }
 
   public updateAnimation(mixer?: AnimationMixer) {
-    for (const boneIndex of this.animationControlledIKBones) {
-      if (!this.ikSolver.isEnabled(boneIndex))
-        this.ikSolver.setEnabled(boneIndex, true)
+    this.currentAnimationControlledIKBones.clear()
+
+    if (mixer != null) {
+      const animationActions = getActiveActions(mixer)
+      let activePropertyTrack: MMDAnimationUserData['propertyTrack']
+      let activeActionTime = 0
+      let activeWeight = 0
+
+      for (const action of animationActions) {
+        const propertyTrack = (action.getClip().userData as MMDAnimationUserData).propertyTrack
+        if (propertyTrack == null)
+          continue
+
+        const weight = action.getEffectiveWeight()
+        if (weight <= activeWeight)
+          continue
+
+        activePropertyTrack = propertyTrack
+        activeActionTime = action.time
+        activeWeight = weight
+      }
+
+      if (activePropertyTrack != null && activePropertyTrack.frameNumbers.length > 0) {
+        const frameNumber = activeActionTime * 30
+        let low = 0
+        let high = activePropertyTrack.frameNumbers.length
+        while (low < high) {
+          const middle = (low + high) >>> 1
+          if (activePropertyTrack.frameNumbers[middle] <= frameNumber)
+            low = middle + 1
+          else
+            high = middle
+        }
+
+        const frameIndex = low - 1
+        if (frameIndex >= 0) {
+          for (let i = 0; i < activePropertyTrack.ikBoneNames.length; i++) {
+            const ikBoneName = activePropertyTrack.ikBoneNames[i]
+            const boneIndex = this.ikBoneIndicesByName.get(ikBoneName)
+              ?? this.normalizedIkBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
+            if (boneIndex === undefined)
+              continue
+
+            const enabled = activePropertyTrack.ikStates[i]?.[frameIndex]
+            if (enabled == null)
+              continue
+
+            if (!this.animationControlledIKBones.has(boneIndex))
+              this.animationControlledIKBones.set(boneIndex, this.ikSolver.isEnabled(boneIndex))
+            this.currentAnimationControlledIKBones.add(boneIndex)
+            if (this.ikSolver.isEnabled(boneIndex) !== enabled)
+              this.ikSolver.setEnabled(boneIndex, enabled)
+          }
+        }
+      }
     }
-    this.animationControlledIKBones.clear()
 
-    if (mixer == null)
-      return
-
-    const animationActions = getActiveActions(mixer)
-    let activePropertyTrack: MMDAnimationUserData['propertyTrack']
-    let activeActionTime = 0
-    let activeWeight = 0
-
-    for (const action of animationActions) {
-      const propertyTrack = (action.getClip().userData as MMDAnimationUserData).propertyTrack
-      if (propertyTrack == null)
+    for (const [boneIndex, enabled] of this.animationControlledIKBones) {
+      if (this.currentAnimationControlledIKBones.has(boneIndex))
         continue
 
-      const weight = action.getEffectiveWeight()
-      if (weight <= activeWeight)
-        continue
-
-      activePropertyTrack = propertyTrack
-      activeActionTime = action.time
-      activeWeight = weight
-    }
-
-    if (activePropertyTrack == null || activePropertyTrack.frameNumbers.length === 0)
-      return
-
-    const frameNumber = activeActionTime * 30
-    let low = 0
-    let high = activePropertyTrack.frameNumbers.length
-    while (low < high) {
-      const middle = (low + high) >>> 1
-      if (activePropertyTrack.frameNumbers[middle] <= frameNumber)
-        low = middle + 1
-      else
-        high = middle
-    }
-
-    const frameIndex = low - 1
-    if (frameIndex < 0)
-      return
-
-    for (let i = 0; i < activePropertyTrack.ikBoneNames.length; i++) {
-      const ikBoneName = activePropertyTrack.ikBoneNames[i]
-      const boneIndex = this.ikBoneIndicesByName.get(ikBoneName)
-        ?? this.normalizedIkBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
-      if (boneIndex === undefined)
-        continue
-
-      const enabled = activePropertyTrack.ikStates[i]?.[frameIndex]
-      if (enabled == null)
-        continue
-
-      this.animationControlledIKBones.add(boneIndex)
       if (this.ikSolver.isEnabled(boneIndex) !== enabled)
         this.ikSolver.setEnabled(boneIndex, enabled)
+      this.animationControlledIKBones.delete(boneIndex)
     }
   }
 
