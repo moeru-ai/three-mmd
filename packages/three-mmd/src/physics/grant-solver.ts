@@ -18,6 +18,7 @@ interface GrantEntry {
   index: number
   isLocal: boolean
   parentIndex: number
+  processed: boolean
   ratio: number
   transformOrder: number
 }
@@ -96,6 +97,7 @@ export class GrantSolver {
         index,
         isLocal: (flags & PmxObject.Bone.Flag.LocalAppendTransform) !== 0,
         parentIndex,
+        processed: false,
         ratio: appendTransform.ratio,
         transformOrder: bone.transformOrder,
       }
@@ -109,35 +111,55 @@ export class GrantSolver {
     this.entries.sort((a, b) => a.transformOrder - b.transformOrder || a.index - b.index)
   }
 
-  /** Clears append results at the start of MMD's before-physics stage. */
+  /** Restores unchanged output and captures the input for both physics stages. */
+  public beginFrame() {
+    const bones = this.mesh.skeleton.bones
+    for (const [index, pose] of this.appliedPoses) {
+      const bone = bones[index]
+      if (bone.position.equals(pose.outputPosition))
+        bone.position.copy(pose.basePosition)
+      if (bone.quaternion.equals(pose.outputRotation))
+        bone.quaternion.copy(pose.baseRotation)
+    }
+    this.reset()
+    for (const entry of this.entries) {
+      const bone = bones[entry.index]
+      this.appliedPoses.set(entry.index, {
+        basePosition: bone.position.clone(),
+        baseRotation: bone.quaternion.clone(),
+        outputPosition: bone.position.clone(),
+        outputRotation: bone.quaternion.clone(),
+      })
+    }
+  }
+
+  /** Records the final output after all bone transforms and physics have run. */
+  public endFrame() {
+    const bones = this.mesh.skeleton.bones
+    for (const [index, pose] of this.appliedPoses) {
+      pose.outputPosition.copy(bones[index].position)
+      pose.outputRotation.copy(bones[index].quaternion)
+    }
+  }
+
+  /** Discards frame state when an explicit animation pose replaces the output. */
   public reset() {
     this.appliedPoses.clear()
     for (const entry of this.entries) {
       entry.appendPosition.set(0, 0, 0)
       entry.appendRotation.identity()
+      entry.processed = false
     }
   }
 
-  /**
-   * Applies all append transforms once to the current animated/IK pose.
-   *
-   * Callers that use AnimationMixer should restore the animated pose before
-   * the mixer runs, as MMD.beforeUpdate() already does.
-   */
+  /** Applies all append transforms once to the current animated/IK pose. */
   public update() {
-    const bones = this.mesh.skeleton.bones
-    for (const [index, pose] of this.appliedPoses) {
-      const bone = bones[index]
-      if (bone.position.equals(pose.outputPosition) && bone.quaternion.equals(pose.outputRotation)) {
-        bone.position.copy(pose.basePosition)
-        bone.quaternion.copy(pose.baseRotation)
-      }
-    }
-    this.reset()
+    this.beginFrame()
     this.mesh.updateMatrixWorld(true)
     for (const entry of this.entries)
       this.updateBone(entry.index)
     this.mesh.updateMatrixWorld(true)
+    this.endFrame()
     return this
   }
 
@@ -149,10 +171,8 @@ export class GrantSolver {
 
     const bones = this.mesh.skeleton.bones
     const bone = bones[entry.index]
-    const basePosition = bone.position.clone()
-    const baseRotation = bone.quaternion.clone()
-    const positionOffset = basePosition.clone().sub(this.restPositions[entry.index])
-    const rotation = baseRotation.clone()
+    const positionOffset = bone.position.clone().sub(this.restPositions[entry.index])
+    const rotation = bone.quaternion.clone()
 
     if (entry.affectRotation) {
       const sourceRotation = this.getSourceRotation(entry, bones)
@@ -171,12 +191,7 @@ export class GrantSolver {
     bone.position.copy(this.restPositions[entry.index]).add(positionOffset)
     bone.updateMatrixWorld(true)
 
-    this.appliedPoses.set(entry.index, {
-      basePosition,
-      baseRotation,
-      outputPosition: bone.position.clone(),
-      outputRotation: bone.quaternion.clone(),
-    })
+    entry.processed = true
   }
 
   private getSourcePosition(
@@ -186,7 +201,7 @@ export class GrantSolver {
     const sourceEntry = this.entriesByIndex[entry.parentIndex]
 
     if (!entry.isLocal) {
-      if (sourceEntry?.affectPosition && !this.appliedPoses.has(entry.parentIndex))
+      if (sourceEntry?.affectPosition && !sourceEntry.processed)
         return sourceEntry.appendPosition
       return this.worldPosition.copy(bones[entry.parentIndex].position).sub(this.restPositions[entry.parentIndex])
     }
@@ -205,7 +220,7 @@ export class GrantSolver {
     const sourceEntry = this.entriesByIndex[entry.parentIndex]
 
     if (!entry.isLocal) {
-      if (sourceEntry?.affectRotation && !this.appliedPoses.has(entry.parentIndex))
+      if (sourceEntry?.affectRotation && !sourceEntry.processed)
         return sourceEntry.appendRotation
       return bones[entry.parentIndex].quaternion
     }

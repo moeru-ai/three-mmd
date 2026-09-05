@@ -35,7 +35,9 @@ advance the mixer, and call `update()` once per frame.
 `afterPhysics()`. Both stages interleave grants and IK in PMX transform order,
 separated by each bone's `TransformAfterPhysics` flag. You can call the two
 stages around an external physics update instead; pass the same update options
-to both stages.
+to both stages. Solver frame state spans both stages, so repeated updates with
+unchanged input do not accumulate grants or IK. `beforeUpdate()` is still needed
+before advancing an external mixer, to restore its cached animation input.
 
 For a static VPD pose, load it with `VPDLoader` and apply it with `applyVPD`:
 

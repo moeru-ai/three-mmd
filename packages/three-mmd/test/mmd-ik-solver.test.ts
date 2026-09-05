@@ -556,6 +556,81 @@ describe('mmdIKSolver', () => {
     expect(updatePhysics).toHaveBeenCalledTimes(physicsCalls)
   })
 
+  it('does not accumulate grants across direct MMD updates', () => {
+    const specs: BoneSpec[] = [
+      {},
+      {
+        appendTransform: { parentIndex: 0, ratio: 0.5 },
+        flag: PmxObject.Bone.Flag.HasAppendMove | PmxObject.Bone.Flag.HasAppendRotate,
+      },
+    ]
+    const { bones, mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+    bones[0].position.x = 2
+    bones[0].quaternion.setFromAxisAngle(new Vector3(0, 0, 1), 0.6)
+
+    mmd.update(0, { physics: false })
+    const position = bones[1].position.clone()
+    const rotation = bones[1].quaternion.clone()
+    closeTo(position.x, 1)
+    closeTo(rotation.angleTo(new Quaternion()), 0.3)
+    mmd.update(0, { physics: false })
+
+    closeTo(bones[1].position.distanceTo(position), 0)
+    closeTo(bones[1].quaternion.angleTo(rotation), 0)
+    mmd.beforeUpdate()
+    closeTo(bones[1].position.x, 0)
+    closeTo(bones[1].quaternion.angleTo(new Quaternion()), 0)
+  })
+
+  it('does not accumulate limited IK iterations across direct MMD updates', () => {
+    const specs = createSingleLinkSpecs({
+      maximumAngle: [0, 0, 1],
+      minimumAngle: [0, 0, -1],
+    })
+    specs[0].ik = { ...specs[0].ik!, iteration: 1, rotationConstraint: 0.1 }
+    const { bones, mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+
+    mmd.update(0, { physics: false })
+    const rotation = bones[1].quaternion.clone()
+    closeTo(rotation.angleTo(new Quaternion()), 0.1)
+    mmd.update(0, { physics: false })
+
+    closeTo(bones[1].quaternion.angleTo(rotation), 0)
+    mmd.beforeUpdate()
+    closeTo(bones[1].quaternion.angleTo(new Quaternion()), 0)
+  })
+
+  it.each([false, true])('keeps shared Grant/IK bones stable across stages, grantAfterPhysics=%s', (grantAfterPhysics) => {
+    const specs = createSingleLinkSpecs()
+    specs[0].ik = { ...specs[0].ik!, iteration: 1, rotationConstraint: 0.1 }
+    specs[0].flag = grantAfterPhysics ? 0 : PmxObject.Bone.Flag.TransformAfterPhysics
+    specs[1].appendTransform = { parentIndex: 3, ratio: 1 }
+    specs[1].flag = PmxObject.Bone.Flag.HasAppendRotate
+      | (grantAfterPhysics ? PmxObject.Bone.Flag.TransformAfterPhysics : 0)
+    specs.push({})
+    const { bones, mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+    bones[3].quaternion.setFromAxisAngle(new Vector3(0, 0, 1), 0.2)
+
+    mmd.update(0, { physics: false })
+    const rotation = bones[1].quaternion.clone()
+    closeTo(rotation.angleTo(new Quaternion()), 0.3)
+    for (let frame = 0; frame < 3; frame++) {
+      mmd.beforePhysics({ physics: false })
+      mmd.afterPhysics({ physics: false })
+      closeTo(bones[1].quaternion.angleTo(rotation), 0)
+    }
+
+    // An external edit is new input; only unchanged outputs are restored.
+    bones[1].quaternion.setFromAxisAngle(new Vector3(0, 0, 1), 0.4)
+    mmd.update(0, { physics: false })
+    closeTo(bones[1].quaternion.angleTo(new Quaternion()), 0.7)
+    mmd.update(0, { physics: false })
+    closeTo(bones[1].quaternion.angleTo(new Quaternion()), 0.7)
+  })
+
   it('applies a grant on the IK goal before solving its chain', () => {
     const specs = createSingleLinkSpecs()
     specs[0].appendTransform = { parentIndex: 3, ratio: 1 }

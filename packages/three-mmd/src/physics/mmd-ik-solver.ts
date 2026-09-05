@@ -183,14 +183,48 @@ export class MMDIKSolver {
     this.entries = entries
   }
 
+  /** Restores unchanged output and captures chain input for both physics stages. */
+  public beginFrame() {
+    const bones = this.mesh.skeleton.bones
+    for (const [boneIndex, pose] of this.appliedPoses) {
+      const bone = bones[boneIndex]
+      if (bone.quaternion.equals(pose.outputRotation))
+        bone.quaternion.copy(pose.baseRotation)
+    }
+
+    this.reset()
+    for (const entry of this.entries) {
+      for (const chain of entry.chains) {
+        if (!this.appliedPoses.has(chain.boneIndex)) {
+          this.appliedPoses.set(chain.boneIndex, {
+            baseRotation: chain.bone.quaternion.clone(),
+            outputRotation: chain.bone.quaternion.clone(),
+          })
+        }
+      }
+    }
+  }
+
   /** Creates a helper that visualizes every PMX IK chain. */
   public createHelper(sphereSize = 0.25) {
     return new MMDIKHelper(this.mesh, this.pmx, sphereSize)
   }
 
+  /** Records the final output after all bone transforms and physics have run. */
+  public endFrame() {
+    const bones = this.mesh.skeleton.bones
+    for (const [boneIndex, pose] of this.appliedPoses)
+      pose.outputRotation.copy(bones[boneIndex].quaternion)
+  }
+
   /** Returns whether the IK definition attached to a PMX bone is enabled. */
   public isEnabled(ikBoneIndex: number): boolean {
     return this.getEntry(ikBoneIndex).enabled
+  }
+
+  /** Discards frame state when an explicit animation pose replaces the output. */
+  public reset() {
+    this.appliedPoses.clear()
   }
 
   /** Enables or disables the IK definition attached to a PMX bone. */
@@ -211,37 +245,11 @@ export class MMDIKSolver {
   public update(delta = 0, physicsAffectsIK = false) {
     void delta
 
-    const bones = this.mesh.skeleton.bones
-
-    // Applying IK writes its result into Three.js bones. Restore an unchanged
-    // previous result first so a direct repeated update remains idempotent.
-    for (const [boneIndex, pose] of this.appliedPoses) {
-      const bone = bones[boneIndex]
-      if (bone.quaternion.equals(pose.outputRotation))
-        bone.quaternion.copy(pose.baseRotation)
-    }
-
-    const baseRotations = new Map<number, Quaternion>()
-    for (const entry of this.entries) {
-      for (const chain of entry.chains) {
-        if (!baseRotations.has(chain.boneIndex))
-          baseRotations.set(chain.boneIndex, chain.bone.quaternion.clone())
-      }
-    }
-
+    this.beginFrame()
     this.mesh.updateMatrixWorld(true)
-
     for (const entry of this.entries)
       this.updateBone(entry.boneIndex, physicsAffectsIK)
-
-    this.appliedPoses.clear()
-    for (const [boneIndex, baseRotation] of baseRotations) {
-      this.appliedPoses.set(boneIndex, {
-        baseRotation,
-        outputRotation: bones[boneIndex].quaternion.clone(),
-      })
-    }
-
+    this.endFrame()
     return this
   }
 

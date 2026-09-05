@@ -42,10 +42,14 @@ export class MMD {
   /** Evaluates post-physics bones after the physics service writes back its pose. */
   public afterPhysics(options: MMDUpdateOptions = {}) {
     this.updateBones(true, options)
+    this.grantSolver.endFrame()
+    this.ikSolver.endFrame()
   }
 
-  /** Captures the mixer pose, resets solver state, and evaluates pre-physics bones. */
+  /** Restores unchanged solver output, captures the input, and evaluates pre-physics bones. */
   public beforePhysics(options: MMDUpdateOptions = {}) {
+    this.grantSolver.beginFrame()
+    this.ikSolver.beginFrame()
     const bones = this.mesh.skeleton.bones
     this.animationPose ??= bones.map(bone => ({
       position: bone.position.clone(),
@@ -55,7 +59,6 @@ export class MMD {
       pose.position.copy(bones[index].position)
       pose.rotation.copy(bones[index].quaternion)
     })
-    this.grantSolver.reset()
     this.updateBones(false, options)
   }
 
@@ -70,6 +73,8 @@ export class MMD {
       bone.position.copy(pose.position)
       bone.quaternion.copy(pose.rotation)
     })
+    this.grantSolver.reset()
+    this.ikSolver.reset()
   }
 
   public dispose() {
@@ -102,7 +107,7 @@ export class MMD {
    *
    * The ordering is significant: the mixer pose is cached before IK and append
    * transforms mutate the bones, so the next frame can start from an unmodified
-   * animation pose. Call beforeUpdate() before supplying the next frame.
+   * animation pose. Call beforeUpdate() before advancing an external mixer.
    */
   public update(delta: number, options: MMDUpdateOptions = {}) {
     this.beforePhysics(options)
