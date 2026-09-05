@@ -35,9 +35,12 @@ export class MMD {
   public pmx: PmxObject
   public scale: number
 
+  private readonly animationControlledIKBones = new Set<number>()
   private animationPose?: { position: Vector3, rotation: Quaternion }[]
   private readonly boneOrder: number[]
+  private readonly ikBoneIndicesByName = new Map<string, number>()
   private ikRotations: Quaternion[]
+  private readonly normalizedIkBoneIndicesByName = new Map<string, number>()
 
   constructor(pmx: PmxObject, mesh: SkinnedMesh) {
     this.pmx = pmx
@@ -46,6 +49,16 @@ export class MMD {
     this.ikRotations = pmx.bones.map(() => new Quaternion())
     this.ikSolver = new MMDIKSolver(mesh, pmx, this.ikRotations)
     this.grantSolver = new GrantSolver(mesh, pmx, this.ikRotations)
+    pmx.bones.forEach((bone, boneIndex) => {
+      if (bone.ik === undefined)
+        return
+
+      this.ikBoneIndicesByName.set(bone.name, boneIndex)
+
+      const normalizedName = bone.name.normalize('NFKC')
+      if (!this.normalizedIkBoneIndicesByName.has(normalizedName))
+        this.normalizedIkBoneIndicesByName.set(normalizedName, boneIndex)
+    })
     this.boneOrder = pmx.bones.map((_, index) => index).sort((a, b) =>
       pmx.bones[a].transformOrder - pmx.bones[b].transformOrder || a - b,
     )
@@ -129,6 +142,12 @@ export class MMD {
   }
 
   public updateAnimation(mixer?: AnimationMixer) {
+    for (const boneIndex of this.animationControlledIKBones) {
+      if (!this.ikSolver.isEnabled(boneIndex))
+        this.ikSolver.setEnabled(boneIndex, true)
+    }
+    this.animationControlledIKBones.clear()
+
     if (mixer == null)
       return
 
@@ -165,26 +184,23 @@ export class MMD {
         high = middle
     }
 
-    const frameIndex = Math.max(0, low - 1)
-    const boneIndicesByName = new Map<string, number>()
-    const normalizedBoneIndicesByName = new Map<string, number>()
-    this.pmx.bones.forEach((bone, boneIndex) => {
-      boneIndicesByName.set(bone.name, boneIndex)
-
-      const normalizedName = bone.name.normalize('NFKC')
-      if (!normalizedBoneIndicesByName.has(normalizedName))
-        normalizedBoneIndicesByName.set(normalizedName, boneIndex)
-    })
+    const frameIndex = low - 1
+    if (frameIndex < 0)
+      return
 
     for (let i = 0; i < activePropertyTrack.ikBoneNames.length; i++) {
       const ikBoneName = activePropertyTrack.ikBoneNames[i]
-      const boneIndex = boneIndicesByName.get(ikBoneName)
-        ?? normalizedBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
-      if (boneIndex === undefined || this.pmx.bones[boneIndex].ik === undefined)
+      const boneIndex = this.ikBoneIndicesByName.get(ikBoneName)
+        ?? this.normalizedIkBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
+      if (boneIndex === undefined)
         continue
 
       const enabled = activePropertyTrack.ikStates[i]?.[frameIndex]
-      if (enabled != null && this.ikSolver.isEnabled(boneIndex) !== enabled)
+      if (enabled == null)
+        continue
+
+      this.animationControlledIKBones.add(boneIndex)
+      if (this.ikSolver.isEnabled(boneIndex) !== enabled)
         this.ikSolver.setEnabled(boneIndex, enabled)
     }
   }
