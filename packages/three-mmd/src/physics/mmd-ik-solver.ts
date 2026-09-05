@@ -57,6 +57,7 @@ export class MMDIKSolver {
   private readonly entries: IKEntry[]
   private readonly entriesByBoneIndex = new Map<number, IKEntry>()
   private readonly ikPosition = new Vector3()
+  private readonly ikRotations: readonly Quaternion[]
   private readonly inverseParentRotation = new Quaternion()
   private readonly invertedLocalRotation = new Quaternion()
   private readonly parentRotation = new Matrix4()
@@ -69,7 +70,7 @@ export class MMDIKSolver {
   private readonly yAxis = new Vector3(0, 1, 0)
   private readonly zAxis = new Vector3(0, 0, 1)
 
-  constructor(mesh: SkinnedMesh, pmx: PmxObject) {
+  constructor(mesh: SkinnedMesh, pmx: PmxObject, ikRotations?: Quaternion[]) {
     this.mesh = mesh
     this.pmx = pmx
 
@@ -77,6 +78,13 @@ export class MMDIKSolver {
     if (bones.length < pmx.bones.length) {
       throw new RangeError(
         `MMDIKSolver: skeleton has ${bones.length} bones, but PMX contains ${pmx.bones.length}.`,
+      )
+    }
+
+    this.ikRotations = ikRotations ?? Array.from({ length: pmx.bones.length }, () => new Quaternion())
+    if (this.ikRotations.length < pmx.bones.length) {
+      throw new RangeError(
+        `MMDIKSolver: IK rotation state has ${this.ikRotations.length} entries, but PMX contains ${pmx.bones.length} bones.`,
       )
     }
 
@@ -148,7 +156,7 @@ export class MMDIKSolver {
         return {
           bone: chainBone,
           boneIndex: link.target,
-          ikRotation: new Quaternion(),
+          ikRotation: this.ikRotations[link.target],
           localRotation: new Quaternion(),
           maximumAngle,
           minimumAngle,
@@ -183,14 +191,51 @@ export class MMDIKSolver {
     this.entries = entries
   }
 
+  /** Restores unchanged output and captures chain input for both physics stages. */
+  public beginFrame() {
+    const bones = this.mesh.skeleton.bones
+    for (const [boneIndex, pose] of this.appliedPoses) {
+      const bone = bones[boneIndex]
+      if (bone.quaternion.equals(pose.outputRotation))
+        bone.quaternion.copy(pose.baseRotation)
+    }
+
+    this.reset()
+    for (const entry of this.entries) {
+      for (const chain of entry.chains) {
+        if (!this.appliedPoses.has(chain.boneIndex)) {
+          this.appliedPoses.set(chain.boneIndex, {
+            baseRotation: chain.bone.quaternion.clone(),
+            outputRotation: chain.bone.quaternion.clone(),
+          })
+        }
+      }
+    }
+  }
+
   /** Creates a helper that visualizes every PMX IK chain. */
   public createHelper(sphereSize = 0.25) {
     return new MMDIKHelper(this.mesh, this.pmx, sphereSize)
   }
 
+  /** Records the final output after all bone transforms and physics have run. */
+  public endFrame() {
+    const bones = this.mesh.skeleton.bones
+    for (const [boneIndex, pose] of this.appliedPoses)
+      pose.outputRotation.copy(bones[boneIndex].quaternion)
+  }
+
   /** Returns whether the IK definition attached to a PMX bone is enabled. */
   public isEnabled(ikBoneIndex: number): boolean {
     return this.getEntry(ikBoneIndex).enabled
+  }
+
+  /** Discards frame state when an explicit animation pose replaces the output. */
+  public reset() {
+    this.appliedPoses.clear()
+
+    for (const rotation of this.ikRotations)
+      rotation.identity()
   }
 
   /** Enables or disables the IK definition attached to a PMX bone. */
@@ -211,48 +256,24 @@ export class MMDIKSolver {
   public update(delta = 0, physicsAffectsIK = false) {
     void delta
 
-    const bones = this.mesh.skeleton.bones
-
-    // Applying IK writes its result into Three.js bones. Restore an unchanged
-    // previous result first so a direct repeated update remains idempotent.
-    for (const [boneIndex, pose] of this.appliedPoses) {
-      const bone = bones[boneIndex]
-      if (bone.quaternion.equals(pose.outputRotation))
-        bone.quaternion.copy(pose.baseRotation)
-    }
-
-    const baseRotations = new Map<number, Quaternion>()
-    for (const entry of this.entries) {
-      for (const chain of entry.chains) {
-        if (!baseRotations.has(chain.boneIndex))
-          baseRotations.set(chain.boneIndex, chain.bone.quaternion.clone())
-      }
-    }
-
+    this.beginFrame()
     this.mesh.updateMatrixWorld(true)
-
-    // TODO: Interleave IK with other bone transforms and physics stages in a
-    // future staged pose evaluation pipeline.
-    for (const entry of this.entries) {
-      if (!entry.enabled || (physicsAffectsIK && entry.canSkipForPhysics))
-        continue
-
-      this.solve(entry, physicsAffectsIK)
-
-      // TODO: Replace full subtree/world refreshes with targeted link-to-
-      // effector path updates after profiling demonstrates a need.
-      this.mesh.updateMatrixWorld(true)
-    }
-
-    this.appliedPoses.clear()
-    for (const [boneIndex, baseRotation] of baseRotations) {
-      this.appliedPoses.set(boneIndex, {
-        baseRotation,
-        outputRotation: bones[boneIndex].quaternion.clone(),
-      })
-    }
-
+    for (const entry of this.entries)
+      this.updateBone(entry.boneIndex, physicsAffectsIK)
+    this.endFrame()
     return this
+  }
+
+  /** Solves one definition within MMD's ordered pose evaluation. */
+  public updateBone(boneIndex: number, physicsAffectsIK = false) {
+    const entry = this.entriesByBoneIndex.get(boneIndex)
+    if (entry === undefined || !entry.enabled || (physicsAffectsIK && entry.canSkipForPhysics))
+      return
+
+    this.solve(entry, physicsAffectsIK)
+    // TODO: Replace full subtree/world refreshes with targeted link-to-
+    // effector path updates after profiling demonstrates a need.
+    this.mesh.updateMatrixWorld(true)
   }
 
   private buildPhysicsBoneIndices(pmx: PmxObject) {

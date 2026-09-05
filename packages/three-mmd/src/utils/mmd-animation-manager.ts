@@ -245,18 +245,13 @@ export class MMDAnimationManager {
       mixer.removeEventListener('loop', onLoop)
     }
 
-    mmd.update(delta, { grant: false, ik: false, physics: false })
-
-    if (options?.ik !== false)
-      mmd.ikSolver.update(delta, options?.physics !== false && mmd.physics?.affectsIK === true)
-
-    if (options?.grant !== false)
-      mmd.grantSolver.update()
+    mmd.beforePhysics(options)
 
     if (skeletalAnimationLooped)
       mmd.physics?.reset?.()
 
     if (options?.physics !== false)
       mmd.physics?.update(delta)
+    mmd.afterPhysics(options)
   }
 }
