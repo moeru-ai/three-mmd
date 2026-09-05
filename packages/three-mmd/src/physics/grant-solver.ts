@@ -23,17 +23,8 @@ interface GrantEntry {
   transformOrder: number
 }
 
-/**
- * Solver for Grant (Fuyo in Japanese. I just google translated because
- * Fuyo may be MMD specific term and may not be common word in 3D CG terms.)
- * Grant propagates a bone's transform to other bones transforms even if
- * they are not children.
- *
- * The append-transform calculation is adapted from babylon-mmd's
- * AppendTransformSolver at commit 2ee0cee. Babylon runtime state is kept
- * here as Three.js pose snapshots and per-bone append results instead of
- * leaking Babylon runtime bones or math types.
- */
+// https://github.com/noname0310/babylon-mmd/blob/2ee0cee9fb744ab71f2cb6631c94d4338580814c/src/Runtime/appendTransformSolver.ts
+/** @internal */
 export class GrantSolver {
   public readonly mesh: SkinnedMesh
 

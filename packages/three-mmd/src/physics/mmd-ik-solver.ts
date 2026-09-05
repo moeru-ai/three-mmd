@@ -38,13 +38,8 @@ interface IKEntry {
 
 type SolveAxis = 'fixed' | 'none' | 'x' | 'y' | 'z'
 
-/**
- * PMX inverse-kinematics solver for a Three.js skeleton.
- *
- * The constraint calculation is adapted from babylon-mmd's IkSolver at
- * commit 2ee0cee. The input PMX is expected to use the same coordinate
- * system as the supplied mesh.
- */
+// https://github.com/noname0310/babylon-mmd/blob/2ee0cee9fb744ab71f2cb6631c94d4338580814c/src/Runtime/ikSolver.ts
+/** @internal */
 export class MMDIKSolver {
   public readonly mesh: SkinnedMesh
 
