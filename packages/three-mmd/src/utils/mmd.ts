@@ -183,10 +183,19 @@ export class MMD {
 
     const frameIndex = Math.max(0, low - 1)
     const boneIndicesByName = new Map<string, number>()
-    this.pmx.bones.forEach((bone, boneIndex) => boneIndicesByName.set(bone.name, boneIndex))
+    const normalizedBoneIndicesByName = new Map<string, number>()
+    this.pmx.bones.forEach((bone, boneIndex) => {
+      boneIndicesByName.set(bone.name, boneIndex)
+
+      const normalizedName = bone.name.normalize('NFKC')
+      if (!normalizedBoneIndicesByName.has(normalizedName))
+        normalizedBoneIndicesByName.set(normalizedName, boneIndex)
+    })
 
     for (let i = 0; i < activePropertyTrack.ikBoneNames.length; i++) {
-      const boneIndex = boneIndicesByName.get(activePropertyTrack.ikBoneNames[i])
+      const ikBoneName = activePropertyTrack.ikBoneNames[i]
+      const boneIndex = boneIndicesByName.get(ikBoneName)
+        ?? normalizedBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
       if (boneIndex === undefined || this.pmx.bones[boneIndex].ik === undefined)
         continue
 

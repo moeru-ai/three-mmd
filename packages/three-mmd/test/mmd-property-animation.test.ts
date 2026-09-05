@@ -36,8 +36,8 @@ const mesh = {
   },
 } as unknown as SkinnedMesh
 
-const createIkMmd = () => {
-  const bones = ['ik', 'link', 'target'].map((name) => {
+const createIkMmd = (ikName = 'ik') => {
+  const bones = [ikName, 'link', 'target'].map((name) => {
     const bone = new Bone()
     bone.name = name
     return bone
@@ -53,7 +53,7 @@ const createIkMmd = () => {
       {
         appendTransform: undefined,
         axisLimit: undefined,
-        englishName: 'ik',
+        englishName: ikName,
         externalParentTransform: undefined,
         flag: PmxObject.Bone.Flag.IsIkEnabled,
         ik: {
@@ -63,7 +63,7 @@ const createIkMmd = () => {
           target: 2,
         },
         localVector: undefined,
-        name: 'ik',
+        name: ikName,
         parentBoneIndex: -1,
         position: [0, 0, 0],
         tailPosition: [0, 0, 0],
@@ -185,5 +185,28 @@ describe('mmd property animation', () => {
 
     update(0.1)
     expect(setEnabled).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    ['左足ＩＫ', '左足IK'],
+    ['左足IK', '左足ＩＫ'],
+  ])('matches IK property names after NFKC normalization (%s model, %s VMD)', (modelIkName, vmdIkName) => {
+    const mmd = createIkMmd(modelIkName)
+    const clip = new AnimationClip('property', 1, [])
+    clip.userData = {
+      propertyTrack: {
+        frameNumbers: [0, 15],
+        ikBoneNames: [vmdIkName],
+        ikStates: [[true, false]],
+      },
+    }
+    const setEnabled = vi.spyOn(mmd.ikSolver, 'setEnabled')
+    const mixer = new AnimationMixer(mmd.mesh)
+    mixer.clipAction(clip).play()
+
+    mmd.updateWithMixer(0.5, mixer, { grant: false, physics: false })
+
+    expect(setEnabled).toHaveBeenCalledWith(0, false)
+    expect(mmd.ikSolver.isEnabled(0)).toBe(false)
   })
 })
