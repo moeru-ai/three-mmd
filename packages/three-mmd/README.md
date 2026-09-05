@@ -28,16 +28,9 @@ const update = () =>
 ```
 
 `updateWithMixer()` restores the previous animation pose, advances the mixer,
-then calls `update()`. If you manage the mixer yourself, call `beforeUpdate()`,
-advance the mixer, and call `update()` once per frame.
-
-`update()` runs `beforePhysics()`, the optional physics service, and
-`afterPhysics()`. Both stages interleave grants and IK in PMX transform order,
-separated by each bone's `TransformAfterPhysics` flag. You can call the two
-stages around an external physics update instead; pass the same update options
-to both stages. Solver frame state spans both stages, so repeated updates with
-unchanged input do not accumulate grants or IK. `beforeUpdate()` is still needed
-before advancing an external mixer, to restore its cached animation input.
+then applies MMD IK, grants, and the optional physics service. Use `update()`
+directly when the mixer is managed elsewhere; do not call both methods for the
+same frame.
 
 For a static VPD pose, load it with `VPDLoader` and apply it with `applyVPD`:
 

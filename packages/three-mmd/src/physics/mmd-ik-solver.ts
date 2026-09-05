@@ -260,6 +260,8 @@ export class MMDIKSolver {
       return
 
     this.solve(entry, physicsAffectsIK)
+    // TODO: Replace full subtree/world refreshes with targeted link-to-
+    // effector path updates after profiling demonstrates a need.
     this.mesh.updateMatrixWorld(true)
   }
 
