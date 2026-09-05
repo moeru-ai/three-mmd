@@ -241,7 +241,8 @@ export class MMDAnimationManager {
       mixer.removeEventListener('loop', onLoop)
     }
 
-    mmd.beforePhysics(options, mixer)
+    mmd.applyAnimationPropertyTrack(mixer)
+    mmd.beforePhysics(options)
 
     if (skeletalAnimationLooped)
       mmd.physics?.reset?.()

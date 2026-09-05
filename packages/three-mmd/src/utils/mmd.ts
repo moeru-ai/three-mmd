@@ -58,9 +58,69 @@ export class MMD {
     this.ikSolver.endFrame()
   }
 
+  public applyAnimationPropertyTrack(mixer?: AnimationMixer) {
+    if (mixer == null)
+      return
+
+    const animationActions = getActiveActions(mixer)
+    let activePropertyTrack: MMDAnimationUserData['propertyTrack']
+    let activeActionTime = 0
+    let activeWeight = 0
+
+    for (const action of animationActions) {
+      const propertyTrack = (action.getClip().userData as MMDAnimationUserData).propertyTrack
+      if (propertyTrack == null)
+        continue
+
+      const weight = action.getEffectiveWeight()
+      if (weight <= activeWeight)
+        continue
+
+      activePropertyTrack = propertyTrack
+      activeActionTime = action.time
+      activeWeight = weight
+    }
+
+    if (activePropertyTrack == null || activePropertyTrack.frameNumbers.length === 0)
+      return
+
+    const frameNumber = activeActionTime * 30
+    let low = 0
+    let high = activePropertyTrack.frameNumbers.length
+    while (low < high) {
+      const middle = (low + high) >>> 1
+      if (activePropertyTrack.frameNumbers[middle] <= frameNumber)
+        low = middle + 1
+      else
+        high = middle
+    }
+
+    const frameIndex = Math.max(0, low - 1)
+    const boneIndicesByName = new Map<string, number>()
+    const normalizedBoneIndicesByName = new Map<string, number>()
+    this.pmx.bones.forEach((bone, boneIndex) => {
+      boneIndicesByName.set(bone.name, boneIndex)
+
+      const normalizedName = bone.name.normalize('NFKC')
+      if (!normalizedBoneIndicesByName.has(normalizedName))
+        normalizedBoneIndicesByName.set(normalizedName, boneIndex)
+    })
+
+    for (let i = 0; i < activePropertyTrack.ikBoneNames.length; i++) {
+      const ikBoneName = activePropertyTrack.ikBoneNames[i]
+      const boneIndex = boneIndicesByName.get(ikBoneName)
+        ?? normalizedBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
+      if (boneIndex === undefined || this.pmx.bones[boneIndex].ik === undefined)
+        continue
+
+      const enabled = activePropertyTrack.ikStates[i]?.[frameIndex]
+      if (enabled != null && this.ikSolver.isEnabled(boneIndex) !== enabled)
+        this.ikSolver.setEnabled(boneIndex, enabled)
+    }
+  }
+
   /** Restores unchanged solver output, captures the input, and evaluates pre-physics bones. */
-  public beforePhysics(options: MMDUpdateOptions = {}, mixer?: AnimationMixer) {
-    this.applyAnimationPropertyTrack(mixer)
+  public beforePhysics(options: MMDUpdateOptions = {}) {
     this.grantSolver.beginFrame()
     this.ikSolver.beginFrame()
     const bones = this.mesh.skeleton.bones
@@ -137,72 +197,7 @@ export class MMD {
     this.beforeUpdate()
     mixer.update(delta)
     this.applyAnimationPropertyTrack(mixer)
-
-    this.beforePhysics(options, mixer)
-    if (options.physics !== false)
-      this.physics?.update(delta)
-    this.afterPhysics(options)
-  }
-
-  private applyAnimationPropertyTrack(mixer?: AnimationMixer) {
-    if (mixer == null)
-      return
-
-    const animationActions = getActiveActions(mixer)
-    let activePropertyTrack: MMDAnimationUserData['propertyTrack']
-    let activeActionTime = 0
-    let activeWeight = 0
-
-    for (const action of animationActions) {
-      const propertyTrack = (action.getClip().userData as MMDAnimationUserData).propertyTrack
-      if (propertyTrack == null)
-        continue
-
-      const weight = action.getEffectiveWeight()
-      if (weight <= activeWeight)
-        continue
-
-      activePropertyTrack = propertyTrack
-      activeActionTime = action.time
-      activeWeight = weight
-    }
-
-    if (activePropertyTrack == null || activePropertyTrack.frameNumbers.length === 0)
-      return
-
-    const frameNumber = activeActionTime * 30
-    let low = 0
-    let high = activePropertyTrack.frameNumbers.length
-    while (low < high) {
-      const middle = (low + high) >>> 1
-      if (activePropertyTrack.frameNumbers[middle] <= frameNumber)
-        low = middle + 1
-      else
-        high = middle
-    }
-
-    const frameIndex = Math.max(0, low - 1)
-    const boneIndicesByName = new Map<string, number>()
-    const normalizedBoneIndicesByName = new Map<string, number>()
-    this.pmx.bones.forEach((bone, boneIndex) => {
-      boneIndicesByName.set(bone.name, boneIndex)
-
-      const normalizedName = bone.name.normalize('NFKC')
-      if (!normalizedBoneIndicesByName.has(normalizedName))
-        normalizedBoneIndicesByName.set(normalizedName, boneIndex)
-    })
-
-    for (let i = 0; i < activePropertyTrack.ikBoneNames.length; i++) {
-      const ikBoneName = activePropertyTrack.ikBoneNames[i]
-      const boneIndex = boneIndicesByName.get(ikBoneName)
-        ?? normalizedBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
-      if (boneIndex === undefined || this.pmx.bones[boneIndex].ik === undefined)
-        continue
-
-      const enabled = activePropertyTrack.ikStates[i]?.[frameIndex]
-      if (enabled != null && this.ikSolver.isEnabled(boneIndex) !== enabled)
-        this.ikSolver.setEnabled(boneIndex, enabled)
-    }
+    this.update(delta, options)
   }
 
   private updateBones(afterPhysics: boolean, options: MMDUpdateOptions) {
