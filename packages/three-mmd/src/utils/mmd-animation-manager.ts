@@ -130,6 +130,7 @@ export class MMDAnimationManager {
         return this
 
       mixer.stopAllAction()
+      object.updateAnimation()
       mixer.uncacheRoot(object.mesh)
       this.models.delete(object)
       return this

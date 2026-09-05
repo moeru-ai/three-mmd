@@ -211,6 +211,27 @@ describe('mmd property animation', () => {
     expect(mmd.ikSolver.isEnabled(0)).toBe(true)
   })
 
+  it('restores animation-controlled IK when an animation manager removes the MMD', () => {
+    const mmd = createIkMmd()
+    const clip = new AnimationClip('property', 1, [])
+    clip.userData = {
+      propertyTrack: {
+        frameNumbers: [0],
+        ikBoneNames: ['ik'],
+        ikStates: [[false]],
+      },
+    }
+    const manager = new MMDAnimationManager()
+    manager.add(mmd, { animation: clip })
+
+    manager.update(0, { grant: false, physics: false })
+    expect(mmd.ikSolver.isEnabled(0)).toBe(false)
+
+    manager.remove(mmd)
+
+    expect(mmd.ikSolver.isEnabled(0)).toBe(true)
+  })
+
   it('does not apply an IK property state before its first key', () => {
     const mmd = createIkMmd()
     const clip = new AnimationClip('property', 1, [])
