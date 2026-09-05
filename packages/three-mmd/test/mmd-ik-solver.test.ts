@@ -654,6 +654,42 @@ describe('mmdIKSolver', () => {
     }
   })
 
+  it('includes earlier IK when reading an unprocessed append source', () => {
+    const specs = createSingleLinkSpecs()
+
+    // Bone 1 is first modified as an IK link by bone 0. Its own append
+    // transform runs later, so bone 3 must still observe the IK contribution
+    // when it reads bone 1 as an append source.
+    specs[1].appendTransform = { parentIndex: 4, ratio: 1 }
+    specs[1].flag = PmxObject.Bone.Flag.HasAppendRotate
+    specs[1].transformOrder = 2
+
+    specs.push({
+      appendTransform: { parentIndex: 1, ratio: 1 },
+      flag: PmxObject.Bone.Flag.HasAppendRotate,
+      transformOrder: 1,
+    }, {})
+
+    const { bones, mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+
+    mmd.update(0, { physics: false })
+
+    const expected = new Quaternion().setFromAxisAngle(
+      new Vector3(0, 0, 1),
+      Math.PI / 2,
+    )
+    closeTo(bones[3].quaternion.angleTo(expected), 0)
+
+    // The shared IK contribution is frame-local. Disabling IK on the next
+    // frame must not leave the previous frame's rotation visible to Grant.
+    mmd.beforeUpdate()
+    mmd.ikSolver.setEnabled(0, false)
+    mmd.update(0, { physics: false })
+
+    closeTo(bones[3].quaternion.angleTo(new Quaternion()), 0)
+  })
+
   it.each(['mixer', 'manager'])('restores constant animation tracks between %s frames', (mode) => {
     const specs = createSingleLinkSpecs()
     specs[0].appendTransform = { parentIndex: 3, ratio: 1 }

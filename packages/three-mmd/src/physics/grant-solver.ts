@@ -42,14 +42,15 @@ export class GrantSolver {
   private readonly entries: GrantEntry[]
   private readonly entriesByIndex: Array<GrantEntry | undefined>
   private readonly identityQuaternion = new Quaternion()
-
+  private readonly ikRotations: readonly Quaternion[]
   private readonly restPositions: Vector3[]
   private readonly skinMatrix = new Matrix4()
+  private readonly sourceRotation = new Quaternion()
   private readonly worldPosition = new Vector3()
   private readonly worldQuaternion = new Quaternion()
   private readonly worldScale = new Vector3()
 
-  constructor(mesh: SkinnedMesh, pmx: PmxObject) {
+  constructor(mesh: SkinnedMesh, pmx: PmxObject, ikRotations?: Quaternion[]) {
     this.mesh = mesh
 
     const bones = mesh.skeleton.bones
@@ -61,6 +62,13 @@ export class GrantSolver {
     if (mesh.skeleton.boneInverses.length < pmx.bones.length) {
       throw new RangeError(
         `GrantSolver: skeleton has ${mesh.skeleton.boneInverses.length} inverse bind matrices, but PMX contains ${pmx.bones.length} bones.`,
+      )
+    }
+
+    this.ikRotations = ikRotations ?? Array.from({ length: pmx.bones.length }, () => new Quaternion())
+    if (this.ikRotations.length < pmx.bones.length) {
+      throw new RangeError(
+        `GrantSolver: IK rotation state has ${this.ikRotations.length} entries, but PMX contains ${pmx.bones.length} bones.`,
       )
     }
 
@@ -203,6 +211,7 @@ export class GrantSolver {
     if (!entry.isLocal) {
       if (sourceEntry?.affectPosition && !sourceEntry.processed)
         return sourceEntry.appendPosition
+
       return this.worldPosition.copy(bones[entry.parentIndex].position).sub(this.restPositions[entry.parentIndex])
     }
 
@@ -220,8 +229,12 @@ export class GrantSolver {
     const sourceEntry = this.entriesByIndex[entry.parentIndex]
 
     if (!entry.isLocal) {
-      if (sourceEntry?.affectRotation && !sourceEntry.processed)
-        return sourceEntry.appendRotation
+      if (sourceEntry?.affectRotation && !sourceEntry.processed) {
+        return this.sourceRotation
+          .copy(sourceEntry.appendRotation)
+          .premultiply(this.ikRotations[entry.parentIndex])
+      }
+
       return bones[entry.parentIndex].quaternion
     }
 

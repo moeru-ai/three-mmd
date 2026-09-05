@@ -57,6 +57,7 @@ export class MMDIKSolver {
   private readonly entries: IKEntry[]
   private readonly entriesByBoneIndex = new Map<number, IKEntry>()
   private readonly ikPosition = new Vector3()
+  private readonly ikRotations: readonly Quaternion[]
   private readonly inverseParentRotation = new Quaternion()
   private readonly invertedLocalRotation = new Quaternion()
   private readonly parentRotation = new Matrix4()
@@ -69,7 +70,7 @@ export class MMDIKSolver {
   private readonly yAxis = new Vector3(0, 1, 0)
   private readonly zAxis = new Vector3(0, 0, 1)
 
-  constructor(mesh: SkinnedMesh, pmx: PmxObject) {
+  constructor(mesh: SkinnedMesh, pmx: PmxObject, ikRotations?: Quaternion[]) {
     this.mesh = mesh
     this.pmx = pmx
 
@@ -77,6 +78,13 @@ export class MMDIKSolver {
     if (bones.length < pmx.bones.length) {
       throw new RangeError(
         `MMDIKSolver: skeleton has ${bones.length} bones, but PMX contains ${pmx.bones.length}.`,
+      )
+    }
+
+    this.ikRotations = ikRotations ?? Array.from({ length: pmx.bones.length }, () => new Quaternion())
+    if (this.ikRotations.length < pmx.bones.length) {
+      throw new RangeError(
+        `MMDIKSolver: IK rotation state has ${this.ikRotations.length} entries, but PMX contains ${pmx.bones.length} bones.`,
       )
     }
 
@@ -148,7 +156,7 @@ export class MMDIKSolver {
         return {
           bone: chainBone,
           boneIndex: link.target,
-          ikRotation: new Quaternion(),
+          ikRotation: this.ikRotations[link.target],
           localRotation: new Quaternion(),
           maximumAngle,
           minimumAngle,
@@ -225,6 +233,9 @@ export class MMDIKSolver {
   /** Discards frame state when an explicit animation pose replaces the output. */
   public reset() {
     this.appliedPoses.clear()
+
+    for (const rotation of this.ikRotations)
+      rotation.identity()
   }
 
   /** Enables or disables the IK definition attached to a PMX bone. */

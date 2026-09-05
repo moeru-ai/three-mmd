@@ -1,8 +1,9 @@
-import type { AnimationMixer, Quaternion, SkinnedMesh, Vector3 } from 'three'
+import type { AnimationMixer, SkinnedMesh, Vector3 } from 'three'
 
 import type { PhysicsFactory, PhysicsService } from '../physics/physics-service'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
+import { Quaternion } from 'three'
 
 import { GrantSolver } from '../physics/grant-solver'
 import { MMDIKSolver } from '../physics/mmd-ik-solver'
@@ -27,13 +28,15 @@ export class MMD {
 
   private animationPose?: { position: Vector3, rotation: Quaternion }[]
   private readonly boneOrder: number[]
+  private ikRotations: Quaternion[]
 
   constructor(pmx: PmxObject, mesh: SkinnedMesh) {
     this.pmx = pmx
     this.mesh = mesh
     this.scale = 1
-    this.ikSolver = new MMDIKSolver(mesh, pmx)
-    this.grantSolver = new GrantSolver(mesh, pmx)
+    this.ikRotations = pmx.bones.map(() => new Quaternion())
+    this.ikSolver = new MMDIKSolver(mesh, pmx, this.ikRotations)
+    this.grantSolver = new GrantSolver(mesh, pmx, this.ikRotations)
     this.boneOrder = pmx.bones.map((_, index) => index).sort((a, b) =>
       pmx.bones[a].transformOrder - pmx.bones[b].transformOrder || a - b,
     )
