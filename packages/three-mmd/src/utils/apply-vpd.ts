@@ -4,8 +4,6 @@ import type { MMD } from './mmd'
 
 import { Quaternion, Vector3 } from 'three'
 
-import { cacheMMDAnimationPose, resetMMDAnimationPose } from './mmd'
-
 export interface ApplyVPDOptions {
   grant?: boolean
   ik?: boolean
@@ -31,10 +29,6 @@ export const applyVPD = (
     resetPose = true,
   } = options
   const { mesh } = mmd
-
-  // A previous VMD action may have cached a mixer pose. The static VPD pose
-  // must replace it rather than be restored away on the next frame.
-  resetMMDAnimationPose(mmd)
 
   if (resetPose)
     mesh.pose()
@@ -66,11 +60,6 @@ export const applyVPD = (
     bone.quaternion.multiply(rotation)
   }
 
-  // Keep the raw VPD pose as the next frame's animation input. The pose below
-  // is immediately processed once, but MMD.update() must not process that
-  // already-derived pose a second time on the following frame.
-  cacheMMDAnimationPose(mmd)
-
   const morphTargetDictionary = mesh.morphTargetDictionary
   for (const [name, weight] of Object.entries(vpd.morphs)) {
     const index = morphTargetDictionary?.[name]
@@ -80,13 +69,7 @@ export const applyVPD = (
 
   mesh.updateMatrixWorld(true)
 
-  if (ik)
-    mmd.ikSolver.update(0, mmd.physics?.affectsIK === true)
-
-  if (grant)
-    mmd.grantSolver.update()
-
-  mesh.updateMatrixWorld(true)
+  mmd.update(0, { grant, ik, physics: false })
 
   if (resetPhysics)
     mmd.physics?.reset?.()

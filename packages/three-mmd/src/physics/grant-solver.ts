@@ -40,8 +40,8 @@ export class GrantSolver {
   private readonly appliedPoses = new Map<number, AppliedPose>()
   private readonly entries: GrantEntry[]
   private readonly entriesByIndex: Array<GrantEntry | undefined>
-
   private readonly identityQuaternion = new Quaternion()
+
   private readonly restPositions: Vector3[]
   private readonly skinMatrix = new Matrix4()
   private readonly worldPosition = new Vector3()
@@ -109,6 +109,15 @@ export class GrantSolver {
     this.entries.sort((a, b) => a.transformOrder - b.transformOrder || a.index - b.index)
   }
 
+  /** Clears append results at the start of MMD's before-physics stage. */
+  public reset() {
+    this.appliedPoses.clear()
+    for (const entry of this.entries) {
+      entry.appendPosition.set(0, 0, 0)
+      entry.appendRotation.identity()
+    }
+  }
+
   /**
    * Applies all append transforms once to the current animated/IK pose.
    *
@@ -117,82 +126,69 @@ export class GrantSolver {
    */
   public update() {
     const bones = this.mesh.skeleton.bones
-
-    // GrantSolver is normally called after MMD restores the mixer pose. Also
-    // make a direct second update harmless when no external animation changed
-    // the affected bones in between calls.
-    for (const entry of this.entries) {
-      const previous = this.appliedPoses.get(entry.index)
-      const bone = bones[entry.index]
-      if (previous === undefined
-        || !bone.position.equals(previous.outputPosition)
-        || !bone.quaternion.equals(previous.outputRotation)) {
-        continue
+    for (const [index, pose] of this.appliedPoses) {
+      const bone = bones[index]
+      if (bone.position.equals(pose.outputPosition) && bone.quaternion.equals(pose.outputRotation)) {
+        bone.position.copy(pose.basePosition)
+        bone.quaternion.copy(pose.baseRotation)
       }
-
-      bone.position.copy(previous.basePosition)
-      bone.quaternion.copy(previous.baseRotation)
     }
-
-    const basePositions = bones.map(bone => bone.position.clone())
-    const baseRotations = bones.map(bone => bone.quaternion.clone())
-    const basePositionOffsets = basePositions.map((position, index) =>
-      position.clone().sub(this.restPositions[index]),
-    )
-
-    for (const entry of this.entries) {
-      entry.appendPosition.set(0, 0, 0)
-      entry.appendRotation.copy(this.identityQuaternion)
-    }
-
+    this.reset()
     this.mesh.updateMatrixWorld(true)
-
-    for (const entry of this.entries) {
-      const bone = bones[entry.index]
-      const positionOffset = basePositionOffsets[entry.index].clone()
-      const rotation = baseRotations[entry.index].clone()
-
-      if (entry.affectRotation) {
-        const sourceRotation = this.getSourceRotation(entry, bones, baseRotations)
-        this.appendQuaternion.copy(this.identityQuaternion).slerp(sourceRotation, entry.ratio)
-        rotation.multiply(this.appendQuaternion)
-        entry.appendRotation.copy(rotation)
-      }
-
-      if (entry.affectPosition) {
-        const sourcePosition = this.getSourcePosition(entry, bones, basePositionOffsets)
-        positionOffset.addScaledVector(sourcePosition, entry.ratio)
-        entry.appendPosition.copy(positionOffset)
-      }
-
-      bone.quaternion.copy(rotation)
-      bone.position.copy(this.restPositions[entry.index]).add(positionOffset)
-      bone.updateMatrixWorld(true)
-
-      this.appliedPoses.set(entry.index, {
-        basePosition: basePositions[entry.index].clone(),
-        baseRotation: baseRotations[entry.index].clone(),
-        outputPosition: bone.position.clone(),
-        outputRotation: bone.quaternion.clone(),
-      })
-    }
-
+    for (const entry of this.entries)
+      this.updateBone(entry.index)
     this.mesh.updateMatrixWorld(true)
     return this
+  }
+
+  /** Applies one append transform before the IK attached to that bone. */
+  public updateBone(boneIndex: number) {
+    const entry = this.entriesByIndex[boneIndex]
+    if (entry === undefined)
+      return
+
+    const bones = this.mesh.skeleton.bones
+    const bone = bones[entry.index]
+    const basePosition = bone.position.clone()
+    const baseRotation = bone.quaternion.clone()
+    const positionOffset = basePosition.clone().sub(this.restPositions[entry.index])
+    const rotation = baseRotation.clone()
+
+    if (entry.affectRotation) {
+      const sourceRotation = this.getSourceRotation(entry, bones)
+      this.appendQuaternion.copy(this.identityQuaternion).slerp(sourceRotation, entry.ratio)
+      rotation.multiply(this.appendQuaternion)
+      entry.appendRotation.copy(rotation)
+    }
+
+    if (entry.affectPosition) {
+      const sourcePosition = this.getSourcePosition(entry, bones)
+      positionOffset.addScaledVector(sourcePosition, entry.ratio)
+      entry.appendPosition.copy(positionOffset)
+    }
+
+    bone.quaternion.copy(rotation)
+    bone.position.copy(this.restPositions[entry.index]).add(positionOffset)
+    bone.updateMatrixWorld(true)
+
+    this.appliedPoses.set(entry.index, {
+      basePosition,
+      baseRotation,
+      outputPosition: bone.position.clone(),
+      outputRotation: bone.quaternion.clone(),
+    })
   }
 
   private getSourcePosition(
     entry: GrantEntry,
     bones: Bone[],
-    basePositionOffsets: Vector3[],
   ) {
     const sourceEntry = this.entriesByIndex[entry.parentIndex]
 
     if (!entry.isLocal) {
-      if (sourceEntry?.affectPosition)
+      if (sourceEntry?.affectPosition && !this.appliedPoses.has(entry.parentIndex))
         return sourceEntry.appendPosition
-
-      return basePositionOffsets[entry.parentIndex]
+      return this.worldPosition.copy(bones[entry.parentIndex].position).sub(this.restPositions[entry.parentIndex])
     }
 
     const sourceBone = bones[entry.parentIndex]
@@ -205,15 +201,13 @@ export class GrantSolver {
   private getSourceRotation(
     entry: GrantEntry,
     bones: Bone[],
-    baseRotations: Quaternion[],
   ) {
     const sourceEntry = this.entriesByIndex[entry.parentIndex]
 
     if (!entry.isLocal) {
-      if (sourceEntry?.affectRotation)
+      if (sourceEntry?.affectRotation && !this.appliedPoses.has(entry.parentIndex))
         return sourceEntry.appendRotation
-
-      return baseRotations[entry.parentIndex]
+      return bones[entry.parentIndex].quaternion
     }
 
     const sourceBone = bones[entry.parentIndex]

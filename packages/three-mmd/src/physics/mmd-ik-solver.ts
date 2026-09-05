@@ -231,18 +231,8 @@ export class MMDIKSolver {
 
     this.mesh.updateMatrixWorld(true)
 
-    // TODO: Interleave IK with other bone transforms and physics stages in a
-    // future staged pose evaluation pipeline.
-    for (const entry of this.entries) {
-      if (!entry.enabled || (physicsAffectsIK && entry.canSkipForPhysics))
-        continue
-
-      this.solve(entry, physicsAffectsIK)
-
-      // TODO: Replace full subtree/world refreshes with targeted link-to-
-      // effector path updates after profiling demonstrates a need.
-      this.mesh.updateMatrixWorld(true)
-    }
+    for (const entry of this.entries)
+      this.updateBone(entry.boneIndex, physicsAffectsIK)
 
     this.appliedPoses.clear()
     for (const [boneIndex, baseRotation] of baseRotations) {
@@ -253,6 +243,16 @@ export class MMDIKSolver {
     }
 
     return this
+  }
+
+  /** Solves one definition within MMD's ordered pose evaluation. */
+  public updateBone(boneIndex: number, physicsAffectsIK = false) {
+    const entry = this.entriesByBoneIndex.get(boneIndex)
+    if (entry === undefined || !entry.enabled || (physicsAffectsIK && entry.canSkipForPhysics))
+      return
+
+    this.solve(entry, physicsAffectsIK)
+    this.mesh.updateMatrixWorld(true)
   }
 
   private buildPhysicsBoneIndices(pmx: PmxObject) {

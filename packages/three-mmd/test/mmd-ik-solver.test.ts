@@ -1,7 +1,9 @@
-import type { AnimationMixer, Line } from 'three'
+import type { Line } from 'three'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import {
+  AnimationClip,
+  AnimationMixer,
   Bone,
   BufferGeometry,
   MeshBasicMaterial,
@@ -9,15 +11,19 @@ import {
   Skeleton,
   SkinnedMesh,
   Vector3,
+  VectorKeyframeTrack,
 } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MMDIKHelper } from '../src/physics/mmd-ik-helper'
 import { MMDIKSolver } from '../src/physics/mmd-ik-solver'
 import { MMD } from '../src/utils/mmd'
+import { MMDAnimationManager } from '../src/utils/mmd-animation-manager'
 import { postParseProcessing } from '../src/utils/post-parse'
 
 interface BoneSpec {
+  appendTransform?: NonNullable<PmxObject.Bone['appendTransform']>
+  flag?: number
   ik?: NonNullable<PmxObject['bones'][number]['ik']>
   name?: string
   parentBoneIndex?: number
@@ -52,11 +58,11 @@ const createPmx = (
 ): PmxObject => {
   const zero: [number, number, number] = [0, 0, 0]
   const bones: PmxObject['bones'] = specs.map((spec, index) => ({
-    appendTransform: undefined,
+    appendTransform: spec.appendTransform,
     axisLimit: undefined,
     englishName: `bone-${index}`,
     externalParentTransform: undefined,
-    flag: spec.ik === undefined ? 0 : PmxObject.Bone.Flag.IsIkEnabled,
+    flag: spec.flag ?? (spec.ik === undefined ? 0 : PmxObject.Bone.Flag.IsIkEnabled),
     ik: spec.ik,
     localVector: undefined,
     name: spec.name ?? `bone-${index}`,
@@ -522,9 +528,19 @@ describe('mmdIKSolver', () => {
     expect(updatePhysics).toHaveBeenCalledWith(1 / 60)
   })
 
-  it('runs all update stages by default', () => {
+  it.each([
+    { grantAngle: Math.PI / 2, ikAngle: Math.PI / 2, options: {}, physicsCalls: 1 },
+    { grantAngle: 0, ikAngle: 0, options: { ik: false }, physicsCalls: 1 },
+    { grantAngle: 0, ikAngle: Math.PI / 2, options: { grant: false }, physicsCalls: 1 },
+    { grantAngle: Math.PI / 2, ikAngle: Math.PI / 2, options: { physics: false }, physicsCalls: 0 },
+  ])('respects independent stage options $options', ({ grantAngle, ikAngle, options, physicsCalls }) => {
     const specs = createSingleLinkSpecs()
-    const { mesh } = createMesh(specs)
+    specs.push({
+      appendTransform: { parentIndex: 1, ratio: 1 },
+      flag: PmxObject.Bone.Flag.HasAppendRotate,
+      transformOrder: 1,
+    })
+    const { bones, mesh } = createMesh(specs)
     const mmd = new MMD(createPmx(specs), mesh)
     const updatePhysics = vi.fn()
     mmd.setPhysics(() => ({
@@ -532,45 +548,126 @@ describe('mmdIKSolver', () => {
       createHelper: <T>() => ({}) as T,
       update: updatePhysics,
     }))
-    const updateIK = vi.spyOn(mmd.ikSolver, 'update')
-    const updateGrant = vi.spyOn(mmd.grantSolver, 'update')
 
-    mmd.update(1 / 60)
+    mmd.update(1 / 60, options)
 
-    expect(updateIK).toHaveBeenCalledWith(1 / 60, true)
-    expect(updateGrant).toHaveBeenCalledOnce()
-    expect(updatePhysics).toHaveBeenCalledWith(1 / 60)
+    closeTo(bones[1].quaternion.angleTo(new Quaternion()), ikAngle)
+    closeTo(bones[3].quaternion.angleTo(new Quaternion()), grantAngle)
+    expect(updatePhysics).toHaveBeenCalledTimes(physicsCalls)
   })
 
-  it('allows IK, grant, and physics to be disabled independently', () => {
+  it('applies a grant on the IK goal before solving its chain', () => {
     const specs = createSingleLinkSpecs()
-    const { mesh } = createMesh(specs)
+    specs[0].appendTransform = { parentIndex: 3, ratio: 1 }
+    specs[0].flag = PmxObject.Bone.Flag.HasAppendMove | PmxObject.Bone.Flag.IsIkEnabled
+    specs.push({})
+    const { bones, mesh } = createMesh(specs)
     const mmd = new MMD(createPmx(specs), mesh)
-    const updatePhysics = vi.fn()
+    bones[3].position.set(0, -2, 0)
+
+    mmd.update(0)
+
+    const effector = new Vector3().setFromMatrixPosition(bones[2].matrixWorld)
+    closeTo(effector.distanceTo(new Vector3(0, -1, 0)), 0)
+    // Restore the raw input before sampling each new animation frame.
+    for (let i = 0; i < 3; i++) {
+      mmd.beforeUpdate()
+      closeTo(bones[0].position.y, 1)
+      mmd.update(0)
+      closeTo(bones[0].position.y, -1)
+      closeTo(effector.setFromMatrixPosition(bones[2].matrixWorld).y, -1)
+    }
+  })
+
+  it.each(['mixer', 'manager'])('restores constant animation tracks between %s frames', (mode) => {
+    const specs = createSingleLinkSpecs()
+    specs[0].appendTransform = { parentIndex: 3, ratio: 1 }
+    specs[0].flag = PmxObject.Bone.Flag.HasAppendMove | PmxObject.Bone.Flag.IsIkEnabled
+    specs.push({})
+    const { bones, mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+    const clip = new AnimationClip('constant', 1, [
+      new VectorKeyframeTrack('.bones[3].position', [0, 1], [0, -2, 0, 0, -2, 0]),
+    ])
+    const mixer = new AnimationMixer(mesh)
+    const manager = new MMDAnimationManager()
+    if (mode === 'mixer')
+      mixer.clipAction(clip).play()
+    else
+      manager.add(mmd, { animation: clip })
+
+    for (let frame = 0; frame < 3; frame++) {
+      if (mode === 'mixer')
+        mmd.updateWithMixer(1 / 60, mixer)
+      else
+        manager.update(1 / 60)
+      closeTo(bones[0].position.y, -1)
+      closeTo(new Vector3().setFromMatrixPosition(bones[2].matrixWorld).y, -1)
+    }
+  })
+
+  it.each([-1, 0, 1])('interleaves a grant with IK at transform order %s', (transformOrder) => {
+    const specs = createSingleLinkSpecs()
+    specs.push({
+      appendTransform: { parentIndex: 1, ratio: 1 },
+      flag: PmxObject.Bone.Flag.HasAppendRotate,
+      transformOrder,
+    })
+    const { bones, mesh } = createMesh(specs)
+    new MMD(createPmx(specs), mesh).update(0)
+
+    closeTo(bones[3].quaternion.angleTo(new Quaternion()), transformOrder < 0 ? 0 : Math.PI / 2)
+  })
+
+  it.each(['update', 'stages', 'manager'].flatMap(mode =>
+    [true, false].map(physics => ({ mode, physics })),
+  ))('evaluates after-physics bones through $mode with physics=$physics', ({ mode, physics }) => {
+    const specs = createSingleLinkSpecs()
+    specs[0].flag = PmxObject.Bone.Flag.IsIkEnabled | PmxObject.Bone.Flag.TransformAfterPhysics
+    specs[0].transformOrder = -1
+    specs.push({
+      appendTransform: { parentIndex: 4, ratio: 1 },
+      flag: PmxObject.Bone.Flag.HasAppendMove,
+    }, {})
+    specs.push({
+      appendTransform: { parentIndex: 1, ratio: 1 },
+      flag: PmxObject.Bone.Flag.HasAppendRotate | PmxObject.Bone.Flag.TransformAfterPhysics,
+    })
+    const { bones, mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+    bones[4].position.y = 2
+    const updatePhysics = vi.fn(() => {
+      closeTo(bones[1].quaternion.angleTo(new Quaternion()), 0)
+      closeTo(bones[3].position.y, 2)
+      bones[0].position.set(0, -1, 0)
+    })
     mmd.setPhysics(() => ({
       affectsIK: true,
       createHelper: <T>() => ({}) as T,
       update: updatePhysics,
     }))
-    const updateIK = vi.spyOn(mmd.ikSolver, 'update')
-    const updateGrant = vi.spyOn(mmd.grantSolver, 'update')
 
-    mmd.update(1 / 60, { ik: false })
-    expect(updateIK).not.toHaveBeenCalled()
-    expect(updateGrant).toHaveBeenCalledOnce()
-    expect(updatePhysics).toHaveBeenCalledOnce()
+    if (mode === 'stages') {
+      mmd.beforePhysics({ physics })
+      closeTo(bones[3].position.y, 2)
+      closeTo(bones[1].quaternion.angleTo(new Quaternion()), 0)
+      expect(updatePhysics).not.toHaveBeenCalled()
+      if (physics)
+        mmd.physics!.update(1 / 60)
+      mmd.afterPhysics({ physics })
+    }
+    else if (mode === 'manager') {
+      const manager = new MMDAnimationManager()
+      manager.add(mmd)
+      manager.update(1 / 60, { physics })
+    }
+    else {
+      mmd.update(1 / 60, { physics })
+    }
 
-    vi.clearAllMocks()
-    mmd.update(1 / 60, { grant: false })
-    expect(updateIK).toHaveBeenCalledWith(1 / 60, true)
-    expect(updateGrant).not.toHaveBeenCalled()
-    expect(updatePhysics).toHaveBeenCalledOnce()
-
-    vi.clearAllMocks()
-    mmd.update(1 / 60, { physics: false })
-    expect(updateIK).toHaveBeenCalledWith(1 / 60, false)
-    expect(updateGrant).toHaveBeenCalledOnce()
-    expect(updatePhysics).not.toHaveBeenCalled()
+    closeTo(new Vector3().setFromMatrixPosition(bones[2].matrixWorld).y, physics ? -1 : 1)
+    closeTo(bones[5].quaternion.angleTo(bones[1].quaternion), 0)
+    expect(updatePhysics).toHaveBeenCalledTimes(physics ? 1 : 0)
   })
 
   it('forwards update options and preserves updateWithMixer order', () => {
