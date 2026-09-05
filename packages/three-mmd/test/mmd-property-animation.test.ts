@@ -143,7 +143,7 @@ describe('mmd property animation', () => {
       ikBoneNames: ['left', 'right'],
       ikStates: [[true, true, true], [true, true, false]],
     })
-    expect(clip.duration).toBe(1)
+    expect(clip.duration).toBeCloseTo(31 / 30)
     expect((clip.clone().userData as MMDAnimationUserData).propertyTrack).toEqual(propertyTrack)
   })
 
@@ -153,6 +153,21 @@ describe('mmd property animation', () => {
     ]), mesh)
 
     expect(clip.duration).toBeCloseTo(1 / 30)
+  })
+
+  it('keeps the final property key active before the default loop wraps', () => {
+    const clip = buildAnimation(createVmd([
+      { frameNumber: 0, ikStates: [['ik', true]], visible: true },
+      { frameNumber: 30, ikStates: [['ik', false]], visible: true },
+    ]), mesh)
+    const mmd = createIkMmd()
+    const mixer = new AnimationMixer(mmd.mesh)
+    mixer.clipAction(clip).play()
+
+    mmd.updateWithMixer(1, mixer, { grant: false, physics: false })
+
+    expect(mmd.ikSolver.isEnabled(0)).toBe(false)
+    expect(clip.duration).toBeCloseTo(31 / 30)
   })
 
   it.each(['mixer', 'manager'])('applies the active property track before MMD IK evaluation through %s', (mode) => {

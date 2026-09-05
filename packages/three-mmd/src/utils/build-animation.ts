@@ -47,10 +47,10 @@ class AnimationBuilder {
     const propertyTrack = this.buildPropertyTrack(vmd)
     if (propertyTrack !== undefined) {
       (clip.userData as MMDAnimationUserData).propertyTrack = propertyTrack
+      const lastPropertyFrame = propertyTrack.frameNumbers[propertyTrack.frameNumbers.length - 1]
       clip.duration = Math.max(
-        1 / 30,
         clip.duration,
-        propertyTrack.frameNumbers[propertyTrack.frameNumbers.length - 1] / 30,
+        (lastPropertyFrame + 1) / 30,
       )
     }
 
