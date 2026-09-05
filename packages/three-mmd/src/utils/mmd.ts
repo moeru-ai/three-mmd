@@ -137,7 +137,11 @@ export class MMD {
     this.beforeUpdate()
     mixer.update(delta)
     this.applyAnimationPropertyTrack(mixer)
-    this.update(delta, options)
+
+    this.beforePhysics(options, mixer)
+    if (options.physics !== false)
+      this.physics?.update(delta)
+    this.afterPhysics(options)
   }
 
   private applyAnimationPropertyTrack(mixer?: AnimationMixer) {
