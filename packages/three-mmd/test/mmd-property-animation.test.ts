@@ -36,68 +36,65 @@ const mesh = {
   },
 } as unknown as SkinnedMesh
 
-const createIkMmd = (ikName = 'ik') => {
-  const bones = [ikName, 'link', 'target'].map((name) => {
-    const bone = new Bone()
-    bone.name = name
-    return bone
-  })
-  bones[1].add(bones[2])
+type IkMetadata = NonNullable<PmxObject['bones'][number]['ik']>
 
+const createBoneMetadata = (
+  name: string,
+  parentBoneIndex = -1,
+  position: [number, number, number] = [0, 0, 0],
+  ik?: IkMetadata,
+) => ({
+  appendTransform: undefined,
+  axisLimit: undefined,
+  englishName: name,
+  externalParentTransform: undefined,
+  flag: ik === undefined ? 0 : PmxObject.Bone.Flag.IsIkEnabled,
+  ik,
+  localVector: undefined,
+  name,
+  parentBoneIndex,
+  position,
+  tailPosition: [0, 0, 0] as [number, number, number],
+  transformOrder: 0,
+})
+
+const createIkMmd = (ikNameOrNames: string | string[] = 'ik') => {
+  const ikNames = typeof ikNameOrNames === 'string' ? [ikNameOrNames] : ikNameOrNames
+  const bones: Bone[] = []
+  const pmxBones: PmxObject['bones'][number][] = []
   const mesh = new ThreeSkinnedMesh(new BufferGeometry(), new MeshBasicMaterial())
-  mesh.add(bones[0], bones[1])
+
+  ikNames.forEach((ikName, index) => {
+    const suffix = index === 0 ? '' : `-${index}`
+    const linkName = `link${suffix}`
+    const targetName = `target${suffix}`
+    const ikBone = new Bone()
+    const linkBone = new Bone()
+    const targetBone = new Bone()
+    ikBone.name = ikName
+    linkBone.name = linkName
+    targetBone.name = targetName
+    linkBone.add(targetBone)
+    mesh.add(ikBone, linkBone)
+    bones.push(ikBone, linkBone, targetBone)
+
+    const boneIndex = index * 3
+    pmxBones.push(
+      createBoneMetadata(ikName, -1, [0, 0, 0], {
+        iteration: 1,
+        links: [{ limitation: undefined, target: boneIndex + 1 }],
+        rotationConstraint: Math.PI,
+        target: boneIndex + 2,
+      }),
+      createBoneMetadata(linkName),
+      createBoneMetadata(targetName, boneIndex + 1, [1, 0, 0]),
+    )
+  })
+
   mesh.bind(new Skeleton(bones))
 
   const pmx: PmxObject = {
-    bones: [
-      {
-        appendTransform: undefined,
-        axisLimit: undefined,
-        englishName: ikName,
-        externalParentTransform: undefined,
-        flag: PmxObject.Bone.Flag.IsIkEnabled,
-        ik: {
-          iteration: 1,
-          links: [{ limitation: undefined, target: 1 }],
-          rotationConstraint: Math.PI,
-          target: 2,
-        },
-        localVector: undefined,
-        name: ikName,
-        parentBoneIndex: -1,
-        position: [0, 0, 0],
-        tailPosition: [0, 0, 0],
-        transformOrder: 0,
-      },
-      {
-        appendTransform: undefined,
-        axisLimit: undefined,
-        englishName: 'link',
-        externalParentTransform: undefined,
-        flag: 0,
-        ik: undefined,
-        localVector: undefined,
-        name: 'link',
-        parentBoneIndex: -1,
-        position: [0, 0, 0],
-        tailPosition: [0, 0, 0],
-        transformOrder: 0,
-      },
-      {
-        appendTransform: undefined,
-        axisLimit: undefined,
-        englishName: 'target',
-        externalParentTransform: undefined,
-        flag: 0,
-        ik: undefined,
-        localVector: undefined,
-        name: 'target',
-        parentBoneIndex: 1,
-        position: [1, 0, 0],
-        tailPosition: [0, 0, 0],
-        transformOrder: 0,
-      },
-    ],
+    bones: pmxBones,
     displayFrames: [],
     header: {
       additionalVec4Count: 0,
@@ -249,6 +246,33 @@ describe('mmd property animation', () => {
     mmd.updateWithMixer(0, mixer, { grant: false, physics: false })
 
     expect(mmd.ikSolver.isEnabled(0)).toBe(false)
+  })
+
+  it('applies property states from multiple actions per IK bone', () => {
+    const mmd = createIkMmd(['left', 'right'])
+    const leftClip = new AnimationClip('left-property', 1, [])
+    leftClip.userData = {
+      propertyTrack: {
+        frameNumbers: [0],
+        ikBoneNames: ['left'],
+        ikStates: [[false]],
+      },
+    }
+    const rightClip = new AnimationClip('right-property', 1, [])
+    rightClip.userData = {
+      propertyTrack: {
+        frameNumbers: [0],
+        ikBoneNames: ['right'],
+        ikStates: [[false]],
+      },
+    }
+    const manager = new MMDAnimationManager()
+    manager.add(mmd, { animation: [leftClip, rightClip] })
+
+    manager.update(0, { grant: false, physics: false })
+
+    expect(mmd.ikSolver.isEnabled(0)).toBe(false)
+    expect(mmd.ikSolver.isEnabled(3)).toBe(false)
   })
 
   it('restores animation-controlled IK when an animation manager removes the MMD', () => {

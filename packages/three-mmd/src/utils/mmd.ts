@@ -1,7 +1,7 @@
 import type { AnimationAction, AnimationMixer, SkinnedMesh, Vector3 } from 'three'
 
 import type { PhysicsFactory, PhysicsService } from '../physics/physics-service'
-import type { MMDAnimationUserData } from './build-animation'
+import type { MMDAnimationUserData, MMDPropertyTrackData } from './build-animation'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import { Quaternion } from 'three'
@@ -23,6 +23,21 @@ const getActiveActions = (mixer: AnimationMixer): readonly AnimationAction[] => 
   return internal._actions?.slice(0, internal._nActiveActions) ?? []
 }
 
+const getPropertyFrameIndex = (propertyTrack: MMDPropertyTrackData, actionTime: number) => {
+  const frameNumber = actionTime * 30
+  let low = 0
+  let high = propertyTrack.frameNumbers.length
+  while (low < high) {
+    const middle = (low + high) >>> 1
+    if (propertyTrack.frameNumbers[middle] <= frameNumber)
+      low = middle + 1
+    else
+      high = middle
+  }
+
+  return low - 1
+}
+
 /**
  * MMD model shell: holds parsed PMX, skinned mesh, IK/grants, and pluggable physics strategy.
  * Lifecycle methods update scale/physics, helpers expose collider/joint visualization when available.
@@ -38,7 +53,8 @@ export class MMD {
   private readonly animationControlledIKBones = new Map<number, boolean>()
   private animationPose?: { position: Vector3, rotation: Quaternion }[]
   private readonly boneOrder: number[]
-  private readonly currentAnimationControlledIKBones = new Set<number>()
+  private readonly currentAnimationIKStates = new Map<number, boolean>()
+  private readonly currentAnimationIKWeights = new Map<number, number>()
   private readonly ikBoneIndicesByName = new Map<string, number>()
   private ikRotations: Quaternion[]
   private readonly normalizedIkBoneIndicesByName = new Map<string, number>()
@@ -143,13 +159,11 @@ export class MMD {
   }
 
   public updateAnimation(mixer?: AnimationMixer) {
-    this.currentAnimationControlledIKBones.clear()
+    this.currentAnimationIKStates.clear()
+    this.currentAnimationIKWeights.clear()
 
     if (mixer != null) {
       const animationActions = getActiveActions(mixer)
-      let activePropertyTrack: MMDAnimationUserData['propertyTrack']
-      let activeActionTime = 0
-      let activeWeight = 0
 
       for (const action of animationActions) {
         const propertyTrack = (action.getClip().userData as MMDAnimationUserData).propertyTrack
@@ -157,51 +171,43 @@ export class MMD {
           continue
 
         const weight = action.getEffectiveWeight()
-        if (weight <= activeWeight)
+        if (weight <= 0 || propertyTrack.frameNumbers.length === 0)
           continue
 
-        activePropertyTrack = propertyTrack
-        activeActionTime = action.time
-        activeWeight = weight
-      }
+        const frameIndex = getPropertyFrameIndex(propertyTrack, action.time)
+        if (frameIndex < 0)
+          continue
 
-      if (activePropertyTrack != null && activePropertyTrack.frameNumbers.length > 0) {
-        const frameNumber = activeActionTime * 30
-        let low = 0
-        let high = activePropertyTrack.frameNumbers.length
-        while (low < high) {
-          const middle = (low + high) >>> 1
-          if (activePropertyTrack.frameNumbers[middle] <= frameNumber)
-            low = middle + 1
-          else
-            high = middle
-        }
+        for (let i = 0; i < propertyTrack.ikBoneNames.length; i++) {
+          const ikBoneName = propertyTrack.ikBoneNames[i]
+          const boneIndex = this.ikBoneIndicesByName.get(ikBoneName)
+            ?? this.normalizedIkBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
+          if (boneIndex === undefined)
+            continue
 
-        const frameIndex = low - 1
-        if (frameIndex >= 0) {
-          for (let i = 0; i < activePropertyTrack.ikBoneNames.length; i++) {
-            const ikBoneName = activePropertyTrack.ikBoneNames[i]
-            const boneIndex = this.ikBoneIndicesByName.get(ikBoneName)
-              ?? this.normalizedIkBoneIndicesByName.get(ikBoneName.normalize('NFKC'))
-            if (boneIndex === undefined)
-              continue
+          const enabled = propertyTrack.ikStates[i]?.[frameIndex]
+          if (enabled == null)
+            continue
 
-            const enabled = activePropertyTrack.ikStates[i]?.[frameIndex]
-            if (enabled == null)
-              continue
+          const currentWeight = this.currentAnimationIKWeights.get(boneIndex)
+          if (currentWeight !== undefined && currentWeight >= weight)
+            continue
 
-            if (!this.animationControlledIKBones.has(boneIndex))
-              this.animationControlledIKBones.set(boneIndex, this.ikSolver.isEnabled(boneIndex))
-            this.currentAnimationControlledIKBones.add(boneIndex)
-            if (this.ikSolver.isEnabled(boneIndex) !== enabled)
-              this.ikSolver.setEnabled(boneIndex, enabled)
-          }
+          this.currentAnimationIKWeights.set(boneIndex, weight)
+          this.currentAnimationIKStates.set(boneIndex, enabled)
         }
       }
     }
 
+    for (const [boneIndex, enabled] of this.currentAnimationIKStates) {
+      if (!this.animationControlledIKBones.has(boneIndex))
+        this.animationControlledIKBones.set(boneIndex, this.ikSolver.isEnabled(boneIndex))
+      if (this.ikSolver.isEnabled(boneIndex) !== enabled)
+        this.ikSolver.setEnabled(boneIndex, enabled)
+    }
+
     for (const [boneIndex, enabled] of this.animationControlledIKBones) {
-      if (this.currentAnimationControlledIKBones.has(boneIndex))
+      if (this.currentAnimationIKStates.has(boneIndex))
         continue
 
       if (this.ikSolver.isEnabled(boneIndex) !== enabled)
