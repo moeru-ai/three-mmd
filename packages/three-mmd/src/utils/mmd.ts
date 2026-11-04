@@ -1,10 +1,10 @@
-import type { AnimationAction, AnimationMixer, SkinnedMesh, Vector3 } from 'three'
+import type { AnimationAction, AnimationMixer, SkinnedMesh } from 'three'
 
 import type { PhysicsFactory, PhysicsService } from '../physics/physics-service'
 import type { MMDAnimationUserData, MMDPropertyTrackData } from './build-animation'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
-import { Quaternion } from 'three'
+import { Quaternion, Vector3 } from 'three'
 
 import { GrantSolver } from '../physics/grant-solver'
 import { MMDIKSolver } from '../physics/mmd-ik-solver'
@@ -52,6 +52,7 @@ export class MMD {
 
   private readonly animationControlledIKBones = new Map<number, boolean>()
   private animationPose?: { position: Vector3, rotation: Quaternion }[]
+  private readonly axisLimits: (null | Vector3)[]
   private readonly boneOrder: number[]
   private readonly currentAnimationIKStates = new Map<number, boolean>()
   private readonly currentAnimationIKWeights = new Map<number, number>()
@@ -76,6 +77,9 @@ export class MMD {
       if (!this.normalizedIkBoneIndicesByName.has(normalizedName))
         this.normalizedIkBoneIndicesByName.set(normalizedName, boneIndex)
     })
+    this.axisLimits = pmx.bones.map(bone => bone.axisLimit === undefined
+      ? null
+      : new Vector3().fromArray(bone.axisLimit).normalize())
     this.boneOrder = pmx.bones.map((_, index) => index).sort((a, b) =>
       pmx.bones[a].transformOrder - pmx.bones[b].transformOrder || a - b,
     )
@@ -83,6 +87,7 @@ export class MMD {
 
   /** Evaluates post-physics bones after the physics service writes back its pose. */
   public afterPhysics(options: MMDUpdateOptions = {}) {
+    this.applyAxisLimits(true)
     this.updateBones(true, options)
     this.grantSolver.endFrame()
     this.ikSolver.endFrame()
@@ -101,6 +106,7 @@ export class MMD {
       pose.position.copy(bones[index].position)
       pose.rotation.copy(bones[index].quaternion)
     })
+    this.applyAxisLimits()
     this.updateBones(false, options)
   }
 
@@ -225,6 +231,32 @@ export class MMD {
     mixer.update(delta)
     this.updateAnimation(mixer)
     this.update(delta, options)
+  }
+
+  private applyAxisLimits(afterPhysics?: boolean) {
+    const bones = this.mesh.skeleton.bones
+    for (let index = 0; index < this.axisLimits.length; index++) {
+      const axisLimit = this.axisLimits[index]
+      if (axisLimit === null)
+        continue
+      if (afterPhysics !== undefined) {
+        const flag = this.pmx.bones[index].flag
+        if (((flag & PmxObject.Bone.Flag.TransformAfterPhysics) !== 0) !== afterPhysics)
+          continue
+      }
+
+      const rotation = bones[index].quaternion
+      const vectorLength = Math.hypot(rotation.x, rotation.y, rotation.z)
+      if (axisLimit.lengthSq() === 0 || vectorLength < 1e-8) {
+        rotation.identity()
+        continue
+      }
+
+      let angle = 2 * Math.atan2(vectorLength, rotation.w)
+      if (rotation.x * axisLimit.x + rotation.y * axisLimit.y + rotation.z * axisLimit.z < 0)
+        angle = -angle
+      rotation.setFromAxisAngle(axisLimit, angle)
+    }
   }
 
   private updateBones(afterPhysics: boolean, options: MMDUpdateOptions) {

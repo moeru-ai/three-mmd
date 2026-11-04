@@ -30,9 +30,13 @@ export const postParseProcessing = (pmx: PmxObject): PmxObject => {
     pmx.indices[i + 2] = tmp
   }
 
-  // Bones: position and IK angle limitations
+  // Bones: position, fixed axis, and IK angle limitations
   pmx.bones.forEach((bone) => {
     bone.position[2] = -bone.position[2]
+    if (bone.axisLimit !== undefined) {
+      bone.axisLimit[0] = -bone.axisLimit[0]
+      bone.axisLimit[1] = -bone.axisLimit[1]
+    }
 
     for (const link of bone.ik?.links ?? []) {
       const limitation = link.limitation

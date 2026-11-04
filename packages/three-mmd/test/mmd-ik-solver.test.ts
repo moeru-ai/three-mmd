@@ -23,6 +23,7 @@ import { postParseProcessing } from '../src/utils/post-parse'
 
 interface BoneSpec {
   appendTransform?: NonNullable<PmxObject.Bone['appendTransform']>
+  axisLimit?: [number, number, number]
   flag?: number
   ik?: NonNullable<PmxObject['bones'][number]['ik']>
   name?: string
@@ -59,7 +60,7 @@ const createPmx = (
   const zero: [number, number, number] = [0, 0, 0]
   const bones: PmxObject['bones'] = specs.map((spec, index) => ({
     appendTransform: spec.appendTransform,
-    axisLimit: undefined,
+    axisLimit: spec.axisLimit,
     englishName: `bone-${index}`,
     externalParentTransform: undefined,
     flag: spec.flag ?? (spec.ik === undefined ? 0 : PmxObject.Bone.Flag.IsIkEnabled),
@@ -855,6 +856,83 @@ describe('mmdIKSolver', () => {
 
     expect(() => new MMDIKSolver(mesh, createPmx(specs)))
       .toThrow(/skeleton has 2 bones, but PMX contains 3/)
+  })
+
+  it('applies normalized axis limits before append transforms', () => {
+    const specs: BoneSpec[] = [
+      { axisLimit: [0, 0, 2] },
+      {
+        appendTransform: { parentIndex: 0, ratio: 1 },
+        flag: PmxObject.Bone.Flag.HasAppendRotate,
+      },
+    ]
+    const { bones, mesh } = createMesh(specs)
+    const original = new Quaternion().setFromAxisAngle(
+      new Vector3(1, 1, 0).normalize(),
+      Math.PI / 2,
+    )
+    const expected = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2)
+    bones[0].quaternion.copy(original)
+    const mmd = new MMD(createPmx(specs), mesh)
+
+    mmd.update(0, { physics: false })
+
+    closeTo(bones[0].quaternion.angleTo(expected), 0)
+    closeTo(bones[1].quaternion.angleTo(expected), 0)
+    mmd.beforeUpdate()
+    closeTo(bones[0].quaternion.angleTo(original), 0)
+    mmd.update(0, { physics: false })
+    closeTo(bones[0].quaternion.angleTo(expected), 0)
+    closeTo(bones[1].quaternion.angleTo(expected), 0)
+  })
+
+  it('removes animated rotation for a zero axis limit', () => {
+    const specs: BoneSpec[] = [{ axisLimit: [0, 0, 0] }]
+    const { bones, mesh } = createMesh(specs)
+    bones[0].quaternion.setFromAxisAngle(new Vector3(0, 0, 1), 0.5)
+
+    new MMD(createPmx(specs), mesh).update(0, { physics: false })
+
+    closeTo(bones[0].quaternion.angleTo(new Quaternion()), 0)
+  })
+
+  it('uses axis limits converted to right-handed coordinates', () => {
+    const specs: BoneSpec[] = [{ axisLimit: [1, 0, 1] }]
+    const { bones, mesh } = createMesh(specs)
+    bones[0].quaternion.setFromAxisAngle(
+      new Vector3(1, 1, 0).normalize(),
+      Math.PI / 2,
+    )
+    const pmx = createPmx(specs)
+    postParseProcessing(pmx)
+
+    new MMD(pmx, mesh).update(0, { physics: false })
+
+    const expected = new Quaternion().setFromAxisAngle(
+      new Vector3(-1, 0, 1).normalize(),
+      -Math.PI / 2,
+    )
+    closeTo(bones[0].quaternion.angleTo(expected), 0)
+  })
+
+  it('applies axis limits to bones evaluated after physics', () => {
+    const specs: BoneSpec[] = [{
+      axisLimit: [0, 0, 1],
+      flag: PmxObject.Bone.Flag.TransformAfterPhysics,
+    }]
+    const { bones, mesh } = createMesh(specs)
+    const mmd = new MMD(createPmx(specs), mesh)
+    mmd.setPhysics(() => ({
+      createHelper: <T>() => ({}) as T,
+      update: () => {
+        bones[0].quaternion.setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2)
+      },
+    }))
+
+    mmd.update(1 / 60)
+
+    const expected = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2)
+    closeTo(bones[0].quaternion.angleTo(expected), 0)
   })
 })
 
