@@ -879,6 +879,7 @@ describe('mmdIKSolver', () => {
 
     closeTo(bones[0].quaternion.angleTo(expected), 0)
     closeTo(bones[1].quaternion.angleTo(expected), 0)
+    mmd.update(0, { physics: false })
     mmd.beforeUpdate()
     closeTo(bones[0].quaternion.angleTo(original), 0)
     mmd.update(0, { physics: false })
@@ -894,6 +895,20 @@ describe('mmdIKSolver', () => {
     new MMD(createPmx(specs), mesh).update(0, { physics: false })
 
     closeTo(bones[0].quaternion.angleTo(new Quaternion()), 0)
+  })
+
+  it('treats negated quaternions as the same fixed-axis input', () => {
+    const specs: BoneSpec[] = [{ axisLimit: [0, 0, 1] }]
+    const first = createMesh(specs)
+    const second = createMesh(specs)
+    const rotation = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2)
+    first.bones[0].quaternion.copy(rotation)
+    second.bones[0].quaternion.set(-rotation.x, -rotation.y, -rotation.z, -rotation.w)
+
+    new MMD(createPmx(specs), first.mesh).update(0, { physics: false })
+    new MMD(createPmx(specs), second.mesh).update(0, { physics: false })
+
+    closeTo(first.bones[0].quaternion.angleTo(second.bones[0].quaternion), 0)
   })
 
   it('uses axis limits converted to right-handed coordinates', () => {
@@ -933,6 +948,21 @@ describe('mmdIKSolver', () => {
 
     const expected = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2)
     closeTo(bones[0].quaternion.angleTo(expected), 0)
+  })
+
+  it('preserves pre-physics IK contributions on fixed-axis links', () => {
+    const specs = createSingleLinkSpecs()
+    specs[1].axisLimit = [1, 0, 0]
+    specs[1].flag = PmxObject.Bone.Flag.TransformAfterPhysics
+    const { bones, mesh } = createMesh(specs)
+
+    new MMD(createPmx(specs), mesh).update(0, { physics: false })
+
+    const target = new Vector3().setFromMatrixPosition(bones[0].matrixWorld)
+    const effector = new Vector3().setFromMatrixPosition(bones[2].matrixWorld)
+    closeTo(target.distanceTo(effector), 0)
+    const expected = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2)
+    closeTo(bones[1].quaternion.angleTo(expected), 0)
   })
 })
 

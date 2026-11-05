@@ -15,6 +15,11 @@ export interface MMDUpdateOptions {
   physics?: boolean
 }
 
+interface AxisLimitPose {
+  baseRotation: Quaternion
+  outputRotation: Quaternion
+}
+
 const getActiveActions = (mixer: AnimationMixer): readonly AnimationAction[] => {
   const internal = mixer as unknown as {
     _actions?: AnimationAction[]
@@ -52,6 +57,8 @@ export class MMD {
 
   private readonly animationControlledIKBones = new Map<number, boolean>()
   private animationPose?: { position: Vector3, rotation: Quaternion }[]
+  private readonly axisLimitPoses = new Map<number, AxisLimitPose>()
+  private readonly axisLimitRotation = new Quaternion()
   private readonly axisLimits: (null | Vector3)[]
   private readonly boneOrder: number[]
   private readonly currentAnimationIKStates = new Map<number, boolean>()
@@ -91,10 +98,12 @@ export class MMD {
     this.updateBones(true, options)
     this.grantSolver.endFrame()
     this.ikSolver.endFrame()
+    this.recordAxisLimitOutputs()
   }
 
   /** Restores unchanged solver output, captures the input, and evaluates pre-physics bones. */
   public beforePhysics(options: MMDUpdateOptions = {}) {
+    this.restoreAxisLimitInputs()
     this.grantSolver.beginFrame()
     this.ikSolver.beginFrame()
     const bones = this.mesh.skeleton.bones
@@ -121,6 +130,7 @@ export class MMD {
       bone.position.copy(pose.position)
       bone.quaternion.copy(pose.rotation)
     })
+    this.axisLimitPoses.clear()
     this.grantSolver.reset()
     this.ikSolver.reset()
   }
@@ -235,6 +245,19 @@ export class MMD {
 
   private applyAxisLimits(afterPhysics?: boolean) {
     const bones = this.mesh.skeleton.bones
+    if (afterPhysics === undefined) {
+      this.axisLimitPoses.clear()
+      for (let index = 0; index < this.axisLimits.length; index++) {
+        if (this.axisLimits[index] === null)
+          continue
+        const rotation = bones[index].quaternion
+        this.axisLimitPoses.set(index, {
+          baseRotation: rotation.clone(),
+          outputRotation: rotation.clone(),
+        })
+      }
+    }
+
     for (let index = 0; index < this.axisLimits.length; index++) {
       const axisLimit = this.axisLimits[index]
       if (axisLimit === null)
@@ -245,17 +268,50 @@ export class MMD {
           continue
       }
 
-      const rotation = bones[index].quaternion
-      const vectorLength = Math.hypot(rotation.x, rotation.y, rotation.z)
-      if (axisLimit.lengthSq() === 0 || vectorLength < 1e-8) {
-        rotation.identity()
-        continue
+      const boneRotation = bones[index].quaternion
+      const ikRotation = this.ikRotations[index]
+      const rotation = afterPhysics === undefined
+        ? boneRotation
+        : this.axisLimitRotation.copy(ikRotation).invert().multiply(boneRotation)
+      let x = rotation.x
+      let y = rotation.y
+      let z = rotation.z
+      let w = rotation.w
+      if (w < 0) {
+        x = -x
+        y = -y
+        z = -z
+        w = -w
       }
 
-      let angle = 2 * Math.atan2(vectorLength, rotation.w)
-      if (rotation.x * axisLimit.x + rotation.y * axisLimit.y + rotation.z * axisLimit.z < 0)
-        angle = -angle
-      rotation.setFromAxisAngle(axisLimit, angle)
+      const vectorLength = Math.hypot(x, y, z)
+      if (axisLimit.lengthSq() === 0 || vectorLength < 1e-8) {
+        rotation.identity()
+      }
+      else {
+        let angle = 2 * Math.atan2(vectorLength, w)
+        if (x * axisLimit.x + y * axisLimit.y + z * axisLimit.z < 0)
+          angle = -angle
+        rotation.setFromAxisAngle(axisLimit, angle)
+      }
+
+      if (afterPhysics !== undefined)
+        boneRotation.copy(ikRotation).multiply(rotation)
+    }
+  }
+
+  private recordAxisLimitOutputs() {
+    const bones = this.mesh.skeleton.bones
+    for (const [index, pose] of this.axisLimitPoses)
+      pose.outputRotation.copy(bones[index].quaternion)
+  }
+
+  private restoreAxisLimitInputs() {
+    const bones = this.mesh.skeleton.bones
+    for (const [index, pose] of this.axisLimitPoses) {
+      const rotation = bones[index].quaternion
+      if (rotation.equals(pose.outputRotation))
+        rotation.copy(pose.baseRotation)
     }
   }
 
