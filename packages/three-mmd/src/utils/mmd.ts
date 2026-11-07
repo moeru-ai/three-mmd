@@ -1,10 +1,10 @@
-import type { AnimationAction, AnimationMixer, SkinnedMesh, Vector3 } from 'three'
+import type { AnimationAction, AnimationMixer, SkinnedMesh } from 'three'
 
 import type { PhysicsFactory, PhysicsService } from '../physics/physics-service'
 import type { MMDAnimationUserData, MMDPropertyTrackData } from './build-animation'
 
 import { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
-import { Quaternion } from 'three'
+import { Quaternion, Vector3 } from 'three'
 
 import { GrantSolver } from '../physics/grant-solver'
 import { MMDIKSolver } from '../physics/mmd-ik-solver'
@@ -13,6 +13,38 @@ export interface MMDUpdateOptions {
   grant?: boolean
   ik?: boolean
   physics?: boolean
+}
+
+interface AxisLimitedBone {
+  axis: Vector3
+  /** The animated rotation, before it was projected onto the axis. */
+  base: Quaternion
+  index: number
+  /** The final rotation of the previous frame, to tell whether the bone was left untouched. */
+  output: Quaternion
+}
+
+/**
+ * Replaces the axis of a rotation with the fixed axis, keeping its angle. This
+ * is how MMD and babylon-mmd evaluate bones with a PMX fixed axis.
+ */
+const projectOntoAxis = (rotation: Quaternion, axis: Vector3): void => {
+  let { w, x, y, z } = rotation
+  if (w < 0) {
+    x = -x
+    y = -y
+    z = -z
+    w = -w
+  }
+
+  const length = Math.hypot(x, y, z)
+  if (axis.lengthSq() === 0 || length < 1e-8) {
+    rotation.identity()
+    return
+  }
+
+  const angle = 2 * Math.atan2(length, w)
+  rotation.setFromAxisAngle(axis, x * axis.x + y * axis.y + z * axis.z < 0 ? -angle : angle)
 }
 
 const getActiveActions = (mixer: AnimationMixer): readonly AnimationAction[] => {
@@ -52,6 +84,8 @@ export class MMD {
 
   private readonly animationControlledIKBones = new Map<number, boolean>()
   private animationPose?: { position: Vector3, rotation: Quaternion }[]
+  private readonly axisLimitedBones: AxisLimitedBone[]
+  private axisLimitsApplied = false
   private readonly boneOrder: number[]
   private readonly currentAnimationIKStates = new Map<number, boolean>()
   private readonly currentAnimationIKWeights = new Map<number, number>()
@@ -76,6 +110,14 @@ export class MMD {
       if (!this.normalizedIkBoneIndicesByName.has(normalizedName))
         this.normalizedIkBoneIndicesByName.set(normalizedName, boneIndex)
     })
+    this.axisLimitedBones = pmx.bones.flatMap((bone, index) => bone.axisLimit === undefined
+      ? []
+      : [{
+          axis: new Vector3().fromArray(bone.axisLimit).normalize(),
+          base: new Quaternion(),
+          index,
+          output: new Quaternion(),
+        }])
     this.boneOrder = pmx.bones.map((_, index) => index).sort((a, b) =>
       pmx.bones[a].transformOrder - pmx.bones[b].transformOrder || a - b,
     )
@@ -86,10 +128,12 @@ export class MMD {
     this.updateBones(true, options)
     this.grantSolver.endFrame()
     this.ikSolver.endFrame()
+    this.recordAxisLimitOutputs()
   }
 
   /** Restores unchanged solver output, captures the input, and evaluates pre-physics bones. */
   public beforePhysics(options: MMDUpdateOptions = {}) {
+    this.restoreAxisLimitInputs()
     this.grantSolver.beginFrame()
     this.ikSolver.beginFrame()
     const bones = this.mesh.skeleton.bones
@@ -101,6 +145,7 @@ export class MMD {
       pose.position.copy(bones[index].position)
       pose.rotation.copy(bones[index].quaternion)
     })
+    this.applyAxisLimits()
     this.updateBones(false, options)
   }
 
@@ -115,6 +160,7 @@ export class MMD {
       bone.position.copy(pose.position)
       bone.quaternion.copy(pose.rotation)
     })
+    this.axisLimitsApplied = false
     this.grantSolver.reset()
     this.ikSolver.reset()
   }
@@ -225,6 +271,36 @@ export class MMD {
     mixer.update(delta)
     this.updateAnimation(mixer)
     this.update(delta, options)
+  }
+
+  /** Projects the animated rotation of fixed-axis bones, before append transforms and IK build on it. */
+  private applyAxisLimits() {
+    const bones = this.mesh.skeleton.bones
+    for (const limited of this.axisLimitedBones) {
+      const rotation = bones[limited.index].quaternion
+      limited.base.copy(rotation)
+      projectOntoAxis(rotation, limited.axis)
+    }
+    this.axisLimitsApplied = true
+  }
+
+  private recordAxisLimitOutputs() {
+    const bones = this.mesh.skeleton.bones
+    for (const limited of this.axisLimitedBones)
+      limited.output.copy(bones[limited.index].quaternion)
+  }
+
+  /** Without a mixer in between, bones still hold last frame's output; put the animated input back. */
+  private restoreAxisLimitInputs() {
+    if (!this.axisLimitsApplied)
+      return
+
+    const bones = this.mesh.skeleton.bones
+    for (const limited of this.axisLimitedBones) {
+      const rotation = bones[limited.index].quaternion
+      if (rotation.equals(limited.output))
+        rotation.copy(limited.base)
+    }
   }
 
   private updateBones(afterPhysics: boolean, options: MMDUpdateOptions) {
