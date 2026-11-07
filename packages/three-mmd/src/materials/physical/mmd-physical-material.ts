@@ -2,7 +2,7 @@ import type { MMDMaterial, MMDMaterialEvaluatedState, MMDMaterialParameters } fr
 
 import { MeshPhysicalMaterial } from 'three'
 
-import { updateMMDAlpha } from '../alpha'
+import { copyMMDAlpha, updateMMDAlpha } from '../alpha'
 import { installSdefPatch } from '../sdef'
 
 /**
@@ -58,6 +58,7 @@ export class MMDPhysicalMaterial extends MeshPhysicalMaterial implements MMDMate
     this.needsUpdate = true
     this.alphaMorph = source.alphaMorph
     this.textureAlphaMode = source.textureAlphaMode
+    copyMMDAlpha(this, source)
     this.updateAlpha()
     return this
   }

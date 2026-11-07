@@ -21,7 +21,7 @@ import {
   Vector4,
 } from 'three'
 
-import { updateMMDAlpha } from '../alpha'
+import { copyMMDAlpha, updateMMDAlpha } from '../alpha'
 import { installSdefPatch } from '../sdef'
 
 const replaceShaderSeam = (source: string, expected: string, replacement: string, name: string): string => {
@@ -218,6 +218,7 @@ export class MMDToonMaterial extends MeshPhongMaterial implements MMDMaterial {
     this.sphereTextureAdditiveColor.copy(source.sphereTextureAdditiveColor)
     this.toonTextureMultiplicativeColor.copy(source.toonTextureMultiplicativeColor)
     this.toonTextureAdditiveColor.copy(source.toonTextureAdditiveColor)
+    copyMMDAlpha(this, source)
     this.updateAlpha()
     return this
   }

@@ -234,6 +234,30 @@ describe('mmd alpha', () => {
     expect(material.transparent).toBe(true)
   })
 
+  it('keeps a user-set alphaTest as a cutout on both backends', () => {
+    for (const Material of [MMDToonMaterial, MMDPhysicalMaterial]) {
+      const material = new Material({ alphaTest: 0.25, textureAlphaMode: 'blend' })
+      expect(material.alphaTest).toBe(0.25)
+      expect(material.transparent).toBe(false)
+
+      material.updateAlpha()
+      expect(material.alphaTest).toBe(0.25)
+      expect(material.clone().alphaTest).toBe(0.25)
+    }
+  })
+
+  it('does not mistake a derived cutout threshold for a user-set one after copy', () => {
+    const source = new MMDToonMaterial({ textureAlphaMode: 'cutout' })
+    const target = source.clone()
+
+    target.textureAlphaMode = 'blend'
+    target.updateAlpha()
+
+    expect(source.alphaTest).toBe(0.5)
+    expect(target.alphaTest).toBe(0)
+    expect(target.transparent).toBe(true)
+  })
+
   it('keeps single-sided materials single-sided', () => {
     expect(new MMDToonMaterial({ side: FrontSide }).side).toBe(FrontSide)
   })
