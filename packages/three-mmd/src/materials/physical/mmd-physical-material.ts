@@ -1,186 +1,69 @@
-import type { MeshPhysicalMaterialParameters } from 'three'
+import type { MMDMaterial, MMDMaterialEvaluatedState, MMDMaterialParameters } from '../types'
 
-import type { MMDAlphaMode, MMDTextureAlphaMode } from '../core/alpha-policy'
-import type {
-  MMDMaterialCapabilities,
-  MMDMaterialDescriptor,
-  MMDMaterialEvaluatedState,
-} from '../types'
-import type { MMDPhysicalSpecularMode, MMDShininessToRoughness } from './mapping'
+import { MeshPhysicalMaterial } from 'three'
 
-import { DoubleSide, FrontSide, MeshPhysicalMaterial } from 'three'
+import { updateMMDAlpha } from '../alpha'
+import { installSdefPatch } from '../sdef'
 
-import {
-  applyMMDAlphaPolicy,
-  resolveMMDAlphaPolicy,
-} from '../core/alpha-policy'
-import { installSdefPatch } from '../core/sdef'
-import {
-  mmdShininessToRoughness,
-  resolveMMDPhysicalRoughness,
-  resolveMMDPhysicalSpecularColor,
-} from './mapping'
-
-export interface MMDPhysicalMaterialOptions {
-  alphaMode?: MMDAlphaMode
-  shininessToRoughness?: MMDShininessToRoughness
-  specularMode?: MMDPhysicalSpecularMode
-}
-
-interface ResolvedMMDPhysicalMaterialOptions {
-  alphaMode: MMDAlphaMode
-  shininessToRoughness: MMDShininessToRoughness
-  specularMode: MMDPhysicalSpecularMode
-}
-
-const capabilities: MMDMaterialCapabilities = {
-  alpha: ['opaque', 'cutout', 'blend', 'mmd-depth-blend'],
-  materialMorph: 'binding',
-  outline: false,
-  renderer: ['webgl-renderer'],
-  sdef: 'full',
-  sphereTexture: [],
-  toon: false,
-}
-
-const resolveOptions = (options: MMDPhysicalMaterialOptions): ResolvedMMDPhysicalMaterialOptions => ({
-  alphaMode: options.alphaMode ?? 'evaluate',
-  shininessToRoughness: options.shininessToRoughness ?? mmdShininessToRoughness,
-  specularMode: options.specularMode ?? 'ignore',
-})
-
-const createPhysicalParameters = (
-  descriptor: MMDMaterialDescriptor,
-  options: ResolvedMMDPhysicalMaterialOptions,
-): MeshPhysicalMaterialParameters => {
-  const specularColor = resolveMMDPhysicalSpecularColor(descriptor.specular, options.specularMode)
-  return {
-    ...(descriptor.alphaTest === undefined ? {} : { alphaTest: descriptor.alphaTest }),
-    ...(descriptor.map === undefined ? {} : { map: descriptor.map }),
-    color: descriptor.diffuse,
-    fog: descriptor.fog,
-    metalness: 0,
-    opacity: descriptor.opacity,
-    roughness: resolveMMDPhysicalRoughness(descriptor.shininess, options.shininessToRoughness),
-    ...(specularColor === undefined ? {} : { specularColor }),
-    side: descriptor.doubleSided ? DoubleSide : FrontSide,
-    transparent: descriptor.opacity !== 1,
-  }
-}
+/**
+ * Engineering approximation from a Blinn-Phong exponent to Three's GGX
+ * roughness input. This is intentionally not a PMX rule.
+ */
+const shininessToRoughness = (shininess: number): number => (
+  Math.min(1, Math.sqrt(2 / (Math.max(0, shininess) + 2)))
+)
 
 /**
  * @experimental
- * Opt-in physically based MMD material backend for WebGLRenderer.
+ * Physically based MMD material that keeps Three's native lights and
+ * environment lighting. PMX shininess is approximated as `roughness`;
+ * `ambient`, `specular`, toon and sphere textures are not supported.
  */
-export class MMDPhysicalMaterial extends MeshPhysicalMaterial {
-  public static readonly isMMDMaterial = true as const
-  public static readonly mmdCapabilities = capabilities
-
-  public alphaMode: MMDAlphaMode
-  public descriptor: MMDMaterialDescriptor
+export class MMDPhysicalMaterial extends MeshPhysicalMaterial implements MMDMaterial {
+  public alphaMorph = false
   public readonly isMMDMaterial = true as const
-  public readonly mmdCapabilities = capabilities
-  public shininessToRoughness: MMDShininessToRoughness
-  public specularMode: MMDPhysicalSpecularMode
-  private alphaMorphEnabled = false
-  private textureAlphaMode?: MMDTextureAlphaMode
+  public readonly isMMDPhysicalMaterial = true
+  public textureAlphaMode: MMDMaterial['textureAlphaMode'] = null
 
-  public constructor(descriptor: MMDMaterialDescriptor, options: MMDPhysicalMaterialOptions = {}) {
-    const resolvedOptions = resolveOptions(options)
-    super(createPhysicalParameters(descriptor, resolvedOptions))
-    this.descriptor = descriptor
-    this.alphaMode = resolvedOptions.alphaMode
-    this.shininessToRoughness = resolvedOptions.shininessToRoughness
-    this.specularMode = resolvedOptions.specularMode
-    this.name = descriptor.name
-    this.textureAlphaMode = descriptor.textureAlphaMode
-    this.updateAlphaPolicy(descriptor.opacity)
+  public constructor(parameters: MMDMaterialParameters = {}) {
+    super()
+
+    this.metalness = 0
+
+    const values = { ...parameters }
+    if (values.shininess !== undefined)
+      this.roughness = shininessToRoughness(values.shininess)
+
+    delete values.ambient
+    delete values.shininess
+    delete values.specular
+    delete values.sphereBlendMode
+    delete values.sphereMap
+    delete values.toonMap
+    this.setValues(values)
+    this.updateAlpha()
     installSdefPatch(this)
   }
 
   public applyMMDMaterialState(state: MMDMaterialEvaluatedState): void {
     this.color.copy(state.diffuse)
     this.opacity = state.opacity
-    this.roughness = resolveMMDPhysicalRoughness(state.shininess, this.shininessToRoughness)
-    const specularColor = resolveMMDPhysicalSpecularColor(state.specular, this.specularMode)
-    if (specularColor !== undefined)
-      this.specularColor.copy(specularColor)
-    this.updateAlphaPolicy(state.opacity)
-  }
-
-  public override clone(): this {
-    const Constructor = this.constructor as new (
-      descriptor: MMDMaterialDescriptor,
-      options?: MMDPhysicalMaterialOptions,
-    ) => this
-    return new Constructor(this.descriptor, {
-      alphaMode: this.alphaMode,
-      shininessToRoughness: this.shininessToRoughness,
-      specularMode: this.specularMode,
-    }).copy(this)
+    this.roughness = shininessToRoughness(state.shininess)
+    this.updateAlpha()
   }
 
   public override copy(source: this): this {
     super.copy(source)
     this.defines = { ...source.defines }
     this.needsUpdate = true
-    this.descriptor = source.descriptor
-    this.alphaMode = source.alphaMode
-    this.shininessToRoughness = source.shininessToRoughness
-    this.specularMode = source.specularMode
-    this.alphaMorphEnabled = source.alphaMorphEnabled
+    this.alphaMorph = source.alphaMorph
     this.textureAlphaMode = source.textureAlphaMode
-    this.updateAlphaPolicy(this.opacity)
+    this.updateAlpha()
     return this
   }
 
-  public override customProgramCacheKey(): string {
-    return `${super.customProgramCacheKey()}|mmd-physical|sdef:${String(this.defines?.MMD_USE_SDEF ?? 1)}`
-  }
-
-  public setMMDAlphaMorphEnabled(enabled: boolean): void {
-    this.alphaMorphEnabled = enabled
-    this.updateAlphaPolicy(this.opacity)
-  }
-
-  public setMMDTextureAlphaMode(mode: MMDTextureAlphaMode | undefined): void {
-    this.textureAlphaMode = mode
-    this.updateAlphaPolicy(this.opacity, mode)
-  }
-
-  public setSdefEnabled(enabled: boolean): void {
-    const value = enabled ? 1 : 0
-    if (this.defines?.MMD_USE_SDEF === value)
-      return
-
-    this.defines = { ...this.defines, MMD_USE_SDEF: value }
-    this.needsUpdate = true
-  }
-
-  private updateAlphaPolicy(
-    opacity: number,
-    textureAlphaMode: MMDTextureAlphaMode | undefined = this.textureAlphaMode,
-  ): void {
-    const mode = resolveMMDAlphaPolicy({
-      alphaTest: this.descriptor.alphaTest,
-      mode: this.alphaMode,
-      opacity,
-      textureAlphaMode,
-      textureHasTransparency: textureAlphaMode !== undefined || this.alphaMorphEnabled,
-    })
-    // Babylon-MMD's default PBR render method is
-    // DepthWriteAlphaBlendingWithEvaluation. Both non-opaque texture results
-    // (cutout and blend) use depth-writing blending in the evaluated MMD path.
-    // An explicit alphaTest remains a cutout, and conventional
-    // depthWrite=false blending remains available through the explicit `blend`
-    // option.
-    const evaluatedTextureCutout = mode === 'cutout'
-      && textureAlphaMode === 'cutout'
-      && (this.descriptor.alphaTest ?? 0) <= 0
-    const renderMode = this.alphaMode === 'evaluate'
-      && (mode === 'blend' || evaluatedTextureCutout)
-      ? 'mmd-depth-blend'
-      : mode
-    applyMMDAlphaPolicy(this, renderMode, this.descriptor.alphaTest ?? 0.5)
+  public updateAlpha(): void {
+    // Matches Babylon-MMD's PBR path, where texture cutout also blends with depth writes.
+    updateMMDAlpha(this, true)
   }
 }

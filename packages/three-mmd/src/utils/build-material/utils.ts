@@ -1,13 +1,46 @@
 import type { BufferGeometry, Texture, TextureLoader, TypedArray } from 'three'
 
-import type { MMDTextureAlphaMode } from '../../materials/core/alpha-policy'
+import type { MMDTextureAlphaMode } from '../../materials/types'
 import type { LoadingTexture, TextureContext, TextureLoadOptions } from './types'
 
 import { SharedToonTextures } from 'babylon-mmd/esm/Loader/sharedToonTextures'
 import { LoaderUtils, NearestFilter, RepeatWrapping, SRGBColorSpace } from 'three'
 
-import { resolveMMDTextureAlphaMode } from '../../materials/core/alpha-policy'
 import { NON_ALPHA_CHANNEL_FORMATS } from './types'
+
+/**
+ * Classifies sampled texture alpha using Babylon-MMD's alpha evaluation rule.
+ * The input values use the usual texture-alpha range (0 = transparent,
+ * 255 = opaque); Babylon's checker evaluates the inverted value in its pass.
+ */
+export const resolveMMDTextureAlphaMode = (
+  alphaValues: readonly number[],
+  alphaThreshold = 195,
+  alphaBlendThreshold = 100,
+): MMDTextureAlphaMode | undefined => {
+  let maxInvertedAlpha = 0
+  let middleInvertedAlphaSum = 0
+  let middleInvertedAlphaCount = 0
+
+  for (const alpha of alphaValues) {
+    const invertedAlpha = 255 - alpha
+    maxInvertedAlpha = Math.max(maxInvertedAlpha, invertedAlpha)
+    if (invertedAlpha > 0 && invertedAlpha < 255) {
+      middleInvertedAlphaSum += invertedAlpha
+      middleInvertedAlphaCount++
+    }
+  }
+
+  if (maxInvertedAlpha < alphaThreshold)
+    return undefined
+
+  const averageMiddleInvertedAlpha = middleInvertedAlphaCount === 0
+    ? 0
+    : middleInvertedAlphaSum / middleInvertedAlphaCount
+  return averageMiddleInvertedAlpha + alphaBlendThreshold < maxInvertedAlpha
+    ? 'cutout'
+    : 'blend'
+}
 
 // Check the alpha mode of the image area used by one geometry group.
 export const checkImageTransparency = (

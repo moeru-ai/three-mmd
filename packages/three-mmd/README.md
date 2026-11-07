@@ -100,27 +100,9 @@ loader.register(parser => new MMDMaterialPlugin(parser, {
 const mmd = await loader.loadAsync('/models/miku.pmx')
 ```
 
-The baseline maps diffuse color/map and double-sided rendering directly,
-keeps `metalness` at `0`, and approximates PMX shininess as GGX roughness.
-PMX ambient, toon, sphere, outline, and texture-morph colors remain explicitly
-unsupported by this pure Physical backend. PMX specular color is opt-in through
-constructor options; when selecting options through the loader, provide a small
-subclass:
-
-```ts
-import type { MMDMaterialDescriptor } from '@moeru/three-mmd/materials'
-
-import { MMDPhysicalMaterial } from '@moeru/three-mmd/materials/physical'
-
-class ProjectPhysicalMaterial extends MMDPhysicalMaterial {
-  constructor(descriptor: MMDMaterialDescriptor) {
-    super(descriptor, {
-      alphaMode: 'evaluate',
-      specularMode: 'physical-color',
-    })
-  }
-}
-```
+Diffuse color/map and sidedness map directly, `metalness` stays `0`, and PMX
+shininess is approximated as GGX roughness. PMX ambient, specular, toon and
+sphere textures are not supported by this backend.
 
 ## License
 

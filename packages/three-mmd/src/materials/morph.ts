@@ -1,19 +1,19 @@
 import type { PmxObject } from 'babylon-mmd/esm/Loader/Parser/pmxObject'
 import type { Color } from 'three'
 
-import type { MMDMaterialDescriptor, MMDMaterialEvaluatedState } from './types'
+import type { MMDMaterialEvaluatedState } from './types'
 
 import { Vector4 } from 'three'
 
-export const createMMDMaterialEvaluatedState = (descriptor: MMDMaterialDescriptor): MMDMaterialEvaluatedState => ({
-  ambient: descriptor.ambient.clone(),
-  diffuse: descriptor.diffuse.clone(),
-  edgeAlpha: descriptor.outline.alpha,
-  edgeColor: descriptor.outline.color.clone(),
-  edgeWidth: descriptor.outline.width,
-  opacity: descriptor.opacity,
-  shininess: descriptor.shininess,
-  specular: descriptor.specular.clone(),
+/** Snapshots the base appearance of a material so morphs can be evaluated against it. */
+export const createMMDMaterialEvaluatedState = (
+  material: { ambient: Color, color: Color, opacity: number, shininess: number, specular: Color },
+): MMDMaterialEvaluatedState => ({
+  ambient: material.ambient.clone(),
+  diffuse: material.color.clone(),
+  opacity: material.opacity,
+  shininess: material.shininess,
+  specular: material.specular.clone(),
   sphereTextureAdditiveColor: new Vector4(0, 0, 0, 0),
   sphereTextureMultiplicativeColor: new Vector4(1, 1, 1, 1),
   textureAdditiveColor: new Vector4(0, 0, 0, 0),
@@ -61,9 +61,6 @@ export const applyMMDMaterialMorph = (
     multiplyColor(state.specular, element.specular, weight)
     state.shininess += (state.shininess * element.shininess - state.shininess) * weight
     multiplyColor(state.ambient, element.ambient, weight)
-    multiplyColor(state.edgeColor, element.edgeColor, weight)
-    state.edgeAlpha += (state.edgeAlpha * element.edgeColor[3] - state.edgeAlpha) * weight
-    state.edgeWidth += (state.edgeWidth * element.edgeSize - state.edgeWidth) * weight
     multiplyVector4(state.textureMultiplicativeColor, element.textureColor, weight)
     multiplyVector4(state.sphereTextureMultiplicativeColor, element.sphereTextureColor, weight)
     multiplyVector4(state.toonTextureMultiplicativeColor, element.toonTextureColor, weight)
@@ -74,9 +71,6 @@ export const applyMMDMaterialMorph = (
     addColor(state.specular, element.specular, weight)
     state.shininess += element.shininess * weight
     addColor(state.ambient, element.ambient, weight)
-    addColor(state.edgeColor, element.edgeColor, weight)
-    state.edgeAlpha += element.edgeColor[3] * weight
-    state.edgeWidth += element.edgeSize * weight
     addVector4(state.textureAdditiveColor, element.textureColor, weight)
     addVector4(state.sphereTextureAdditiveColor, element.sphereTextureColor, weight)
     addVector4(state.toonTextureAdditiveColor, element.toonTextureColor, weight)

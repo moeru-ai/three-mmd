@@ -9,8 +9,8 @@ import {
   Texture,
 } from 'three'
 
-import { isMMDMaterial } from '../types'
-import { installSdefPatch } from './sdef'
+import { installSdefPatch, setSdefEnabled } from './sdef'
+import { isMMDMaterial } from './types'
 
 /**
  * Makes one object-level custom shadow material safe for meshes with multiple
@@ -56,7 +56,7 @@ export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
   const mmdMaterials = surfaceMaterials
   const meshHasSdefVertices = hasSdefVertices(mesh)
   for (const material of mmdMaterials)
-    material.setSdefEnabled(meshHasSdefVertices)
+    setSdefEnabled(material, meshHasSdefVertices)
 
   if (!meshHasSdefVertices)
     return
