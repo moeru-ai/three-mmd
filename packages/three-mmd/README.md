@@ -104,6 +104,30 @@ Diffuse color/map and sidedness map directly, `metalness` stays `0`, and PMX
 shininess is approximated as GGX roughness. PMX ambient, specular, toon and
 sphere textures are not supported by this backend.
 
+## WebGPU
+
+`MMDToonNodeMaterial` is the TSL counterpart of `MMDToonMaterial` for
+`WebGPURenderer` (`three/webgpu`). It takes the same parameters, including
+toon and sphere textures and PMX SDEF skinning:
+
+```ts
+import { MMDLoader, MMDMaterialPlugin } from '@moeru/three-mmd'
+import { MMDToonNodeMaterial } from '@moeru/three-mmd/materials/toon-node'
+import { WebGPURenderer } from 'three/webgpu'
+
+const renderer = new WebGPURenderer()
+await renderer.init()
+
+const loader = new MMDLoader()
+loader.register(parser => new MMDMaterialPlugin(parser, {
+  materialType: MMDToonNodeMaterial,
+}))
+```
+
+The node material and the classic materials can't be mixed on one renderer:
+use `MMDToonMaterial` with `WebGLRenderer`. `WebGPURenderer({ forceWebGL: true })`
+runs the same node material on its WebGL 2 backend.
+
 ## License
 
 [MIT](../../LICENSE.md)

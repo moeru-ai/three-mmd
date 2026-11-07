@@ -55,6 +55,14 @@ export const installMMDMaterialBindings = (mesh: SkinnedMesh): void => {
 
   const mmdMaterials = surfaceMaterials
   const meshHasSdefVertices = hasSdefVertices(mesh)
+
+  // Node materials deform SDEF vertices in TSL and bring their own shadow handling.
+  if (mmdMaterials.some(material => material.bindSkinnedMesh !== undefined)) {
+    for (const material of mmdMaterials)
+      material.bindSkinnedMesh?.(mesh)
+    return
+  }
+
   for (const material of mmdMaterials)
     setSdefEnabled(material, meshHasSdefVertices)
 
