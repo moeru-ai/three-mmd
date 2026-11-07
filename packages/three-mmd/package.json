@@ -21,7 +21,8 @@
     ".": "./src/index.ts",
     "./materials": "./src/materials/index.ts",
     "./materials/physical": "./src/materials/physical/index.ts",
-    "./materials/toon": "./src/materials/toon/index.ts"
+    "./materials/toon": "./src/materials/toon/index.ts",
+    "./materials/toon-node": "./src/materials/toon-node/index.ts"
   },
   "files": [
     "dist"
@@ -43,6 +44,10 @@
       "./materials/toon": {
         "types": "./dist/materials/toon.d.ts",
         "default": "./dist/materials/toon.js"
+      },
+      "./materials/toon-node": {
+        "types": "./dist/materials/toon-node.d.ts",
+        "default": "./dist/materials/toon-node.js"
       },
       "./package.json": "./package.json"
     },

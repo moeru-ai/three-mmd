@@ -1,9 +1,11 @@
-import type { Color, ColorRepresentation, Material, MeshPhongMaterialParameters, Texture, Vector4 } from 'three'
+import type { Color, ColorRepresentation, Material, MeshPhongMaterialParameters, SkinnedMesh, Texture, Vector4 } from 'three'
 
 export interface MMDMaterial extends Material {
   /** Set when a material morph can change opacity. Call `updateAlpha()` afterwards. */
   alphaMorph: boolean
   applyMMDMaterialState: (state: MMDMaterialEvaluatedState) => void
+  /** Called once the material is assigned to a loaded mesh. Materials that handle SDEF themselves implement it. */
+  bindSkinnedMesh?: (mesh: SkinnedMesh) => void
   readonly isMMDMaterial: true
   /** Set once the diffuse texture alpha has been analyzed. Call `updateAlpha()` afterwards. */
   textureAlphaMode: MMDTextureAlphaMode | null
