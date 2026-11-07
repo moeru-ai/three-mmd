@@ -23,21 +23,12 @@ export interface MMDMaterialPluginOptions {
   materialType: MMDMaterialConstructor
 }
 
-const isFirstPartyMaterial = (materialType: MMDMaterialConstructor): boolean => (
-  materialType.isMMDMaterial === true
-)
-
-/** Selects the first-party MMD material backend before mesh assembly begins. */
+/** Selects the material class used for every PMX material of the loaded model. */
 export class MMDMaterialPlugin implements MMDLoaderPlugin {
   public readonly materialType: MMDMaterialConstructor
   public readonly name = 'MMDMaterialPlugin'
 
   public constructor(_parser: MMDLoaderParser, options: MMDMaterialPluginOptions) {
-    if (!isFirstPartyMaterial(options.materialType)) {
-      throw new TypeError(
-        'MMDMaterialPlugin: materialType must be an MMD material backend.',
-      )
-    }
     this.materialType = options.materialType
   }
 }

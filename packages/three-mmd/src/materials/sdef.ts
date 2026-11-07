@@ -107,3 +107,13 @@ export const installSdefPatch = (material: Material): void => {
     shader.vertexShader = assertAndReplace(shader.vertexShader, '#include <skinning_vertex>', `#if MMD_USE_SDEF\n${skinningVertex}\n#else\n#include <skinning_vertex>\n#endif`, 'skinning_vertex')
   }
 }
+
+/** Toggles the SDEF shader variant of a material that went through {@link installSdefPatch}. */
+export const setSdefEnabled = (material: Material, enabled: boolean): void => {
+  const value = enabled ? 1 : 0
+  if (material.defines?.MMD_USE_SDEF === value)
+    return
+
+  material.defines = { ...material.defines, MMD_USE_SDEF: value }
+  material.needsUpdate = true
+}
