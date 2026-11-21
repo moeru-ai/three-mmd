@@ -105,8 +105,8 @@ vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffu
 vec2 mmdSphereUv = normal.xy * 0.5 + 0.5;
 vec3 mmdSphere = texture2D( mmdSphereMap, mmdSphereUv ).rgb;
 mmdSphere = mmdApplyTextureColor( mmdSphere, mmdSphereTextureMultiplicativeColor, mmdSphereTextureAdditiveColor );
-mmdSphere *= reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
 #if MMD_SPHERE_BLEND_MODE > 1
+mmdSphere *= reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
 outgoingLight += mmdSphere;
 #else
 outgoingLight *= mmdSphere;
